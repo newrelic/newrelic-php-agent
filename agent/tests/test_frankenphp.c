@@ -7,14 +7,17 @@
  * Unit tests for FrankenPHP worker mode instrumentation (php_frankenphp.c).
  *
  * The tests register a fake frankenphp_handle_request. The fake copies the
- * real function (FrankenPHP v1.13.0, frankenphp.c) only up to the point where
+ * real function (FrankenPHP v1.13.0, frankenphp.c) up to the point where
  * zend_call_function returns: argument parsing, the not-in-worker-mode throw
- * and the callback call. It deliberately does not copy what FrankenPHP does
- * around the call (request setup, exception reporting, request teardown).
- * The agent's own code runs before the real function, on the callback's
- * frame, and after the real function returns, when it ends the request's
- * transaction. These tests check when that transaction ends, not what it
- * records from FrankenPHP's exception reporting and request teardown.
+ * and the callback call. The agent's own code runs before the real function,
+ * on the callback's frame, and after the real function returns, when it ends
+ * the request's transaction. Most tests check when that transaction ends.
+ *
+ * For the tests of what the transaction records from the rest of the
+ * request, one mode also copies the parts of FrankenPHP's request setup and
+ * teardown that the agent reads: the request method, reporting an uncaught
+ * exception and flushing the output. Nothing else of FrankenPHP's request
+ * handling is copied.
  */
 #include "tlib_php.h"
 
@@ -24,6 +27,7 @@ tlib_parallel_info_t parallel_info
 #if defined(ZTS) && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 #include "nr_attributes.h"
 #include "nr_commands.h"
+#include "nr_errors.h"
 #include "nr_txn.h"
 #include "php_agent.h"
 #include "php_globals.h"
@@ -58,7 +62,9 @@ typedef struct {
   char* name;
   int background;
   bool has_error;
-  char* user_attributes; /* JSON */
+  char* error_message;
+  char* user_attributes;  /* JSON */
+  char* agent_attributes; /* JSON */
 } captured_txn_t;
 
 static captured_txn_t captured[CAPTURE_MAX];
@@ -69,12 +75,17 @@ static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
     captured_txn_t* c = &captured[captured_count];
     nrobj_t* attrs = nr_attributes_user_to_obj(txn->attributes,
                                                NR_ATTRIBUTE_DESTINATION_ALL);
+    nrobj_t* agent_attrs = nr_attributes_agent_to_obj(
+        txn->attributes, NR_ATTRIBUTE_DESTINATION_ALL);
 
     c->name = nr_strdup(txn->name);
     c->background = txn->status.background;
     c->has_error = (NULL != txn->error);
+    c->error_message = nr_strdup(nr_error_get_message(txn->error));
     c->user_attributes = nro_to_json(attrs);
+    c->agent_attributes = nro_to_json(agent_attrs);
     nro_delete(attrs);
+    nro_delete(agent_attrs);
   }
   captured_count += 1;
   return NR_SUCCESS;
@@ -85,7 +96,9 @@ static void capture_reset(void) {
 
   for (i = 0; i < CAPTURE_MAX; i++) {
     nr_free(captured[i].name);
+    nr_free(captured[i].error_message);
     nr_free(captured[i].user_attributes);
+    nr_free(captured[i].agent_attributes);
   }
   nr_memset(captured, 0, sizeof(captured));
   captured_count = 0;
@@ -97,6 +110,8 @@ static void capture_reset(void) {
 typedef enum {
   FAKE_RETURN_ONLY,      /* parse the argument, return fake.return_value */
   FAKE_CALL,             /* parse the argument, call the callback once */
+  FAKE_CALL_AND_FINISH,  /* as FAKE_CALL, as a web request that the fake
+                            then finishes as FrankenPHP does */
   FAKE_THROW_NOT_WORKER, /* parse the argument, throw as outside worker mode */
 } fake_mode_t;
 
@@ -128,6 +143,35 @@ static void fake_observe(fake_observation_t* observation) {
   observation->captured = captured_count;
 }
 
+/*
+ * Makes the request a web request. FrankenPHP registers the request's server
+ * variables before calling the callback; without REQUEST_METHOD the agent
+ * makes the transaction a background job, which records no response
+ * attributes.
+ */
+static void fake_start_web_request(void) {
+  php_register_variable("REQUEST_METHOD", "GET",
+                        &PG(http_globals)[TRACK_VARS_SERVER]);
+}
+
+/*
+ * Finishes the request as FrankenPHP v1.13.0 does once zend_call_function
+ * returns: it reports a pending exception, then flushes every output buffer
+ * (frankenphp.c#L901-L921, #L513-L519). Reporting an uncaught exception sets
+ * the status to 500 only with display_errors off and headers not yet sent,
+ * which tlib's engine doesn't have, so the fake sets it.
+ */
+static void fake_finish_request(void) {
+  zend_object* exception = EG(exception);
+
+  if (NULL != exception && !zend_is_unwind_exit(exception)
+      && !zend_is_graceful_exit(exception)) {
+    SG(sapi_headers).http_response_code = 500;
+    zend_exception_error(exception, E_ERROR);
+  }
+  php_output_end_all();
+}
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_frankenphp_handle_request,
                                         0,
                                         1,
@@ -140,6 +184,7 @@ ZEND_END_ARG_INFO()
  * Mirrors frankenphp_handle_request() from FrankenPHP v1.13.0 up to the
  * return of zend_call_function:
  * https://github.com/php/frankenphp/blob/v1.13.0/frankenphp.c#L841-L892
+ * and, in FAKE_CALL_AND_FINISH mode, what it does after that.
  * The real function parses with Z_PARAM_FUNC; "f" raises the same TypeError
  * and ArgumentCountError.
  */
@@ -164,9 +209,13 @@ static ZEND_FUNCTION(frankenphp_handle_request) {
     RETURN_THROWS();
   }
 
-  if (FAKE_CALL == fake.mode) {
+  if (FAKE_CALL == fake.mode || FAKE_CALL_AND_FINISH == fake.mode) {
     zval retval;
     zval arg;
+
+    if (FAKE_CALL_AND_FINISH == fake.mode) {
+      fake_start_web_request();
+    }
 
     ZVAL_UNDEF(&retval);
     ZVAL_STRING(&arg, "fake-arg");
@@ -181,13 +230,17 @@ static ZEND_FUNCTION(frankenphp_handle_request) {
     }
     zval_ptr_dtor(&arg);
 
-    /*
-     * EG(exception) is left alone: what FrankenPHP does with it can only be
-     * tested against a real FrankenPHP.
-     */
     if (call < FAKE_MAX_CALLS) {
       fake_observe(&fake.after_call[call]);
       fake.exception_after_call[call] = (NULL != EG(exception));
+    }
+
+    /*
+     * FAKE_CALL leaves EG(exception) alone, for the test to see the agent's
+     * state when zend_call_function returns.
+     */
+    if (FAKE_CALL_AND_FINISH == fake.mode) {
+      fake_finish_request();
     }
     RETURN_TRUE;
   }
@@ -979,6 +1032,102 @@ static void test_nested_call_site(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/*
+ * An exception that leaves the request handler is reported by FrankenPHP
+ * after the handler returns, which sets the status to 500. The request's
+ * transaction must record both: it ends only after the real function
+ * returns.
+ */
+static void test_uncaught_exception_recorded_with_status_500(void) {
+  engine_create("");
+  request_start(FAKE_CALL_AND_FINISH);
+
+  tlib_php_request_eval(
+      "$cb = function () { throw new RuntimeException('handler failed'); };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("uncaught exception: bootstrap plus the request",
+                            2, captured_count);
+  tlib_pass_if_false("uncaught exception: web transaction",
+                     captured[1].background, "background=%d",
+                     captured[1].background);
+  tlib_pass_if_true("uncaught exception: error recorded", captured[1].has_error,
+                    "no error on the request's transaction");
+  tlib_pass_if_not_null(
+      "uncaught exception: the handler's exception",
+      nr_strstr(NRSAFESTR(captured[1].error_message), "handler failed"));
+  tlib_pass_if_not_null("uncaught exception: status 500",
+                        nr_strstr(NRSAFESTR(captured[1].agent_attributes),
+                                  "\"http.statusCode\":500"));
+  tlib_pass_if_null("uncaught exception: no transaction left", NRPRG(txn));
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * FrankenPHP flushes the output that is still buffered when the request
+ * handler returns, and the agent's auto-RUM output handler injects the
+ * browser agent into it then. The worker script's own output buffer, started
+ * before the call, sits below the agent's handler and receives the response
+ * body.
+ */
+static void test_buffered_html_gets_browser_agent(void) {
+  zval* body = NULL;
+
+  engine_create("");
+  request_start(FAKE_CALL_AND_FINISH);
+
+  tlib_php_request_eval(
+      "$body = '';"
+      "ob_start(function ($out) { $GLOBALS['body'] .= $out; return ''; });"
+      "$cb = function () {"
+      "  echo '<html><head><title>t</title></head><body>ok</body></html>';"
+      "};"
+      "frankenphp_handle_request($cb);");
+
+  body = tlib_php_request_eval_expr("$body");
+  tlib_pass_if_true("browser agent: body captured",
+                    NULL != body && IS_STRING == Z_TYPE_P(body),
+                    "$body is not a string");
+  if (NULL != body && IS_STRING == Z_TYPE_P(body)) {
+    tlib_pass_if_not_null("browser agent: request's body",
+                          nr_strstr(Z_STRVAL_P(body), "<body>ok"));
+    tlib_pass_if_not_null("browser agent: header injected",
+                          nr_strstr(Z_STRVAL_P(body), "window.NREUM"));
+    tlib_pass_if_not_null("browser agent: footer injected",
+                          nr_strstr(Z_STRVAL_P(body), "NREUM.info"));
+  }
+  nr_php_zval_free(&body);
+  tlib_pass_if_size_t_equal("browser agent: bootstrap plus the request", 2,
+                            captured_count);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * The request handler is a worker request only when frankenphp_handle_request
+ * calls it. Called directly by the worker script, after the agent wrapped it,
+ * it must not begin a transaction.
+ */
+static void test_direct_call_begins_no_transaction(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "$cb();");
+
+  tlib_pass_if_size_t_equal("direct call: bootstrap plus the request only", 2,
+                            captured_count);
+  tlib_pass_if_null("direct call: no transaction", NRPRG(txn));
+
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -1004,5 +1153,8 @@ void test_main(void* p NRUNUSED) {
   test_api_calls_inside_callback();
   test_callback_throws();
   test_nested_call_site();
+  test_uncaught_exception_recorded_with_status_500();
+  test_buffered_html_gets_browser_agent();
+  test_direct_call_begins_no_transaction();
 #endif
 }
