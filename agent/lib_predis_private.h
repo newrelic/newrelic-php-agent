@@ -138,8 +138,7 @@ extern nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
  * Params  : 1. The handle of the command object.
  *           2. The start time, as an absolute time.
  */
-extern void nr_predis_command_start_save(uint64_t handle,
-                                         nrtime_t start TSRMLS_DC);
+extern void nr_predis_command_start_save(uint64_t handle, nrtime_t start);
 
 /*
  * Purpose : Retrieve the start time saved for a command and remove it, so it
@@ -160,7 +159,7 @@ extern void nr_predis_command_start_save(uint64_t handle,
  */
 extern bool nr_predis_command_start_take(uint64_t handle,
                                          nrtime_t txn_start,
-                                         nrtime_t* start TSRMLS_DC);
+                                         nrtime_t* start);
 
 /*
  * Purpose : Retrieve a parameter from a Predis\Connection\ParametersInterface
