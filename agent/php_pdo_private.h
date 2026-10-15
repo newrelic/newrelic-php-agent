@@ -153,4 +153,16 @@ static inline pdo_stmt_t* nr_php_pdo_get_statement_object_internal(
  */
 extern zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC);
 
+/*
+ * Purpose : Return the options saved for a PDO object by
+ *           nr_php_pdo_options_save().
+ *
+ * Params  : 1. The PDO object (a zend_object on PHP 8.5 and later, a zval
+ *              before).
+ *
+ * Returns : The saved options array, which is NOT owned by the caller, or NULL
+ *           if none were saved.
+ */
+extern zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh);
+
 #endif /* PHP_PDO_PRIVATE_HDR */
