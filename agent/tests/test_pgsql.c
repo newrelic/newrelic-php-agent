@@ -366,12 +366,18 @@ static void test_object_connections(TSRMLS_D) {
       "closing another connection keeps the last", expected_first,
       nr_php_pgsql_retrieve_datastore_instance(NULL TSRMLS_CC));
 
-  /* pg_close() with no connection closes the last one. */
+  /*
+   * pg_close() with no connection releases the default link and leaves the
+   * connection open: its instance stays until the object is freed.
+   */
   nr_php_pgsql_remove_datastore_instance(NULL TSRMLS_CC);
-  tlib_pass_if_null("closed the last connection",
-                    nr_php_pgsql_retrieve_datastore_instance(second TSRMLS_CC));
+  assert_datastore_instance_equals(
+      "the connection keeps its instance", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(second TSRMLS_CC));
+  tlib_pass_if_null("the last mark is cleared",
+                    nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances)));
   tlib_pass_if_size_t_equal(
-      "the table is empty", 0,
+      "the entry is kept", 1,
       nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
 
   /* A connection that is freed takes its instance with it. */
