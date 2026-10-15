@@ -229,6 +229,24 @@ static void request_start(fake_mode_t mode) {
   fake_reset(mode);
   tlib_php_request_start();
 }
+
+/*
+ * The wraprec of the callable the PHP expression evaluates to. Only for
+ * callables that are user functions: nr_php_get_wraprec reads op_array
+ * fields.
+ */
+static nruserfn_t* wraprec_of(const char* expr) {
+  zval* callable = tlib_php_request_eval_expr(expr);
+  nruserfn_t* wr = nr_php_get_wraprec(nr_php_zval_to_function(callable));
+
+  nr_php_zval_free(&callable);
+  return wr;
+}
+
+static bool wraprec_has_custom_handlers(const nruserfn_t* wr) {
+  return NULL != wr && NULL != wr->fcall_handlers.begin
+         && NULL != wr->fcall_handlers.end;
+}
 /* }}} */
 
 /*
@@ -281,11 +299,129 @@ static void test_bootstrap_txn_ended_before_real_function(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+static nr_status_t mock_cmd_appinfo_unknown(nrapp_t* app) {
+  app->state = NR_APP_UNKNOWN;
+  return NR_SUCCESS;
+}
+
+/* Not recording at bootstrap because the app is unknown. */
+static void test_bootstrap_not_recording_app_unknown(void) {
+  engine_create("");
+  nr_cmd_appinfo_hook = mock_cmd_appinfo_unknown;
+  request_start(FAKE_RETURN_ONLY);
+
+  tlib_pass_if_false("app unknown: not recording", nr_php_recording(),
+                     "expected the agent not to be recording");
+  tlib_php_request_eval(
+      "$cb = function () {};"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("app unknown: nothing captured", 0, captured_count);
+  tlib_pass_if_true("app unknown: callable still wrapped",
+                    wraprec_has_custom_handlers(wraprec_of("$cb")),
+                    "no wraprec with custom handlers");
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* Not recording at bootstrap because the transaction is ignored. */
+static void test_bootstrap_not_recording_txn_ignored(void) {
+  engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+
+  tlib_php_request_eval(
+      "newrelic_ignore_transaction();"
+      "$cb = function () {};"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("ignored txn: nothing captured", 0, captured_count);
+  tlib_pass_if_true("ignored txn: callable still wrapped",
+                    wraprec_has_custom_handlers(wraprec_of("$cb")),
+                    "no wraprec with custom handlers");
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* The real function's return value reaches PHP unchanged. */
+static void test_return_value_passes_through(void) {
+  zval* rv = NULL;
+
+  engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+
+  fake.return_value = false;
+  rv = tlib_php_request_eval_expr("frankenphp_handle_request(function () {})");
+  tlib_pass_if_zval_is_bool_false("return value: false passes through", rv);
+  nr_php_zval_free(&rv);
+
+  fake.return_value = true;
+  rv = tlib_php_request_eval_expr("frankenphp_handle_request(function () {})");
+  tlib_pass_if_zval_is_bool_true("return value: true passes through", rv);
+  nr_php_zval_free(&rv);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* The same callable passed twice reuses its wraprec. */
+static void test_same_callable_reuses_wraprec(void) {
+  nruserfn_t* first = NULL;
+  nruserfn_t* second = NULL;
+
+  engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+
+  tlib_php_request_eval(
+      "$cb = function () {};"
+      "frankenphp_handle_request($cb);");
+  first = wraprec_of("$cb");
+  tlib_php_request_eval("frankenphp_handle_request($cb);");
+  second = wraprec_of("$cb");
+
+  tlib_pass_if_not_null("same callable: wrapped", first);
+  tlib_pass_if_ptr_equal("same callable: same wraprec reused", first, second);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* Agent disabled for this request. */
+static void test_agent_disabled_for_request(void) {
+  zval* rv = NULL;
+
+  engine_create("");
+  NRINI(enabled) = 0;
+  request_start(FAKE_CALL);
+
+  rv = tlib_php_request_eval_expr(
+      "frankenphp_handle_request(function () { "
+      "$GLOBALS['callback_ran'] = true; })");
+  tlib_pass_if_int_equal("disabled agent: fake entered", 1, fake.entered);
+  tlib_pass_if_zval_is_bool_true("disabled agent: return value passes through",
+                                 rv);
+  nr_php_zval_free(&rv);
+  rv = tlib_php_request_eval_expr("$callback_ran");
+  tlib_pass_if_zval_is_bool_true("disabled agent: callback ran", rv);
+  nr_php_zval_free(&rv);
+  tlib_pass_if_size_t_equal("disabled agent: nothing captured", 0,
+                            captured_count);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   test_harness_fake_is_wrapped_and_reachable();
   test_bootstrap_txn_ended_before_real_function();
+  test_bootstrap_not_recording_app_unknown();
+  test_bootstrap_not_recording_txn_ignored();
+  test_return_value_passes_through();
+  test_same_callable_reuses_wraprec();
+  test_agent_disabled_for_request();
 #endif
 }
