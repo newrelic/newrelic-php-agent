@@ -153,19 +153,19 @@ static void test_last(TSRMLS_D) {
   nr_php_objtable_del(table, b);
   tlib_pass_if_null("deleted", nr_php_objtable_get_last(table));
 
-  /* Deleting the last entry removes the marked entry and no other. */
-  nr_php_objtable_del_last(NULL);
-  nr_php_objtable_del_last(table);
-  tlib_pass_if_size_t_equal("nothing marked, nothing deleted", 0,
+  /* Clearing the mark keeps the entry and its value. */
+  nr_php_objtable_clear_last(NULL);
+  nr_php_objtable_clear_last(table);
+  tlib_pass_if_size_t_equal("nothing marked, nothing changed", 0,
                             nr_php_objtable_count(table));
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_objtable_set(table, b, new_value("b"));
   nr_php_objtable_mark_last(table, a);
   dtor_count = 0;
-  nr_php_objtable_del_last(table);
-  tlib_pass_if_int_equal("marked value destroyed", 1, dtor_count);
+  nr_php_objtable_clear_last(table);
+  tlib_pass_if_int_equal("no value destroyed", 0, dtor_count);
   tlib_pass_if_null("mark cleared", nr_php_objtable_get_last(table));
-  tlib_pass_if_null("a removed", nr_php_objtable_get(table, a));
+  tlib_pass_if_str_equal("a kept", "a", nr_php_objtable_get(table, a));
   tlib_pass_if_str_equal("b kept", "b", nr_php_objtable_get(table, b));
 
   nr_php_zval_free(&a);
