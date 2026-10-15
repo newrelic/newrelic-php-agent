@@ -394,7 +394,7 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
-zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh) {
   if (NULL == dbh) {
     return NULL;
   }
@@ -512,7 +512,7 @@ static void free_options(zval* options) {
 void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
   zval* copy = NULL;
 
-  if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
+  if (0 == nr_php_object_instanceof_class(dbh, "PDO")) {
     return;
   }
 

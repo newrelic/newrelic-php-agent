@@ -622,7 +622,7 @@ NR_INNER_WRAPPER(mysqli_close) {
       mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
     }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
-    if (nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
+    if (nr_php_mysqli_zval_is_link(mysqli_obj)) {
       nr_mysqli_metadata_remove(
           NRTXNGLOBAL(mysqli_links),
           (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
@@ -662,7 +662,13 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
@@ -768,13 +774,11 @@ NR_INNER_WRAPPER(mysqli_options) {
    * and the option would then never reach the explain connection.
    */
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "olz", &mysqli_obj,
-                                  &option, &value_zv)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "olz", &mysqli_obj, &option, &value_zv)) {
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "lz", &option,
-                                    &value_zv)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "lz", &option, &value_zv)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -832,15 +836,15 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "os!s!s!s!s!",
-          &mysqli_obj, &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
-          &capath_len, &cipher, &cipher_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os!s!s!s!s!", &mysqli_obj, &key, &key_len,
+                                  &cert, &cert_len, &ca, &ca_len, &capath,
+                                  &capath_len, &cipher, &cipher_len)) {
     if (FAILURE
-        == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s!s!s!s!s!",
-            &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
-            &capath_len, &cipher, &cipher_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s!s!s!s!s!", &key, &key_len, &cert,
+                                    &cert_len, &ca, &ca_len, &capath,
+                                    &capath_len, &cipher, &cipher_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -852,7 +856,7 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
       && nr_php_is_zval_true(return_value)) {
     char* key_term = key ? nr_strndup(key, key_len) : NULL;
     char* cert_term = cert ? nr_strndup(cert, cert_len) : NULL;
@@ -986,14 +990,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-  /* PHP 8.1 and later will report a deprecation warning if null is sent where
-   * a non-null argument value is expected.  For these PHP versions we use the
-   * same argument type specification as the mysqli::real_connect() extension
-   * uses to avoid creating this deprecation warning.
-   * For older PHPs continue to use the same specification string as previously
-   * to minimize any chances of introducing new problems.
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user. From PHP 8.1 a null sent where a non-null
+   * argument value is expected also reports a deprecation warning. For these
+   * PHP versions we use the same argument type specification as the
+   * mysqli::real_connect() extension uses. PHP 7.2 and 7.3 treat a null user
+   * as an empty string, so they keep the previous specification.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* proc_type_spec = "o|s!s!s!s!l!s!l";
   const char* oo_type_spec = "|s!s!s!s!l!s!l";
@@ -1091,14 +1098,14 @@ NR_INNER_WRAPPER(mysqli_change_user) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "oss|s!",
-                                  &mysqli_obj, &user, &user_len, &password,
-                                  &password_len, &database, &database_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "oss|s!", &mysqli_obj, &user, &user_len,
+                                  &password, &password_len, &database,
+                                  &database_len)) {
     if (FAILURE
-        == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "ss|s!", &user,
-            &user_len, &password, &password_len, &database, &database_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "ss|s!", &user, &user_len, &password,
+                                    &password_len, &database, &database_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -1110,7 +1117,7 @@ NR_INNER_WRAPPER(mysqli_change_user) {
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (user && (0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
       && nr_php_is_zval_true(return_value)) {
     char* user_term = nr_strndup(user, user_len);
     char* password_term = nr_strndup(password, password_len);
@@ -1646,7 +1653,7 @@ NR_INNER_WRAPPER(mysqli_init) {
                                          INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
+      && nr_php_mysqli_zval_is_link(return_value)) {
     /* A new link must not inherit what was saved for an earlier one. */
     nr_mysqli_metadata_remove(
         NRTXNGLOBAL(mysqli_links),
@@ -2488,10 +2495,9 @@ NR_INNER_WRAPPER(pdo_connect) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "s|s!s!a!", &dsn,
-                                  &dsn_len, &username, &username_len, &password,
-                                  &password_len, &options)) {
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|s!s!a!", &dsn, &dsn_len,
+          &username, &username_len, &password, &password_len, &options)) {
     options = NULL;
   }
 
@@ -2503,7 +2509,7 @@ NR_INNER_WRAPPER(pdo_connect) {
    * both the PDO object and the options array for validity.
    */
   if (0 == zcaught) {
-    nr_php_pdo_options_save(return_value, options TSRMLS_CC);
+    nr_php_pdo_options_save(return_value, options);
   }
 
   if (zcaught) {

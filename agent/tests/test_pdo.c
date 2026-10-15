@@ -355,15 +355,15 @@ static void test_disable_persistence(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-static zval* saved_options(zval* pdo TSRMLS_DC) {
+static zval* saved_options(zval* pdo) {
 #if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  return nr_php_pdo_options_get(Z_OBJ_P(pdo) TSRMLS_CC);
+  return nr_php_pdo_options_get(Z_OBJ_P(pdo));
 #else
-  return nr_php_pdo_options_get(pdo TSRMLS_CC);
+  return nr_php_pdo_options_get(pdo);
 #endif
 }
 
-static void test_options_save(TSRMLS_D) {
+static void test_options_save() {
   zval** bad_options;
   zval* expected;
   int i;
@@ -375,30 +375,29 @@ static void test_options_save(TSRMLS_D) {
 
   tlib_php_request_start();
 
-  pdo = pdo_new("sqlite::memory:" TSRMLS_CC);
-  other = pdo_new("sqlite::memory:" TSRMLS_CC);
-  not_pdo = tlib_php_request_eval_expr("new \\stdClass" TSRMLS_CC);
+  pdo = pdo_new("sqlite::memory:");
+  other = pdo_new("sqlite::memory:");
+  not_pdo = tlib_php_request_eval_expr("new \\stdClass");
   options = tlib_php_request_eval_expr(
       "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,"
-      "      PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
+      "      PDO::ATTR_TIMEOUT => 5)");
 
-  tlib_pass_if_null("nothing saved yet", saved_options(pdo TSRMLS_CC));
+  tlib_pass_if_null("nothing saved yet", saved_options(pdo));
 
   /*
    * Test : Bad parameters save nothing.
    */
-  nr_php_pdo_options_save(NULL, options TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, NULL TSRMLS_CC);
-  nr_php_pdo_options_save(not_pdo, options TSRMLS_CC);
+  nr_php_pdo_options_save(NULL, options);
+  nr_php_pdo_options_save(pdo, NULL);
+  nr_php_pdo_options_save(not_pdo, options);
 
-  bad_options = tlib_php_zvals_not_of_type(IS_ARRAY TSRMLS_CC);
+  bad_options = tlib_php_zvals_not_of_type(IS_ARRAY);
   for (i = 0; bad_options[i]; i++) {
-    nr_php_pdo_options_save(pdo, bad_options[i] TSRMLS_CC);
+    nr_php_pdo_options_save(pdo, bad_options[i]);
   }
   tlib_php_free_zval_array(&bad_options);
 
-  tlib_pass_if_null("bad parameters save nothing",
-                    saved_options(pdo TSRMLS_CC));
+  tlib_pass_if_null("bad parameters save nothing", saved_options(pdo));
   if (NRTXNGLOBAL(pdo_link_options)) {
     tlib_pass_if_size_t_equal("no entries", 0,
                               nr_hashmap_count(NRTXNGLOBAL(pdo_link_options)));
@@ -408,8 +407,8 @@ static void test_options_save(TSRMLS_D) {
    * Test : Normal operation: the options are copied, so freeing the original
    * array leaves the saved options intact.
    */
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+  nr_php_pdo_options_save(pdo, options);
+  saved = saved_options(pdo);
   tlib_pass_if_not_null("saved options", saved);
   tlib_pass_if_bool_equal("saved options are a copy", true, saved != options);
   tlib_pass_if_zval_identical("saved options match", options, saved);
@@ -418,40 +417,37 @@ static void test_options_save(TSRMLS_D) {
 
   expected = tlib_php_request_eval_expr(
       "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,"
-      "      PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
+      "      PDO::ATTR_TIMEOUT => 5)");
   tlib_pass_if_zval_identical("saved options survive the original", expected,
-                              saved_options(pdo TSRMLS_CC));
+                              saved_options(pdo));
   nr_php_zval_free(&expected);
 
   /*
    * Test : Options are kept per object.
    */
-  tlib_pass_if_null("another object has none", saved_options(other TSRMLS_CC));
+  tlib_pass_if_null("another object has none", saved_options(other));
 
   /*
    * Test : Saving again for the same object replaces the options.
    */
   options = tlib_php_request_eval_expr(
-      "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)" TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
-  tlib_pass_if_zval_identical("replaced options", options,
-                              saved_options(pdo TSRMLS_CC));
+      "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)");
+  nr_php_pdo_options_save(pdo, options);
+  tlib_pass_if_zval_identical("replaced options", options, saved_options(pdo));
   tlib_pass_if_size_t_equal("one entry", 1,
                             nr_hashmap_count(NRTXNGLOBAL(pdo_link_options)));
 
-  nr_php_pdo_options_save(other, options TSRMLS_CC);
+  nr_php_pdo_options_save(other, options);
   tlib_pass_if_size_t_equal("two entries", 2,
                             nr_hashmap_count(NRTXNGLOBAL(pdo_link_options)));
-  tlib_pass_if_zval_identical("second object", options,
-                              saved_options(other TSRMLS_CC));
+  tlib_pass_if_zval_identical("second object", options, saved_options(other));
 
   /*
    * Test : A connection built without options removes what was saved for its
    * handle, so a later connection with the same handle cannot inherit it.
    */
-  nr_php_pdo_options_save(other, NULL TSRMLS_CC);
-  tlib_pass_if_null("no options removes the saved ones",
-                    saved_options(other TSRMLS_CC));
+  nr_php_pdo_options_save(other, NULL);
+  tlib_pass_if_null("no options removes the saved ones", saved_options(other));
   tlib_pass_if_size_t_equal("one entry again", 1,
                             nr_hashmap_count(NRTXNGLOBAL(pdo_link_options)));
 
@@ -473,7 +469,7 @@ void test_main(void* p NRUNUSED) {
       test_get_datastore_for_driver();
       test_get_datastore_internal();
       test_get_driver_internal();
-      test_options_save(TSRMLS_C);
+      test_options_save();
     }
 
     test_disable_persistence(TSRMLS_C);
