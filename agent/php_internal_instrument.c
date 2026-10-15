@@ -1317,8 +1317,7 @@ static void nr_php_prepared_statement_save(const zval* obj,
  * statement would be lost when the transaction restarts and could be found by
  * a later statement that takes the same handle.
  */
-static const char* nr_php_pdo_statement_sql(zval* stmt_obj,
-                                            int* sqlstrlen TSRMLS_DC) {
+static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
   zval* query = nr_php_get_zval_object_property(stmt_obj, "queryString");
 
   if (nr_php_is_zval_non_empty_string(query)) {
@@ -1348,7 +1347,7 @@ NR_INNER_WRAPPER(pdostatement_execute) {
 
   stmt_obj = NR_PHP_INTERNAL_FN_THIS();
 
-  sqlstr = nr_php_pdo_statement_sql(stmt_obj, &sqlstrlen TSRMLS_CC);
+  sqlstr = nr_php_pdo_statement_sql(stmt_obj, &sqlstrlen);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
