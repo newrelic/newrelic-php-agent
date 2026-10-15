@@ -427,6 +427,7 @@ typedef struct _shared_globals_t {
 
   nrframework_t
       current_framework;   // Current request framework (forced or detected)
+  bool laravel_app_instrumented;  // Laravel application wrappers installed
   bool wordpress_plugins;  // set based on
                            // newrelic.framework.wordpress.hooks.options
   bool wordpress_core;     // set based on

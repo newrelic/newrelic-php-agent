@@ -52,6 +52,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)module_number;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
+  NRPRG_SHARED(laravel_app_instrumented) = false;
   NRPRG_CTX(php_cur_stack_depth) = 0;
   NRPRG_CTX(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG_SHARED(sapi_headers) = NULL;
