@@ -411,6 +411,30 @@ static void test_bootstrap_not_recording_txn_ignored(void) {
 
   tlib_php_request_end();
   engine_destroy();
+
+  /*
+   * The ignored bootstrap transaction is ended before the real function
+   * runs, so the request's transaction doesn't replace it, which would leak
+   * it. Valgrind checks the leak.
+   */
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "newrelic_ignore_transaction();"
+      "$cb = function () {};"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_true("ignored txn: no transaction when the real function is "
+                    "entered",
+                    fake.on_entry[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal("ignored txn: the request's transaction captured",
+                            1, captured_count);
+  tlib_fail_if_str_equal("ignored txn: captured one is not the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+
+  tlib_php_request_end();
+  engine_destroy();
 }
 
 /* The real function's return value reaches PHP unchanged. */

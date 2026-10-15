@@ -166,15 +166,20 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
 
   // If recording, end current transaction and record it as FrankenPHP worker
   // bootstrap background transaction. If the agent is not recording it can
-  // mean two things:
+  // mean three things:
   // - No transaction was started because either the agent is not connected to
   //   the daemon yet, or the daemon has not verified appinfo yet.
   // - The transaction was ended by nr_php_frankenphp_handle_request_end
+  // - The worker script ignored the bootstrap transaction. End it as ignored,
+  //   or the request handler's begin handler would replace it without ending
+  //   it, and it would leak.
   if (nr_php_recording()) {
     nr_txn_set_path("FrankenPHP worker", NRPRG(txn), "frankenphp/worker",
                     NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
     nr_txn_set_as_background_job(NRPRG(txn), "frankenphp worker");
     nr_php_txn_end(0, 0);
+  } else if (NULL != NRPRG(txn)) {
+    nr_php_txn_end(1, 0);
   }
 
   // Wrap frankenphp_handle_request's callback, which handles web request,
