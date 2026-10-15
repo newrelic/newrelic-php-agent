@@ -622,7 +622,7 @@ NR_INNER_WRAPPER(mysqli_close) {
       mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
     }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
-    if (nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
+    if (nr_php_mysqli_zval_is_link(mysqli_obj)) {
       nr_php_mysqli_metadata_remove(mysqli_obj);
     }
   }

@@ -702,7 +702,7 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     ADD_IF_STR_SET(true, argv, argc, metadata->socket);
     ADD_IF_INT_SET(false, argv, argc, metadata->flags);
   }
-  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
+  retval = nr_php_call_user_func(link, "real_connect", argc, argv);
 
   for (i = 0; i < argc; i++) {
     nr_php_zval_free(&argv[i]);
