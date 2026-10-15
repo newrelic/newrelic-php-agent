@@ -482,6 +482,12 @@ typedef struct _shared_globals_t {
    */
   nr_php_objtable_t* pgsql_instances;
 
+  /*
+   * The datastore instance of each Predis node connection object (PHP 8.0+),
+   * kept for as long as the object lives.
+   */
+  nr_php_objtable_t* predis_instances;
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
