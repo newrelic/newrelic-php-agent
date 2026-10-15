@@ -300,6 +300,10 @@ static void test_sql_obfuscate(void) {
   sql_obfuscate_testcase("dollar quote tag with digits and underscores",
                          "SELECT $_t1$PASSWORD$_t1$", "SELECT ?");
 
+  /* The tag below is $e$ with an acute accent, which PostgreSQL permits. */
+  sql_obfuscate_testcase("dollar quote with a non-ASCII tag",
+                         "SELECT $\xc3\xa9$PASSWORD$\xc3\xa9$", "SELECT ?");
+
   sql_obfuscate_testcase("empty untagged dollar quote", "$$$$", "?");
   sql_obfuscate_testcase("empty tagged dollar quote", "$t$$t$", "?");
 

@@ -74,7 +74,8 @@ char* nr_sql_obfuscate(const char* raw) {
             for (taglen = 1; (0 != p[taglen]) && ('$' != p[taglen]); taglen++) {
               char c = p[taglen];
 
-              if (nr_isalpha(c) || ('_' == c)) {
+              /* PostgreSQL allows non-Latin letters; accept high bytes too. */
+              if (nr_isalpha(c) || ('_' == c) || (((unsigned char)c) >= 0x80)) {
                 continue;
               }
               if ((taglen > 1) && nr_isdigit(c)) {
