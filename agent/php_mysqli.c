@@ -180,6 +180,17 @@ static int nr_php_mysqli_metadata_begin(const zval* link) {
   return 1;
 }
 
+int nr_php_mysqli_metadata_known(const zval* link) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  return link && NRPRG_SHARED(mysqli_link_handles)
+         && (NULL
+             != nr_php_objtable_get(NRPRG_SHARED(mysqli_link_handles), link));
+#else
+  (void)link;
+  return 0;
+#endif
+}
+
 void nr_php_mysqli_metadata_remove(const zval* link) {
   if (NULL == link) {
     return;

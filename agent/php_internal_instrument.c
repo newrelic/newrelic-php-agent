@@ -728,10 +728,14 @@ NR_INNER_WRAPPER(mysqli_construct) {
     /*
      * PHP reuses the handle of a freed object, so a new link must not inherit
      * what was saved for an earlier one (its password, TLS settings and
-     * options). mysqli::connect() is called on a link that exists already and
-     * may have had options and TLS settings set, so it keeps them.
+     * options). A link the agent has already seen keeps them: mysqli::connect()
+     * runs on an existing link, and a subclass can set options before it
+     * connects through the parent constructor. A new link that took a freed
+     * link's handle is not known. Before PHP 8.0 no link is known, so a
+     * constructor called again on the same object drops what was saved.
      */
-    if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
+    if ((0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect"))
+        && !nr_php_mysqli_metadata_known(mysqli_obj)) {
       nr_php_mysqli_metadata_remove(mysqli_obj);
     }
 

@@ -42,6 +42,16 @@ extern int nr_php_mysqli_metadata_wanted(void);
  *           link's entry in the table.
  */
 extern void nr_php_mysqli_metadata_remove(const zval* link);
+
+/*
+ * Purpose : Whether the agent has saved metadata for this link object. A new
+ *           object that took the handle of a freed link is not known, because
+ *           the table drops an entry when its object is freed.
+ *
+ * Notes   : Always false before PHP 8.0, which cannot tell when a link is
+ *           freed.
+ */
+extern int nr_php_mysqli_metadata_known(const zval* link);
 extern nr_status_t nr_php_mysqli_metadata_get(const zval* link,
                                               nr_mysqli_metadata_link_t* out);
 extern nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
