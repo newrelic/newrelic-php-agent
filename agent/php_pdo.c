@@ -529,7 +529,7 @@ void nr_php_pdo_options_create_table(void) {
       = nr_php_objtable_create(nr_php_pdo_saved_options_destroy);
 }
 
-zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh) {
   zval object;
   const nr_php_pdo_saved_options_t* saved;
 
