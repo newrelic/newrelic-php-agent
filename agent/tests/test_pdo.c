@@ -359,13 +359,13 @@ static void test_disable_persistence(TSRMLS_D) {
 /* The saved options of a PDO object as an array the caller must free. */
 static zval* saved_options(zval* pdo TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  return nr_php_pdo_options_get(Z_OBJ_P(pdo) TSRMLS_CC);
+  return nr_php_pdo_options_get(Z_OBJ_P(pdo));
 #else
-  return nr_php_pdo_options_get(pdo TSRMLS_CC);
+  return nr_php_pdo_options_get(pdo);
 #endif
 }
 
-static void test_options_save(TSRMLS_D) {
+static void test_options_save() {
   zval** bad_options;
   zval* expected;
   int i;
@@ -377,12 +377,12 @@ static void test_options_save(TSRMLS_D) {
 
   tlib_php_request_start();
 
-  pdo = pdo_new("sqlite::memory:" TSRMLS_CC);
-  other = pdo_new("sqlite::memory:" TSRMLS_CC);
-  not_pdo = tlib_php_request_eval_expr("new \\stdClass" TSRMLS_CC);
+  pdo = pdo_new("sqlite::memory:");
+  other = pdo_new("sqlite::memory:");
+  not_pdo = tlib_php_request_eval_expr("new \\stdClass");
   options = tlib_php_request_eval_expr(
       "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,"
-      "      PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
+      "      PDO::ATTR_TIMEOUT => 5)");
 
   /*
    * Test : Bad parameters.
@@ -392,7 +392,7 @@ static void test_options_save(TSRMLS_D) {
   nr_php_pdo_options_save(not_pdo, options TSRMLS_CC);
   bad_options = tlib_php_zvals_of_all_types(TSRMLS_C);
   for (i = 0; bad_options[i]; i++) {
-    nr_php_pdo_options_save(pdo, bad_options[i] TSRMLS_CC);
+    nr_php_pdo_options_save(pdo, bad_options[i]);
   }
   tlib_php_free_zval_array(&bad_options);
 
@@ -405,8 +405,8 @@ static void test_options_save(TSRMLS_D) {
    * Test : Normal operation: the options are copied, so freeing the original
    * array leaves the saved options intact.
    */
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+  nr_php_pdo_options_save(pdo, options);
+  saved = saved_options(pdo);
   tlib_pass_if_not_null("saved options", saved);
   tlib_pass_if_bool_equal("saved options are a copy", true, saved != options);
   tlib_pass_if_zval_identical("saved options match", options, saved);
@@ -440,7 +440,7 @@ static void test_options_save(TSRMLS_D) {
   tlib_pass_if_size_t_equal("one entry", 1,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
 
-  nr_php_pdo_options_save(other, options TSRMLS_CC);
+  nr_php_pdo_options_save(other, options);
   tlib_pass_if_size_t_equal("two entries", 2,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
   saved = saved_options(other TSRMLS_CC);

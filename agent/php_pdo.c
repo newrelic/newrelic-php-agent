@@ -649,7 +649,7 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
 void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
   nr_php_pdo_saved_options_t* saved = NULL;
 
-  if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
+  if (0 == nr_php_object_instanceof_class(dbh, "PDO")) {
     return;
   }
 
