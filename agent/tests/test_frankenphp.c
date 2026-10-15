@@ -765,6 +765,162 @@ static void test_callback_with_a_parameter(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/* Nothing set in one request leaks into the next. */
+static void test_requests_are_isolated(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "$GLOBALS['request_calls'] = 0;"
+      "$cb = function () {"
+      "  if (0 === $GLOBALS['request_calls']++) {"
+      "    newrelic_name_transaction('named_first');"
+      "    newrelic_add_custom_parameter('first_key', 'first_value');"
+      "    newrelic_notice_error('first request error');"
+      "  }"
+      "};"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("isolation: bootstrap plus two requests", 3,
+                            captured_count);
+  /* Positive controls: request 1 really has all three. */
+  tlib_pass_if_not_null("isolation: request 1 named",
+                        nr_strstr(captured[1].name, "named_first"));
+  tlib_pass_if_not_null("isolation: request 1 attribute",
+                        nr_strstr(captured[1].user_attributes, "first_key"));
+  tlib_pass_if_true("isolation: request 1 error", captured[1].has_error,
+                    "no error on request 1");
+  tlib_pass_if_null("isolation: request 2 not named",
+                    nr_strstr(captured[2].name, "named_first"));
+  tlib_pass_if_null("isolation: request 2 no attribute",
+                    nr_strstr(captured[2].user_attributes, "first_key"));
+  tlib_pass_if_false("isolation: request 2 no error", captured[2].has_error,
+                     "request 2 has an error");
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* Agent API calls that end or ignore the request's transaction. */
+static void test_api_calls_inside_callback(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$GLOBALS['calls'] = 0;"
+      "$cb = function () {"
+      "  if (0 === $GLOBALS['calls']++) { newrelic_ignore_transaction(); }"
+      "};"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal(
+      "ignore_transaction: ignored request not captured, the next is", 2,
+      captured_count);
+  tlib_php_request_end();
+  engine_destroy();
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { newrelic_end_transaction(); };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("end_transaction: one capture per request", 3,
+                            captured_count);
+  tlib_pass_if_null("end_transaction: no transaction left", NRPRG(txn));
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * The callback throws. Zend calls the Observer end handler while unwinding,
+ * so the request's transaction is already sent when zend_call_function
+ * returns. Pinned: current behaviour, not necessarily the desired one. The
+ * exception isn't on the transaction. Real FrankenPHP reports the exception
+ * only after that (frankenphp.c#L908), so it is probably lost; only a test
+ * against a real FrankenPHP can confirm. Real runtimes mostly catch
+ * exceptions inside the handler, which makes this the less common path.
+ */
+static void test_callback_throws(void) {
+  int depth = 0;
+
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "$cb = function () { throw new RuntimeException('direct'); };"
+      "try { frankenphp_handle_request($cb); $caught = 'nothing'; }"
+      " catch (RuntimeException $e) { $caught = $e->getMessage(); }");
+
+  pass_if_php_string("direct throw: exception reaches the worker script",
+                     "direct", "$caught");
+  tlib_pass_if_true(
+      "direct throw: exception pending when zend_call_function returned",
+      fake.exception_after_call[0], "no exception");
+  tlib_pass_if_true("direct throw: no transaction after the call",
+                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal("direct throw: request transaction already sent", 2,
+                            fake.after_call[0].captured);
+  tlib_pass_if_false("direct throw: exception not recorded on the transaction",
+                     captured[1].has_error, "the transaction has an error");
+  tlib_php_request_end();
+  engine_destroy();
+
+  /* Thrown two frames below the callback. */
+  engine_create("");
+  request_start(FAKE_CALL);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+  tlib_php_request_eval(
+      "function nested_inner() { throw new RuntimeException('nested'); }"
+      "function nested_middle() { nested_inner(); }"
+      "$cb = function () { nested_middle(); };"
+      "try { frankenphp_handle_request($cb); } catch (RuntimeException $e) {}"
+      "frankenphp_handle_request(function () { return 1; });");
+  tlib_pass_if_size_t_equal("nested throw: bootstrap plus two requests", 3,
+                            captured_count);
+  tlib_pass_if_int_equal("nested throw: stack depth balanced", depth,
+                         NRPRG_CTX(php_cur_stack_depth));
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * frankenphp_handle_request two user frames deep, as in framework
+ * runtimes. The outer frames begin in the bootstrap transaction and end
+ * after it.
+ */
+static void test_nested_call_site(void) {
+  int depth = 0;
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+
+  tlib_php_request_eval(
+      "class NestedRunner {"
+      "  public function run(callable $handler) {"
+      "    for ($i = 0; $i < 3; $i++) { $this->once($handler); }"
+      "  }"
+      "  private function once(callable $handler) {"
+      "    return frankenphp_handle_request($handler);"
+      "  }"
+      "}"
+      "function nested_main() {"
+      "  (new NestedRunner())->run(function () { return 1; });"
+      "}"
+      "nested_main();");
+
+  tlib_pass_if_size_t_equal("nested call site: bootstrap plus three requests",
+                            4, captured_count);
+  tlib_pass_if_int_equal("nested call site: stack depth balanced", depth,
+                         NRPRG_CTX(php_cur_stack_depth));
+  tlib_pass_if_null("nested call site: no transaction after the loop",
+                    NRPRG(txn));
+
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -786,5 +942,9 @@ void test_main(void* p NRUNUSED) {
   test_closure_recreated_each_loop_pass();
   test_warm_up_call_prevents_transactions();
   test_callback_with_a_parameter();
+  test_requests_are_isolated();
+  test_api_calls_inside_callback();
+  test_callback_throws();
+  test_nested_call_site();
 #endif
 }
