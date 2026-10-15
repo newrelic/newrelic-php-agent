@@ -163,6 +163,6 @@ extern zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC);
  * Returns : The saved options array, which is NOT owned by the caller, or NULL
  *           if none were saved.
  */
-extern zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC);
+extern zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh);
 
 #endif /* PHP_PDO_PRIVATE_HDR */
