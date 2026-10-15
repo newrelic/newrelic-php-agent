@@ -17,18 +17,16 @@ can only pass them on if it also passes the three leading arguments. It fills
 those in from the mysqli.default_* settings.
 
 The arguments are null, which PHP replaces by the mysqli.default_* settings
-only from PHP 8.1, so the test is skipped before that. Before 8.1 a null reaches
-the agent as an empty string; only named arguments on PHP 8.0 leave the host
-out, and that case is not tested. The TLS setup is in
-tests/tls; the test is skipped without it and on PHP below 7.4.
+from PHP 7.4. The TLS setup is in tests/tls; the test is skipped without it and
+on PHP below 7.4.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80100) {
-  die("skip: null host, user and password use mysqli.default_* from PHP 8.1\n");
+if (PHP_VERSION_ID < 70400) {
+  die("skip: the TLS test users need PHP 7.4 or later\n");
 }
 if ('' == $MYSQL_TLS_HOST) {
   die("skip: MYSQL_TLS_HOST is not set\n");
