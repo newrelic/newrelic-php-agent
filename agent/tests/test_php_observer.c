@@ -18,6 +18,19 @@ tlib_parallel_info_t parallel_info
 #include "nr_php_packages.h"
 
 /*
+ * PHP 8.5 always loads OPcache, so every engine these tests create maps
+ * OPcache's shared memory. After several engines in one process, valgrind
+ * loses track of the address space and crashes (seen with valgrind 3.25.1 on
+ * amd64 musl). These tests don't need OPcache, which isn't loaded on PHP 8.4
+ * and older, so turn it off.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define OBSERVER_TEST_INI "opcache.enable=0\n"
+#else
+#define OBSERVER_TEST_INI ""
+#endif
+
+/*
  * Baseline: agent is disabled at the process level:
  *  - Zend Observer fcall_begin/fcall_end handlers do not get installed
  *  - Agent does not attempt to detect libraries
@@ -30,7 +43,7 @@ static void test_register_handlers_globally_disabled(void) {
   zend_string* method_name = NULL;
   size_t execute_count = 0;
 
-  tlib_php_engine_create("newrelic.enabled=false");
+  tlib_php_engine_create(OBSERVER_TEST_INI "newrelic.enabled=false");
   tlib_php_request_start();
 
   scope_name = zend_string_init(NR_PSTR("Predis\\Client"), 0);
@@ -79,7 +92,7 @@ static void test_register_handlers_per_request_disabled(void) {
   zend_string* method_name = NULL;
   size_t execute_count = 0;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   // Emulate disabling agent per-request by explicitly setting NRINI(enabled) to 0.
   NRINI(enabled) = 0;
   tlib_php_request_start();
@@ -133,7 +146,7 @@ static void test_register_handlers_enabled_app_unknown(void) {
   zend_string* method_name = NULL;
   size_t execute_count;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   // Emulate 'first transaction' case by forcing appinfo unknown which in turn
   // causes nr_php_recording() to return 0 because NRPRG(txn) is NULL. This is a
   // valid state for the agent to be in.
@@ -188,7 +201,7 @@ static void test_register_handlers_enabled_txn_ignored(void) {
   size_t execute_count;
   nr_php_package_t* package = NULL;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   tlib_php_request_start();
 
   scope_name = zend_string_init(NR_PSTR("Predis\\Client"), 0);
@@ -257,7 +270,7 @@ static void test_register_handlers_enabled_and_recording(void) {
   size_t execute_count = 0;
   nr_php_package_t* package = NULL;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   tlib_php_request_start();
 
   scope_name = zend_string_init(NR_PSTR("Predis\\Client"), 0);
@@ -345,7 +358,7 @@ static override_result_t call_with_custom_handlers(
   int execute_count = 0;
   int depth = 0;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   tlib_php_request_start();
 
   tlib_php_request_eval("function o_target() { return 1; }");
@@ -449,7 +462,7 @@ static void test_override_invalid_wraprec_uses_defaults(void) {
   int execute_count = 0;
   int depth = 0;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create(OBSERVER_TEST_INI);
   tlib_php_request_start();
 
   tlib_php_request_eval("function o_target() { return 1; }");
