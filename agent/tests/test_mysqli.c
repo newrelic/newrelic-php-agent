@@ -617,7 +617,7 @@ static void test_option_to_string(TSRMLS_D) {
 
   tlib_php_request_start();
   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-    zval* value = tlib_php_request_eval_expr(cases[i].expr TSRMLS_CC);
+    zval* value = tlib_php_request_eval_expr(cases[i].expr);
     char* term = nr_php_mysqli_option_to_string(value);
 
     if (cases[i].expected) {

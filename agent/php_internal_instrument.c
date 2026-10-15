@@ -764,13 +764,11 @@ NR_INNER_WRAPPER(mysqli_options) {
    * and the option would then never reach the explain connection.
    */
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "olz", &mysqli_obj,
-                                  &option, &value_zv)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "olz", &mysqli_obj, &option, &value_zv)) {
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "lz", &option,
-                                    &value_zv)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "lz", &option, &value_zv)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -826,15 +824,15 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "os!s!s!s!s!",
-          &mysqli_obj, &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
-          &capath_len, &cipher, &cipher_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os!s!s!s!s!", &mysqli_obj, &key, &key_len,
+                                  &cert, &cert_len, &ca, &ca_len, &capath,
+                                  &capath_len, &cipher, &cipher_len)) {
     if (FAILURE
-        == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s!s!s!s!s!",
-            &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
-            &capath_len, &cipher, &cipher_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s!s!s!s!s!", &key, &key_len, &cert,
+                                    &cert_len, &ca, &ca_len, &capath,
+                                    &capath_len, &cipher, &cipher_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -846,7 +844,7 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
       && nr_php_is_zval_true(return_value)) {
     char* key_term = key ? nr_strndup(key, key_len) : NULL;
     char* cert_term = cert ? nr_strndup(cert, cert_len) : NULL;
@@ -1084,14 +1082,14 @@ NR_INNER_WRAPPER(mysqli_change_user) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "oss|s!",
-                                  &mysqli_obj, &user, &user_len, &password,
-                                  &password_len, &database, &database_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "oss|s!", &mysqli_obj, &user, &user_len,
+                                  &password, &password_len, &database,
+                                  &database_len)) {
     if (FAILURE
-        == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "ss|s!", &user,
-            &user_len, &password, &password_len, &database, &database_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "ss|s!", &user, &user_len, &password,
+                                    &password_len, &database, &database_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -1103,7 +1101,7 @@ NR_INNER_WRAPPER(mysqli_change_user) {
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (user && (0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
       && nr_php_is_zval_true(return_value)) {
     char* user_term = nr_strndup(user, user_len);
     char* password_term = nr_strndup(password, password_len);
@@ -1639,7 +1637,7 @@ NR_INNER_WRAPPER(mysqli_init) {
                                          INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
+      && nr_php_mysqli_zval_is_link(return_value)) {
     /* A new link must not inherit what was saved for an earlier one. */
     nr_php_mysqli_metadata_remove(return_value);
   }
@@ -2479,10 +2477,9 @@ NR_INNER_WRAPPER(pdo_connect) {
   int zcaught = 0;
 
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "s|s!s!a!", &dsn,
-                                  &dsn_len, &username, &username_len, &password,
-                                  &password_len, &options)) {
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|s!s!a!", &dsn, &dsn_len,
+          &username, &username_len, &password, &password_len, &options)) {
     options = NULL;
   }
 
@@ -2494,7 +2491,7 @@ NR_INNER_WRAPPER(pdo_connect) {
    * both the PDO object and the options array for validity.
    */
   if (0 == zcaught) {
-    nr_php_pdo_options_save(return_value, options TSRMLS_CC);
+    nr_php_pdo_options_save(return_value, options);
   }
 
   if (zcaught) {
