@@ -341,7 +341,7 @@ static void test_create_datastore_instance() {
                 }));
 }
 
-static void test_option_to_string(TSRMLS_D) {
+static void test_option_to_string() {
   struct {
     const char* expr;
     const char* expected; /* NULL: not captured */
@@ -357,7 +357,7 @@ static void test_option_to_string(TSRMLS_D) {
 
   tlib_php_request_start();
   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-    zval* value = tlib_php_request_eval_expr(cases[i].expr TSRMLS_CC);
+    zval* value = tlib_php_request_eval_expr(cases[i].expr);
     char* term = nr_php_mysqli_option_to_string(value);
 
     if (cases[i].expected) {
@@ -405,7 +405,7 @@ void test_main(void* p NRUNUSED) {
     test_default_port_host_and_socket();
     test_get_host_and_port_path_or_id();
     test_create_datastore_instance();
-    test_option_to_string(TSRMLS_C);
+    test_option_to_string();
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
