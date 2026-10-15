@@ -50,7 +50,7 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
 
 static nr_status_t nr_php_mysqli_link_set_ssl(
     zval* link,
-    const nr_mysqli_metadata_link_t* metadata TSRMLS_DC);
+    const nr_mysqli_metadata_link_t* metadata);
 
 /*
  * Purpose : Create a blank query metadata array.
@@ -335,7 +335,7 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
     }
   }
 
-  if (NR_FAILURE == nr_php_mysqli_link_set_ssl(dup, &metadata TSRMLS_CC)) {
+  if (NR_FAILURE == nr_php_mysqli_link_set_ssl(dup, &metadata)) {
     nr_php_zval_free(&dup);
     return NULL;
   }
@@ -702,7 +702,7 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     ADD_IF_STR_SET(true, argv, argc, metadata->socket);
     ADD_IF_INT_SET(false, argv, argc, metadata->flags);
   }
-  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
+  retval = nr_php_call_user_func(link, "real_connect", argc, argv);
 
   for (i = 0; i < argc; i++) {
     nr_php_zval_free(&argv[i]);
@@ -763,7 +763,7 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
 
 static nr_status_t nr_php_mysqli_link_set_ssl(
     zval* link,
-    const nr_mysqli_metadata_link_t* metadata TSRMLS_DC) {
+    const nr_mysqli_metadata_link_t* metadata) {
   const char* values[5];
   zval* argv[5] = {0};
   zval* retval = NULL;

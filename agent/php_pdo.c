@@ -529,7 +529,7 @@ void nr_php_pdo_options_create_table(void) {
       = nr_php_objtable_create(nr_php_pdo_saved_options_destroy);
 }
 
-zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh) {
   zval object;
   const nr_php_pdo_saved_options_t* saved;
 
@@ -649,7 +649,7 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
 void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
   nr_php_pdo_saved_options_t* saved = NULL;
 
-  if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
+  if (0 == nr_php_object_instanceof_class(dbh, "PDO")) {
     return;
   }
 

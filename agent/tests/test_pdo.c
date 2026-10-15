@@ -357,15 +357,15 @@ static void test_disable_persistence(TSRMLS_D) {
 }
 
 /* The saved options of a PDO object as an array the caller must free. */
-static zval* saved_options(zval* pdo TSRMLS_DC) {
+static zval* saved_options(zval* pdo) {
 #if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  return nr_php_pdo_options_get(Z_OBJ_P(pdo) TSRMLS_CC);
+  return nr_php_pdo_options_get(Z_OBJ_P(pdo));
 #else
-  return nr_php_pdo_options_get(pdo TSRMLS_CC);
+  return nr_php_pdo_options_get(pdo);
 #endif
 }
 
-static void test_options_save(TSRMLS_D) {
+static void test_options_save() {
   zval** bad_options;
   zval* expected;
   int i;
@@ -377,26 +377,26 @@ static void test_options_save(TSRMLS_D) {
 
   tlib_php_request_start();
 
-  pdo = pdo_new("sqlite::memory:" TSRMLS_CC);
-  other = pdo_new("sqlite::memory:" TSRMLS_CC);
-  not_pdo = tlib_php_request_eval_expr("new \\stdClass" TSRMLS_CC);
+  pdo = pdo_new("sqlite::memory:");
+  other = pdo_new("sqlite::memory:");
+  not_pdo = tlib_php_request_eval_expr("new \\stdClass");
   options = tlib_php_request_eval_expr(
       "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,"
-      "      PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
+      "      PDO::ATTR_TIMEOUT => 5)");
 
   /*
    * Test : Bad parameters.
    */
-  nr_php_pdo_options_save(NULL, options TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, NULL TSRMLS_CC);
-  nr_php_pdo_options_save(not_pdo, options TSRMLS_CC);
-  bad_options = tlib_php_zvals_of_all_types(TSRMLS_C);
+  nr_php_pdo_options_save(NULL, options);
+  nr_php_pdo_options_save(pdo, NULL);
+  nr_php_pdo_options_save(not_pdo, options);
+  bad_options = tlib_php_zvals_of_all_types();
   for (i = 0; bad_options[i]; i++) {
-    nr_php_pdo_options_save(pdo, bad_options[i] TSRMLS_CC);
+    nr_php_pdo_options_save(pdo, bad_options[i]);
   }
   tlib_php_free_zval_array(&bad_options);
 
-  saved = saved_options(pdo TSRMLS_CC);
+  saved = saved_options(pdo);
   tlib_pass_if_null("bad parameters save nothing", saved);
   tlib_pass_if_size_t_equal("no entries", 0,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
@@ -405,8 +405,8 @@ static void test_options_save(TSRMLS_D) {
    * Test : Normal operation: the options are copied, so freeing the original
    * array leaves the saved options intact.
    */
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+  nr_php_pdo_options_save(pdo, options);
+  saved = saved_options(pdo);
   tlib_pass_if_not_null("saved options", saved);
   tlib_pass_if_bool_equal("saved options are a copy", true, saved != options);
   tlib_pass_if_zval_identical("saved options match", options, saved);
@@ -415,8 +415,8 @@ static void test_options_save(TSRMLS_D) {
   nr_php_zval_free(&options);
   expected = tlib_php_request_eval_expr(
       "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,"
-      "      PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+      "      PDO::ATTR_TIMEOUT => 5)");
+  saved = saved_options(pdo);
   tlib_pass_if_zval_identical("saved options survive the original", expected,
                               saved);
   nr_php_zval_free(&saved);
@@ -425,25 +425,25 @@ static void test_options_save(TSRMLS_D) {
   /*
    * Test : Options are kept per object.
    */
-  saved = saved_options(other TSRMLS_CC);
+  saved = saved_options(other);
   tlib_pass_if_null("another object has none", saved);
 
   /*
    * Test : Saving again for the same object replaces the options.
    */
   options = tlib_php_request_eval_expr(
-      "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)" TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+      "array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)");
+  nr_php_pdo_options_save(pdo, options);
+  saved = saved_options(pdo);
   tlib_pass_if_zval_identical("replaced options", options, saved);
   nr_php_zval_free(&saved);
   tlib_pass_if_size_t_equal("one entry", 1,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
 
-  nr_php_pdo_options_save(other, options TSRMLS_CC);
+  nr_php_pdo_options_save(other, options);
   tlib_pass_if_size_t_equal("two entries", 2,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
-  saved = saved_options(other TSRMLS_CC);
+  saved = saved_options(other);
   tlib_pass_if_zval_identical("second object", options, saved);
   nr_php_zval_free(&saved);
 
@@ -451,8 +451,8 @@ static void test_options_save(TSRMLS_D) {
    * Test : A connection built without options removes what was saved for it,
    * so a later connection with the same handle cannot inherit it.
    */
-  nr_php_pdo_options_save(other, NULL TSRMLS_CC);
-  saved = saved_options(other TSRMLS_CC);
+  nr_php_pdo_options_save(other, NULL);
+  saved = saved_options(other);
   tlib_pass_if_null("no options removes the saved ones", saved);
   tlib_pass_if_size_t_equal("one entry again", 1,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
@@ -469,7 +469,7 @@ static void test_options_save(TSRMLS_D) {
  * Only scalar options are kept: an option that holds an array or an object
  * would keep PHP values alive after the request's memory is gone.
  */
-static void test_options_save_scalars_only(TSRMLS_D) {
+static void test_options_save_scalars_only() {
   zval* expected;
   zval* options;
   zval* pdo;
@@ -477,19 +477,19 @@ static void test_options_save_scalars_only(TSRMLS_D) {
 
   tlib_php_request_start();
 
-  pdo = pdo_new("sqlite::memory:" TSRMLS_CC);
+  pdo = pdo_new("sqlite::memory:");
   options = tlib_php_request_eval_expr(
       "array(1 => 'string', 2 => 7, 3 => 2.5, 4 => true, 5 => false,"
       "      6 => null, 'name' => 'value',"
       "      PDO::ATTR_STATEMENT_CLASS => array('PDOStatement', array(new "
       "stdClass)),"
-      "      8 => new stdClass, 9 => array(1, 2), 10 => 'last')" TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
+      "      8 => new stdClass, 9 => array(1, 2), 10 => 'last')");
+  nr_php_pdo_options_save(pdo, options);
 
   expected = tlib_php_request_eval_expr(
       "array(1 => 'string', 2 => 7, 3 => 2.5, 4 => true, 5 => false,"
-      "      6 => null, 'name' => 'value', 10 => 'last')" TSRMLS_CC);
-  saved = saved_options(pdo TSRMLS_CC);
+      "      6 => null, 'name' => 'value', 10 => 'last')");
+  saved = saved_options(pdo);
   tlib_pass_if_zval_identical("scalars kept, arrays and objects dropped",
                               expected, saved);
 
@@ -504,23 +504,22 @@ static void test_options_save_scalars_only(TSRMLS_D) {
 #ifdef NR_PHP_OBJTABLE_WEAK
 
 /* The options go when the PDO object is freed. */
-static void test_options_freed_with_object(TSRMLS_D) {
+static void test_options_freed_with_object() {
   zval* options;
   zval* pdo;
 
   tlib_php_request_start();
 
-  tlib_php_request_eval("$pdo = new PDO('sqlite::memory:');" TSRMLS_CC);
-  pdo = tlib_php_request_eval_expr("$pdo" TSRMLS_CC);
-  options
-      = tlib_php_request_eval_expr("array(PDO::ATTR_TIMEOUT => 5)" TSRMLS_CC);
-  nr_php_pdo_options_save(pdo, options TSRMLS_CC);
+  tlib_php_request_eval("$pdo = new PDO('sqlite::memory:');");
+  pdo = tlib_php_request_eval_expr("$pdo");
+  options = tlib_php_request_eval_expr("array(PDO::ATTR_TIMEOUT => 5)");
+  nr_php_pdo_options_save(pdo, options);
   tlib_pass_if_size_t_equal("saved", 1,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
 
   nr_php_zval_free(&pdo);
   nr_php_zval_free(&options);
-  tlib_php_request_eval("unset($pdo);" TSRMLS_CC);
+  tlib_php_request_eval("unset($pdo);");
   tlib_pass_if_size_t_equal("removed with the object", 0,
                             nr_php_objtable_count(NRPRG_SHARED(pdo_options)));
 
@@ -539,10 +538,10 @@ void test_main(void* p NRUNUSED) {
       test_get_datastore_for_driver();
       test_get_datastore_internal();
       test_get_driver_internal();
-      test_options_save(TSRMLS_C);
-      test_options_save_scalars_only(TSRMLS_C);
+      test_options_save();
+      test_options_save_scalars_only();
 #ifdef NR_PHP_OBJTABLE_WEAK
-      test_options_freed_with_object(TSRMLS_C);
+      test_options_freed_with_object();
 #endif
     }
 
