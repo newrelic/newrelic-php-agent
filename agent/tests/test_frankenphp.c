@@ -401,14 +401,29 @@ static void test_same_callable_reuses_wraprec(void) {
   engine_destroy();
 }
 
-/* Agent disabled for this request. */
+/*
+ * Agent disabled for this request, with the wrapper already installed by
+ * an earlier, enabled request. The always-delegate skips the recording check,
+ * so the agent's code still runs. A request that is disabled from the start
+ * never reaches late initialization, so nothing would be wrapped.
+ */
 static void test_agent_disabled_for_request(void) {
+  zend_function* func = NULL;
   zval* rv = NULL;
 
   engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+  tlib_php_request_end();
+
   NRINI(enabled) = 0;
   request_start(FAKE_CALL);
 
+  func = nr_php_find_function("frankenphp_handle_request");
+  tlib_pass_if_true("disabled agent: the agent's wrapper is installed",
+                    NULL != func
+                        && zif_frankenphp_handle_request
+                               != func->internal_function.handler,
+                    "frankenphp_handle_request was not wrapped");
   rv = tlib_php_request_eval_expr(
       "frankenphp_handle_request(function () { "
       "$GLOBALS['callback_ran'] = true; })");
@@ -867,16 +882,36 @@ static void test_callback_throws(void) {
   tlib_php_request_end();
   engine_destroy();
 
-  /* Thrown two frames below the callback. */
+  /*
+   * Thrown two frames below the callback, on the first call only, with the
+   * same handler reused as real worker loops do. The checks at the boundary
+   * show the request's transaction ended while unwinding; the total alone
+   * would not, because a transaction still open at the next call is ended
+   * and sent as the bootstrap one.
+   */
   engine_create("");
   request_start(FAKE_CALL);
   depth = NRPRG_CTX(php_cur_stack_depth);
   tlib_php_request_eval(
       "function nested_inner() { throw new RuntimeException('nested'); }"
       "function nested_middle() { nested_inner(); }"
-      "$cb = function () { nested_middle(); };"
+      "$GLOBALS['throw_calls'] = 0;"
+      "$cb = function () {"
+      "  if (0 === $GLOBALS['throw_calls']++) { nested_middle(); }"
+      "};"
       "try { frankenphp_handle_request($cb); } catch (RuntimeException $e) {}"
-      "frankenphp_handle_request(function () { return 1; });");
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_true(
+      "nested throw: exception pending when zend_call_function returned",
+      fake.exception_after_call[0], "no exception");
+  tlib_pass_if_true("nested throw: no transaction after the throwing call",
+                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal(
+      "nested throw: throwing request's transaction already sent", 2,
+      fake.after_call[0].captured);
+  tlib_fail_if_str_equal(
+      "nested throw: throwing request's transaction is its own",
+      BOOTSTRAP_TXN_NAME, captured[1].name);
   tlib_pass_if_size_t_equal("nested throw: bootstrap plus two requests", 3,
                             captured_count);
   tlib_pass_if_int_equal("nested throw: stack depth balanced", depth,
