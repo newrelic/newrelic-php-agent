@@ -14,6 +14,7 @@
 #include "nr_segment.h"
 #include "nr_txn.h"
 #include "php_extension.h"
+#include "php_objtable.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
 #include "util_vector.h"
@@ -473,6 +474,13 @@ typedef struct _shared_globals_t {
 
   nrphpcufafn_t
       cufa_callback;  // The current call_user_func_array callback, if any
+
+  /*
+   * The datastore instance of each pgsql connection object (PHP 8.1+), kept
+   * for as long as the object lives. It is shared by all Fibers: the pgsql
+   * default link is, too.
+   */
+  nr_php_objtable_t* pgsql_instances;
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*

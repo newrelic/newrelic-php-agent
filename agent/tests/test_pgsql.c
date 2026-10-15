@@ -9,6 +9,7 @@
 #include "nr_datastore_instance.h"
 #include "php_agent.h"
 #include "php_datastore.h"
+#include "php_objtable.h"
 #include "php_pgsql.h"
 #include "php_pgsql_private.h"
 #include "util_system.h"
@@ -284,6 +285,216 @@ static void test_create_datastore_instance() {
                 }));
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+
+/*
+ * From PHP 8.1 a connection is an object. A stdClass stands in for it: the
+ * instance is kept per object and dropped when the object is freed.
+ */
+static void test_object_connections() {
+  zval* first;
+  zval* second;
+  nr_datastore_instance_t* expected_first = &((nr_datastore_instance_t){
+      .database_name = "kirk",
+      .host = "spock",
+      .port_path_or_id = "2345",
+  });
+  nr_datastore_instance_t* expected_second = &((nr_datastore_instance_t){
+      .database_name = "mccoy",
+      .host = "bones",
+      .port_path_or_id = "5432",
+  });
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval("$first = new stdClass; $second = new stdClass;");
+  first = tlib_php_request_eval_expr("$first");
+  second = tlib_php_request_eval_expr("$second");
+
+  tlib_pass_if_not_null("the table exists", NRPRG_SHARED(pgsql_instances));
+  tlib_pass_if_null("unknown connection",
+                    nr_php_pgsql_retrieve_datastore_instance(first));
+
+  nr_php_pgsql_save_datastore_instance(first,
+                                       "host=spock port=2345 dbname=kirk");
+  assert_datastore_instance_equals(
+      "first connection", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(first));
+  assert_datastore_instance_equals(
+      "a call with no connection uses the last", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+
+  /* A save for a connection that has an entry replaces it. */
+  nr_php_pgsql_save_datastore_instance(first,
+                                       "host=bones port=5432 dbname=mccoy");
+  assert_datastore_instance_equals(
+      "a new connect replaces the entry", expected_second,
+      nr_php_pgsql_retrieve_datastore_instance(first));
+
+  nr_php_pgsql_save_datastore_instance(second,
+                                       "host=spock port=2345 dbname=kirk");
+  assert_datastore_instance_equals(
+      "second connection", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(second));
+  assert_datastore_instance_equals(
+      "the first connection is untouched", expected_second,
+      nr_php_pgsql_retrieve_datastore_instance(first));
+  assert_datastore_instance_equals(
+      "the last connection is the second", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+
+  /* A failed connect returns false: nothing is saved and the last is kept. */
+  {
+    zval failed;
+
+    ZVAL_FALSE(&failed);
+    nr_php_pgsql_save_datastore_instance(&failed, "host=x");
+  }
+  assert_datastore_instance_equals(
+      "a failed connect keeps the last", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+  tlib_pass_if_size_t_equal(
+      "a failed connect saves nothing", 2,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+
+  /* pg_close() of another connection leaves the last alone. */
+  nr_php_pgsql_remove_datastore_instance(first);
+  tlib_pass_if_null("closed connection",
+                    nr_php_pgsql_retrieve_datastore_instance(first));
+  assert_datastore_instance_equals(
+      "closing another connection keeps the last", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+
+  /*
+   * pg_close() with no connection releases the default link and leaves the
+   * connection open: its instance stays until the object is freed.
+   */
+  nr_php_pgsql_remove_datastore_instance(NULL);
+  assert_datastore_instance_equals(
+      "the connection keeps its instance", expected_first,
+      nr_php_pgsql_retrieve_datastore_instance(second));
+  tlib_pass_if_null("the last mark is cleared",
+                    nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances)));
+  tlib_pass_if_size_t_equal(
+      "the entry is kept", 1,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+
+  /* A connection that is freed takes its instance with it. */
+  nr_php_pgsql_save_datastore_instance(second,
+                                       "host=spock port=2345 dbname=kirk");
+  nr_php_zval_free(&second);
+  nr_php_zval_free(&first);
+  tlib_php_request_eval("unset($first, $second);");
+  tlib_pass_if_size_t_equal(
+      "freed with the object", 0,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+  assert_datastore_instance_equals(
+      "no last connection falls back to the default instance",
+      &((nr_datastore_instance_t){
+          .database_name = DEFAULT_DATABASE_NAME,
+          .host = system_host_name,
+          .port_path_or_id = DEFAULT_SOCKET,
+      }),
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+
+  tlib_php_request_end();
+}
+
+/*
+ * The table is shared by all Fibers: it is the same table in every Fiber and
+ * in the main code, its entries survive a Fiber suspending and resuming, and
+ * the default connection is the one connected last whichever Fiber made it.
+ */
+static void test_fiber_shared_table() {
+  nr_php_objtable_t* table;
+  zval* main_conn;
+  zval* fiber_conn;
+  nr_datastore_instance_t* expected_main = &((nr_datastore_instance_t){
+      .database_name = "kirk",
+      .host = "spock",
+      .port_path_or_id = "2345",
+  });
+  nr_datastore_instance_t* expected_fiber = &((nr_datastore_instance_t){
+      .database_name = "mccoy",
+      .host = "bones",
+      .port_path_or_id = "5432",
+  });
+
+  tlib_php_request_start();
+  table = NRPRG_SHARED(pgsql_instances);
+  tlib_pass_if_not_null("the table exists", table);
+
+  tlib_php_request_eval(
+      "$main_conn = new stdClass;"
+      "$fiber = new Fiber(function () {"
+      "  $fiber_conn = new stdClass;"
+      "  Fiber::suspend($fiber_conn);"
+      "  return 1;"
+      "});"
+      "$fiber_conn = $fiber->start();");
+  main_conn = tlib_php_request_eval_expr("$main_conn");
+  fiber_conn = tlib_php_request_eval_expr("$fiber_conn");
+
+  nr_php_pgsql_save_datastore_instance(main_conn,
+                                       "host=spock port=2345 dbname=kirk");
+  nr_php_pgsql_save_datastore_instance(fiber_conn,
+                                       "host=bones port=5432 dbname=mccoy");
+
+  /* The Fiber is suspended. Resume it and let it finish. */
+  tlib_php_request_eval("$fiber->resume();");
+  tlib_pass_if_ptr_equal("same table after the Fiber ran", table,
+                         NRPRG_SHARED(pgsql_instances));
+  assert_datastore_instance_equals(
+      "main connection after the Fiber ran", expected_main,
+      nr_php_pgsql_retrieve_datastore_instance(main_conn));
+  assert_datastore_instance_equals(
+      "Fiber connection after the Fiber ran", expected_fiber,
+      nr_php_pgsql_retrieve_datastore_instance(fiber_conn));
+  assert_datastore_instance_equals(
+      "the last connection is the one made in the Fiber", expected_fiber,
+      nr_php_pgsql_retrieve_datastore_instance(NULL));
+  tlib_pass_if_size_t_equal("two entries", 2, nr_php_objtable_count(table));
+
+  nr_php_zval_free(&main_conn);
+  nr_php_zval_free(&fiber_conn);
+  tlib_php_request_eval("unset($main_conn, $fiber_conn, $fiber);");
+  tlib_pass_if_size_t_equal("freed with the objects", 0,
+                            nr_php_objtable_count(table));
+
+  tlib_php_request_end();
+}
+
+/* A connection made in a Fiber that is destroyed unfinished goes with it. */
+static void test_fiber_destroyed_unfinished() {
+  zval* conn;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval(
+      "$fiber = new Fiber(function () {"
+      "  $conn = new stdClass;"
+      "  Fiber::suspend($conn);"
+      "});"
+      "$conn = $fiber->start();");
+  conn = tlib_php_request_eval_expr("$conn");
+  nr_php_pgsql_save_datastore_instance(conn,
+                                       "host=spock port=2345 dbname=kirk");
+  nr_php_zval_free(&conn);
+
+  tlib_php_request_eval("unset($conn);");
+  tlib_pass_if_size_t_equal(
+      "kept while the Fiber holds it", 1,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+  tlib_php_request_eval("unset($fiber);");
+  tlib_pass_if_size_t_equal(
+      "removed with the Fiber", 0,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+
+  tlib_php_request_end();
+}
+
+#endif
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("" PTSRMLS_CC);
@@ -292,6 +503,11 @@ void test_main(void* p NRUNUSED) {
     test_save_datastore_instance(TSRMLS_C);
     test_retrieve_datastore_instance(TSRMLS_C);
     test_remove_datastore_instance(TSRMLS_C);
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+    test_object_connections();
+    test_fiber_shared_table();
+    test_fiber_destroyed_unfinished();
+#endif
     test_create_datastore_instance();
   }
 
