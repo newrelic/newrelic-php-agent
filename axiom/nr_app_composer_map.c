@@ -27,6 +27,8 @@ nr_composer_thread_entry_t* nr_app_get_or_create_thread_composer_entry(
     return NULL;
   }
 
+  nr_app_tid_maps_check_owner(app, key);
+
   entry = (nr_composer_thread_entry_t*)nr_hashmap_index_get(app->composer_map,
                                                             key);
   if (entry) {
