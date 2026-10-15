@@ -307,6 +307,11 @@ static void test_sql_obfuscate(void) {
   sql_obfuscate_testcase("empty untagged dollar quote", "$$$$", "?");
   sql_obfuscate_testcase("empty tagged dollar quote", "$t$$t$", "?");
 
+  sql_obfuscate_testcase("dollar quote containing digits", "$$abc123$$", "?");
+
+  sql_obfuscate_testcase("dollar quote containing quote and comment characters",
+                         "$$it's -- not /* a comment$$", "?");
+
   sql_obfuscate_testcase("dollar quote with a mismatched closing tag",
                          "SELECT $a$PASSWORD$b$", "SELECT ?");
 
