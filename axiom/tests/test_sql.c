@@ -332,6 +332,19 @@ static void test_sql_obfuscate(void) {
                          "SELECT a$b FROM test WHERE c$d = 1",
                          "SELECT a$b FROM test WHERE c$d = ?");
 
+  sql_obfuscate_testcase("identifier that looks like a delimiter",
+                         "SELECT * FROM a$b$c WHERE id = 5",
+                         "SELECT * FROM a$b$c WHERE id = ?");
+
+  sql_obfuscate_testcase("dollar quote attached to an identifier",
+                         "SELECT a$$b FROM test WHERE id = 5",
+                         "SELECT a$$b FROM test WHERE id = ?");
+
+  /* The second identifier below starts with $e$ with an acute accent. */
+  sql_obfuscate_testcase("dollar sign after an underscore or non-ASCII byte",
+                         "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = 5",
+                         "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = ?");
+
   /*
    * Monstrous integers don't cause us to topple over.
    */
