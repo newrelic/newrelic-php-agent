@@ -11,8 +11,10 @@
  * zend_call_function returns: argument parsing, the not-in-worker-mode throw
  * and the callback call. It deliberately does not copy what FrankenPHP does
  * around the call (request setup, exception reporting, request teardown).
- * The agent's own code runs only before the real function and on the
- * callback's frame, so that is all these tests need.
+ * The agent's own code runs before the real function, on the callback's
+ * frame, and after the real function returns, when it ends the request's
+ * transaction. These tests check when that transaction ends, not what it
+ * records from FrankenPHP's exception reporting and request teardown.
  */
 #include "tlib_php.h"
 
@@ -620,12 +622,14 @@ static void test_called_outside_worker_mode(void) {
 }
 
 /*
- * One transaction per call, ended before control returns to the real
- * function. The callback returns a non-null value, which FrankenPHP v1.13.0
- * forwards (frankenphp.c#L892-L899).
+ * One transaction per call. It is still open when zend_call_function
+ * returns, and the agent's wrapper ends it once the real function returns,
+ * after FrankenPHP has finished the request. The callback returns a non-null
+ * value, which FrankenPHP v1.13.0 forwards (frankenphp.c#L892-L899).
  */
 static void test_one_transaction_per_call(void) {
   int i;
+  size_t sent_after_return;
 
   engine_create("");
   request_start(FAKE_CALL);
@@ -640,14 +644,23 @@ static void test_one_transaction_per_call(void) {
   tlib_pass_if_str_equal("per-call: first is the bootstrap", BOOTSTRAP_TXN_NAME,
                          captured[0].name);
   for (i = 0; i < 3; i++) {
+    /* What the wrapper sent after the real function returned. */
+    sent_after_return
+        = (i < 2) ? fake.on_entry[i + 1].captured : captured_count;
+
     tlib_fail_if_str_equal("per-call: request is not the bootstrap",
                            BOOTSTRAP_TXN_NAME, captured[i + 1].name);
-    tlib_pass_if_true("per-call: no transaction after the call",
-                      fake.after_call[i].txn_is_null,
-                      "NRPRG(txn) was not NULL");
-    tlib_pass_if_size_t_equal("per-call: the call sent one transaction",
-                              fake.on_entry[i].captured + 1,
+    tlib_pass_if_true(
+        "per-call: no transaction when the real function is entered",
+        fake.on_entry[i].txn_is_null, "NRPRG(txn) was not NULL");
+    tlib_pass_if_false("per-call: transaction still open after the call",
+                       fake.after_call[i].txn_is_null, "NRPRG(txn) was NULL");
+    tlib_pass_if_size_t_equal("per-call: nothing sent during the call",
+                              fake.on_entry[i].captured,
                               fake.after_call[i].captured);
+    tlib_pass_if_size_t_equal("per-call: one transaction sent after the return",
+                              fake.after_call[i].captured + 1,
+                              sent_after_return);
     tlib_pass_if_false("per-call: no exception", fake.exception_after_call[i],
                        "the callback threw");
   }
@@ -849,13 +862,13 @@ static void test_api_calls_inside_callback(void) {
 }
 
 /*
- * The callback throws. Zend calls the Observer end handler while unwinding,
- * so the request's transaction is already sent when zend_call_function
- * returns. Pinned: current behaviour, not necessarily the desired one. The
- * exception isn't on the transaction. Real FrankenPHP reports the exception
- * only after that (frankenphp.c#L908), so it is probably lost; only a test
- * against a real FrankenPHP can confirm. Real runtimes mostly catch
- * exceptions inside the handler, which makes this the less common path.
+ * The callback throws. The request's transaction is still open when
+ * zend_call_function returns, and the agent's wrapper ends it only after the
+ * real function returns, which FrankenPHP does after reporting the exception
+ * (frankenphp.c#L908). The exception is on it: Zend calls the Observer end
+ * handler while unwinding, and the handler records the exception before
+ * zend_exception_error would clear it. The fake leaves the exception pending
+ * instead of reporting it, so the worker script catches it here.
  */
 static void test_callback_throws(void) {
   int depth = 0;
@@ -873,21 +886,25 @@ static void test_callback_throws(void) {
   tlib_pass_if_true(
       "direct throw: exception pending when zend_call_function returned",
       fake.exception_after_call[0], "no exception");
-  tlib_pass_if_true("direct throw: no transaction after the call",
-                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
-  tlib_pass_if_size_t_equal("direct throw: request transaction already sent", 2,
-                            fake.after_call[0].captured);
-  tlib_pass_if_false("direct throw: exception not recorded on the transaction",
-                     captured[1].has_error, "the transaction has an error");
+  tlib_pass_if_false("direct throw: transaction still open after the call",
+                     fake.after_call[0].txn_is_null, "NRPRG(txn) was NULL");
+  tlib_pass_if_size_t_equal(
+      "direct throw: only the bootstrap sent during the call", 1,
+      fake.after_call[0].captured);
+  tlib_pass_if_size_t_equal(
+      "direct throw: request transaction sent after the return", 2,
+      captured_count);
+  tlib_pass_if_true("direct throw: exception recorded on the transaction",
+                    captured[1].has_error, "the transaction has no error");
   tlib_php_request_end();
   engine_destroy();
 
   /*
    * Thrown two frames below the callback, on the first call only, with the
-   * same handler reused as real worker loops do. The checks at the boundary
-   * show the request's transaction ended while unwinding; the total alone
-   * would not, because a transaction still open at the next call is ended
-   * and sent as the bootstrap one.
+   * same handler reused as real worker loops do. The checks at the
+   * boundaries show the wrapper ended the throwing request's transaction
+   * before the next call; the total alone would not, because a transaction
+   * still open at the next call is ended and sent as the bootstrap one.
    */
   engine_create("");
   request_start(FAKE_CALL);
@@ -904,11 +921,17 @@ static void test_callback_throws(void) {
   tlib_pass_if_true(
       "nested throw: exception pending when zend_call_function returned",
       fake.exception_after_call[0], "no exception");
-  tlib_pass_if_true("nested throw: no transaction after the throwing call",
-                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_false(
+      "nested throw: transaction still open after the throwing call",
+      fake.after_call[0].txn_is_null, "NRPRG(txn) was NULL");
   tlib_pass_if_size_t_equal(
-      "nested throw: throwing request's transaction already sent", 2,
+      "nested throw: only the bootstrap sent during the call", 1,
       fake.after_call[0].captured);
+  tlib_pass_if_true("nested throw: no transaction when the next call starts",
+                    fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal(
+      "nested throw: throwing request's transaction sent first", 2,
+      fake.on_entry[1].captured);
   tlib_fail_if_str_equal(
       "nested throw: throwing request's transaction is its own",
       BOOTSTRAP_TXN_NAME, captured[1].name);
