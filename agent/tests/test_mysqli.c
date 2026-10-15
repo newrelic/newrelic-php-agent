@@ -538,6 +538,10 @@ static void test_link_metadata_lifetime() {
   nr_php_mysqli_metadata_set_connect(second, "two", "u2", "pw2", NULL, 3306,
                                      NULL, 0);
   nr_php_mysqli_metadata_set_database(first, "db1");
+  tlib_pass_if_int_equal("a saved link is known", 1,
+                         nr_php_mysqli_metadata_known(first));
+  tlib_pass_if_int_equal("no link is not known", 0,
+                         nr_php_mysqli_metadata_known(NULL));
   tlib_pass_if_size_t_equal(
       "one table entry per link, however often it is set", 2,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
@@ -565,6 +569,8 @@ static void test_link_metadata_lifetime() {
   tlib_pass_if_size_t_equal(
       "table entry removed with the link", 1,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+  tlib_pass_if_int_equal("a removed link is not known", 0,
+                         nr_php_mysqli_metadata_known(second));
 
   /* Freeing a link removes its entry and a reused handle finds nothing. */
   tlib_php_request_eval("unset($first);");
@@ -576,6 +582,8 @@ static void test_link_metadata_lifetime() {
   tlib_pass_if_size_t_equal(
       "the table is empty after the link was freed", 0,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+  tlib_pass_if_int_equal("an object on a freed link's handle is not known", 0,
+                         nr_php_mysqli_metadata_known(first));
   {
     zval* object;
     int i;

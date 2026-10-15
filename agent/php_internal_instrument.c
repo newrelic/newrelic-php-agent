@@ -660,7 +660,13 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
@@ -722,10 +728,14 @@ NR_INNER_WRAPPER(mysqli_construct) {
     /*
      * PHP reuses the handle of a freed object, so a new link must not inherit
      * what was saved for an earlier one (its password, TLS settings and
-     * options). mysqli::connect() is called on a link that exists already and
-     * may have had options and TLS settings set, so it keeps them.
+     * options). A link the agent has already seen keeps them: mysqli::connect()
+     * runs on an existing link, and a subclass can set options before it
+     * connects through the parent constructor. A new link that took a freed
+     * link's handle is not known. Before PHP 8.0 no link is known, so a
+     * constructor called again on the same object drops what was saved.
      */
-    if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
+    if ((0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect"))
+        && !nr_php_mysqli_metadata_known(mysqli_obj)) {
       nr_php_mysqli_metadata_remove(mysqli_obj);
     }
 
@@ -977,14 +987,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-  /* PHP 8.1 and later will report a deprecation warning if null is sent where
-   * a non-null argument value is expected.  For these PHP versions we use the
-   * same argument type specification as the mysqli::real_connect() extension
-   * uses to avoid creating this deprecation warning.
-   * For older PHPs continue to use the same specification string as previously
-   * to minimize any chances of introducing new problems.
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user. From PHP 8.1 a null sent where a non-null
+   * argument value is expected also reports a deprecation warning. For these
+   * PHP versions we use the same argument type specification as the
+   * mysqli::real_connect() extension uses. PHP 7.2 and 7.3 treat a null user
+   * as an empty string, so they keep the previous specification.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* proc_type_spec = "o|s!s!s!s!l!s!l";
   const char* oo_type_spec = "|s!s!s!s!l!s!l";

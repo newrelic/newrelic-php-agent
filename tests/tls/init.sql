@@ -22,3 +22,13 @@ GRANT ALL ON `database`.* TO 'nr_nopass'@'%';
 -- A table for the test that changes user and database with
 -- mysqli_change_user(); the test only reads it.
 CREATE TABLE IF NOT EXISTS `database`.nr_change_user_tmp (id INT);
+
+-- A user that may read a view but not the table behind it. MySQL refuses EXPLAIN
+-- on the view for this user.
+CREATE TABLE IF NOT EXISTS `database`.nr_view_priv_t (id INT);
+INSERT INTO `database`.nr_view_priv_t SELECT 1 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `database`.nr_view_priv_t);
+CREATE OR REPLACE SQL SECURITY DEFINER VIEW `database`.nr_view_priv_v
+  AS SELECT id FROM `database`.nr_view_priv_t;
+CREATE USER 'nr_view_only'@'%' IDENTIFIED BY 'nr_view_only';
+GRANT SELECT ON `database`.nr_view_priv_v TO 'nr_view_only'@'%';
