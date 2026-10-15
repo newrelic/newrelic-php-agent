@@ -257,11 +257,11 @@ static const zend_function_entry fake_frankenphp_functions[]
 
 /*
  * Creates an engine with the fake registered and transactions captured. The
- * test SAPI registers the fake at module startup, the way a real SAPI
- * registers its own functions; the agent then wraps it at the first RINIT
- * (nr_php_late_initialization) like any other internal function. Registering
- * it after startup instead leaves it with engine state no real function has,
- * and calling it crashes the engine.
+ * test SAPI registers the fake at module startup, where FrankenPHP registers
+ * the real one (through its own module entry); the agent then wraps it at the
+ * first RINIT (nr_php_late_initialization) like any other internal function.
+ * Registering it after startup instead leaves it with engine state no real
+ * function has, and calling it crashes the engine.
  */
 static void engine_create(const char* extra_ini) {
   char* ini = nr_formatf("%s%s", ENGINE_TEST_INI, NRBLANKSTR(extra_ini));
@@ -569,6 +569,11 @@ static const callable_case_t wrapped_callables[] = {
     {"static closure created in a method", "$o->staticClosureInMethod()"},
 };
 
+/*
+ * phpversion stands in for any internal function because it takes no
+ * required arguments: the fake calls the callback with none, and strlen, for
+ * one, would throw.
+ */
 static const callable_case_t rejected_callables[] = {
     {"internal function name", "'phpversion'"},
     {"internal first-class callable", "phpversion(...)"},
@@ -689,8 +694,8 @@ static void test_called_outside_worker_mode(void) {
   tlib_pass_if_size_t_equal(
       "outside worker mode: current transaction already sent", 1,
       captured_count);
-  tlib_pass_if_str_equal("outside worker mode: and renamed", BOOTSTRAP_TXN_NAME,
-                         captured[0].name);
+  tlib_pass_if_str_equal("outside worker mode: named as the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
   tlib_pass_if_null("outside worker mode: rest of the request unrecorded",
                     NRPRG(txn));
 
@@ -759,9 +764,8 @@ static void test_user_code_between_requests_not_recorded(void) {
       "  between_requests();"
       "}");
 
-  tlib_pass_if_size_t_equal(
-      "between requests: code between requests adds nothing", 4,
-      captured_count);
+  tlib_pass_if_size_t_equal("between requests: no transaction added", 4,
+                            captured_count);
   tlib_pass_if_null("between requests: no transaction after the loop",
                     NRPRG(txn));
 
@@ -791,9 +795,12 @@ static void test_each_callable_type_gets_transactions(void) {
 }
 
 /*
- * A closure re-created on each loop pass shares one runtime cache (same
- * declaration, same scope), so every pass is recorded, also when the loop is
- * inside a method.
+ * A closure re-created on each loop pass is recorded on every pass, also when
+ * the loop is inside a method. The agent's wrapper wraps each closure before
+ * calling the real function, so the request handler's handlers are set by the
+ * time Zend installs Observer handlers on the closure's first call. Closures
+ * from one declaration in one scope share a runtime cache, so Zend installs
+ * them on the first pass only and the later passes reuse them.
  */
 static void test_closure_recreated_each_loop_pass(void) {
   engine_create("");
@@ -820,6 +827,23 @@ static void test_closure_recreated_each_loop_pass(void) {
       "(new LoopRunner())->run();");
   tlib_pass_if_size_t_equal("closure per pass: loop inside a method", 4,
                             captured_count);
+  tlib_php_request_end();
+  engine_destroy();
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "class StaticLoopRunner {"
+      "  public function run() {"
+      "    for ($i = 0; $i < 3; $i++) {"
+      "      frankenphp_handle_request(static function () { return 1; });"
+      "    }"
+      "  }"
+      "}"
+      "(new StaticLoopRunner())->run();");
+  tlib_pass_if_size_t_equal(
+      "closure per pass: static closure in a loop inside a method", 4,
+      captured_count);
   tlib_php_request_end();
   engine_destroy();
 }
@@ -1021,9 +1045,9 @@ static void test_callback_throws(void) {
 }
 
 /*
- * frankenphp_handle_request two user frames deep, as in framework
- * runtimes. The outer frames begin in the bootstrap transaction and end
- * after it.
+ * frankenphp_handle_request three user frames deep (nested_main, run, once),
+ * as in framework runtimes. The outer frames begin in the bootstrap
+ * transaction and end after it.
  */
 static void test_nested_call_site(void) {
   int depth = 0;
