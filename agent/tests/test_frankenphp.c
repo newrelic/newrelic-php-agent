@@ -1,0 +1,291 @@
+/*
+ * Copyright 2026 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Unit tests for FrankenPHP worker mode instrumentation (php_frankenphp.c).
+ *
+ * The tests register a fake frankenphp_handle_request. The fake copies the
+ * real function (FrankenPHP v1.13.0, frankenphp.c) only up to the point where
+ * zend_call_function returns: argument parsing, the not-in-worker-mode throw
+ * and the callback call. It deliberately does not copy what FrankenPHP does
+ * around the call (request setup, exception reporting, request teardown).
+ * The agent's own code runs only before the real function and on the
+ * callback's frame, so that is all these tests need.
+ */
+#include "tlib_php.h"
+
+tlib_parallel_info_t parallel_info
+    = {.suggested_nthreads = -1, .state_size = 0};
+
+#if defined(ZTS) && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#include "nr_attributes.h"
+#include "nr_commands.h"
+#include "nr_txn.h"
+#include "php_agent.h"
+#include "php_globals.h"
+#include "php_user_instrument.h"
+#include "util_memory.h"
+#include "util_object.h"
+#include "util_strings.h"
+
+#include "zend_exceptions.h"
+#include "ext/spl/spl_exceptions.h"
+
+#define BOOTSTRAP_TXN_NAME "OtherTransaction/Custom/frankenphp/worker"
+
+/*
+ * PHP 8.5 always loads OPcache, so every engine these tests create maps
+ * OPcache's shared memory. After several engines in one process, valgrind
+ * loses track of the address space and crashes (seen with valgrind 3.25.1 on
+ * amd64 musl). These tests don't need OPcache, which isn't loaded on PHP 8.4
+ * and older, so turn it off.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define ENGINE_TEST_INI "opcache.enable=0\n"
+#else
+#define ENGINE_TEST_INI ""
+#endif
+
+/* {{{ Transaction capture */
+
+#define CAPTURE_MAX 16
+
+typedef struct {
+  char* name;
+  int background;
+  bool has_error;
+  char* user_attributes; /* JSON */
+} captured_txn_t;
+
+static captured_txn_t captured[CAPTURE_MAX];
+static size_t captured_count = 0;
+
+static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
+  if (captured_count < CAPTURE_MAX) {
+    captured_txn_t* c = &captured[captured_count];
+    nrobj_t* attrs = nr_attributes_user_to_obj(txn->attributes,
+                                               NR_ATTRIBUTE_DESTINATION_ALL);
+
+    c->name = nr_strdup(txn->name);
+    c->background = txn->status.background;
+    c->has_error = (NULL != txn->error);
+    c->user_attributes = nro_to_json(attrs);
+    nro_delete(attrs);
+  }
+  captured_count += 1;
+  return NR_SUCCESS;
+}
+
+static void capture_reset(void) {
+  size_t i;
+
+  for (i = 0; i < CAPTURE_MAX; i++) {
+    nr_free(captured[i].name);
+    nr_free(captured[i].user_attributes);
+  }
+  nr_memset(captured, 0, sizeof(captured));
+  captured_count = 0;
+}
+/* }}} */
+
+/* {{{ Fake frankenphp_handle_request */
+
+typedef enum {
+  FAKE_RETURN_ONLY,      /* parse the argument, return fake.return_value */
+  FAKE_CALL,             /* parse the argument, call the callback once */
+  FAKE_THROW_NOT_WORKER, /* parse the argument, throw as outside worker mode */
+} fake_mode_t;
+
+#define FAKE_MAX_CALLS 8
+
+typedef struct {
+  bool txn_is_null;
+  size_t captured;
+} fake_observation_t;
+
+static struct {
+  fake_mode_t mode;
+  bool return_value;
+  bool pass_arg;
+  int entered;
+  fake_observation_t on_entry[FAKE_MAX_CALLS];
+  fake_observation_t after_call[FAKE_MAX_CALLS];
+  bool exception_after_call[FAKE_MAX_CALLS];
+} fake;
+
+static void fake_reset(fake_mode_t mode) {
+  nr_memset(&fake, 0, sizeof(fake));
+  fake.mode = mode;
+  fake.return_value = true;
+}
+
+static void fake_observe(fake_observation_t* observation) {
+  observation->txn_is_null = (NULL == NRPRG(txn));
+  observation->captured = captured_count;
+}
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_frankenphp_handle_request,
+                                        0,
+                                        1,
+                                        _IS_BOOL,
+                                        0)
+ZEND_ARG_TYPE_INFO(0, callback, IS_CALLABLE, 0)
+ZEND_END_ARG_INFO()
+
+/*
+ * Mirrors frankenphp_handle_request() from FrankenPHP v1.13.0 up to the
+ * return of zend_call_function:
+ * https://github.com/php/frankenphp/blob/v1.13.0/frankenphp.c#L841-L892
+ * The real function parses with Z_PARAM_FUNC; "f" raises the same TypeError
+ * and ArgumentCountError.
+ */
+static ZEND_FUNCTION(frankenphp_handle_request) {
+  zend_fcall_info fci;
+  zend_fcall_info_cache fcc;
+  int call = fake.entered;
+
+  fake.entered += 1;
+  if (call < FAKE_MAX_CALLS) {
+    fake_observe(&fake.on_entry[call]);
+  }
+
+  if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS(), "f", &fci, &fcc)) {
+    RETURN_THROWS();
+  }
+
+  if (FAKE_THROW_NOT_WORKER == fake.mode) {
+    zend_throw_exception(
+        spl_ce_RuntimeException,
+        "frankenphp_handle_request() called while not in worker mode", 0);
+    RETURN_THROWS();
+  }
+
+  if (FAKE_CALL == fake.mode) {
+    zval retval;
+    zval arg;
+
+    ZVAL_UNDEF(&retval);
+    ZVAL_STRING(&arg, "fake-arg");
+    fci.size = sizeof(fci);
+    fci.retval = &retval;
+    fci.params = fake.pass_arg ? &arg : NULL;
+    fci.param_count = fake.pass_arg ? 1 : 0;
+
+    if (SUCCESS == zend_call_function(&fci, &fcc)
+        && IS_UNDEF != Z_TYPE(retval)) {
+      zval_ptr_dtor(&retval);
+    }
+    zval_ptr_dtor(&arg);
+
+    /*
+     * EG(exception) is left alone: what FrankenPHP does with it can only be
+     * tested against a real FrankenPHP.
+     */
+    if (call < FAKE_MAX_CALLS) {
+      fake_observe(&fake.after_call[call]);
+      fake.exception_after_call[call] = (NULL != EG(exception));
+    }
+    RETURN_TRUE;
+  }
+
+  RETURN_BOOL(fake.return_value);
+}
+
+static const zend_function_entry fake_frankenphp_functions[]
+    = {ZEND_FE(frankenphp_handle_request, arginfo_frankenphp_handle_request)
+           ZEND_FE_END};
+/* }}} */
+
+/* {{{ Helpers */
+
+/*
+ * Creates an engine with the fake registered and transactions captured. The
+ * test SAPI registers the fake at module startup, the way a real SAPI
+ * registers its own functions; the agent then wraps it at the first RINIT
+ * (nr_php_late_initialization) like any other internal function. Registering
+ * it after startup instead leaves it with engine state no real function has,
+ * and calling it crashes the engine.
+ */
+static void engine_create(const char* extra_ini) {
+  char* ini = nr_formatf("%s%s", ENGINE_TEST_INI, NRBLANKSTR(extra_ini));
+
+  tlib_php_engine_create_ex(ini, fake_frankenphp_functions);
+  nr_free(ini);
+  nr_cmd_txndata_hook = capture_txndata_tx;
+  capture_reset();
+  fake_reset(FAKE_RETURN_ONLY);
+}
+
+static void engine_destroy(void) {
+  tlib_php_engine_destroy();
+  capture_reset();
+}
+
+/* Starts a request with an empty capture and the fake in the given mode. */
+static void request_start(fake_mode_t mode) {
+  capture_reset();
+  fake_reset(mode);
+  tlib_php_request_start();
+}
+/* }}} */
+
+/*
+ * Harness check: the fake is in the function table, the agent wrapped it at
+ * the first RINIT, and PHP code reaches it.
+ */
+static void test_harness_fake_is_wrapped_and_reachable(void) {
+  zend_function* func = NULL;
+  zval* rv = NULL;
+
+  engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+
+  func = nr_php_find_function("frankenphp_handle_request");
+  tlib_pass_if_not_null("fake is in the function table", func);
+  tlib_pass_if_true("the agent replaced the fake's handler",
+                    NULL != func
+                        && zif_frankenphp_handle_request
+                               != func->internal_function.handler,
+                    "frankenphp_handle_request was not wrapped");
+
+  rv = tlib_php_request_eval_expr("frankenphp_handle_request(function () {})");
+  tlib_pass_if_int_equal("fake entered once", 1, fake.entered);
+  tlib_pass_if_zval_is_bool_true("fake's return value reaches PHP", rv);
+  nr_php_zval_free(&rv);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* The bootstrap transaction ends before the real function runs. */
+static void test_bootstrap_txn_ended_before_real_function(void) {
+  engine_create("");
+  request_start(FAKE_RETURN_ONLY);
+
+  tlib_php_request_eval("frankenphp_handle_request(function () {});");
+
+  tlib_pass_if_size_t_equal("bootstrap: one transaction captured", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("bootstrap: name", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_pass_if_true("bootstrap: is background", captured[0].background,
+                    "background=%d", captured[0].background);
+  tlib_pass_if_true(
+      "bootstrap: no transaction when the real function is entered",
+      fake.on_entry[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal("bootstrap: sent before the real function", 1,
+                            fake.on_entry[0].captured);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+#endif /* ZTS && PHP 8.0+ */
+
+void test_main(void* p NRUNUSED) {
+#if defined(ZTS) && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  test_harness_fake_is_wrapped_and_reachable();
+  test_bootstrap_txn_ended_before_real_function();
+#endif
+}

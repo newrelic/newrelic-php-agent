@@ -29,6 +29,25 @@
 extern nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC);
 
 /*
+ * Purpose : Create a Zend Engine whose SAPI registers its own functions.
+ *
+ * Params  : 1. Any additional INI settings, as for tlib_php_engine_create().
+ *           2. Functions for the SAPI to register at module startup, the way
+ *              a real SAPI registers its own functions (for example
+ *              FrankenPHP's frankenphp_handle_request), or NULL.
+ *
+ * Returns : NR_SUCCESS or NR_FAILURE.
+ *
+ * Note    : Register test functions this way, not with
+ *           zend_register_functions() after the engine is created. Functions
+ *           registered after startup don't get the engine state that internal
+ *           functions get at startup, and calling them crashes the engine.
+ */
+extern nr_status_t tlib_php_engine_create_ex(
+    const char* extra_ini,
+    const zend_function_entry* additional_functions);
+
+/*
  * Purpose : Destroy a Zend Engine.
  */
 extern void tlib_php_engine_destroy(TSRMLS_D);
