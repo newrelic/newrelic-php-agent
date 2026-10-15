@@ -247,6 +247,19 @@ static bool wraprec_has_custom_handlers(const nruserfn_t* wr) {
   return NULL != wr && NULL != wr->fcall_handlers.begin
          && NULL != wr->fcall_handlers.end;
 }
+
+/* Passes if the PHP expression evaluates to the expected string. */
+static void pass_if_php_string(const char* msg,
+                               const char* expected,
+                               const char* expr) {
+  zval* value = tlib_php_request_eval_expr(expr);
+
+  tlib_pass_if_str_equal(
+      msg, expected,
+      (NULL != value && IS_STRING == Z_TYPE_P(value)) ? Z_STRVAL_P(value)
+                                                       : "<not a string>");
+  nr_php_zval_free(&value);
+}
 /* }}} */
 
 /*
@@ -412,6 +425,184 @@ static void test_agent_disabled_for_request(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/* {{{ Callables */
+
+/*
+ * PHP declarations used by the callable-type cases. Evaluated at the start of
+ * each request, because user functions and classes don't outlive a request.
+ */
+static const char callable_setup[]
+    = "function cb_fn() { return 1; }"
+      "class CbC {"
+      "  public static function sm() { return 1; }"
+      "  public function m() { return 1; }"
+      "  public function __invoke() { return 1; }"
+      "  public function closureInMethod() {"
+      "    return function () { return $this; };"
+      "  }"
+      "  public function staticClosureInMethod() {"
+      "    return static function () { return 1; };"
+      "  }"
+      "}"
+      "class CbT {"
+      "  public function __call($name, $args) { return 1; }"
+      "  public static function __callStatic($name, $args) { return 1; }"
+      "}"
+      "$o = new CbC();"
+      "$t = new CbT();";
+
+typedef struct {
+  const char* label;
+  const char* expr;
+} callable_case_t;
+
+#define CASE_COUNT(cases) (sizeof(cases) / sizeof((cases)[0]))
+
+static const callable_case_t wrapped_callables[] = {
+    {"closure", "function () { return 1; }"},
+    {"arrow function", "fn () => 1"},
+    {"function name", "'cb_fn'"},
+    {"static method string", "'CbC::sm'"},
+    {"static method array", "['CbC', 'sm']"},
+    {"instance method array", "[$o, 'm']"},
+    {"invokable object", "$o"},
+    {"first-class callable function", "cb_fn(...)"},
+    {"first-class callable method", "$o->m(...)"},
+    {"Closure::fromCallable", "Closure::fromCallable('cb_fn')"},
+    /* Closures created inside a method. */
+    {"closure created in a method", "$o->closureInMethod()"},
+    {"static closure created in a method", "$o->staticClosureInMethod()"},
+};
+
+static const callable_case_t rejected_callables[] = {
+    {"internal function name", "'phpversion'"},
+    {"internal first-class callable", "phpversion(...)"},
+    {"__call trampoline", "[$t, 'anything']"},
+    {"__callStatic trampoline", "['CbT', 'anything']"},
+};
+/* }}} */
+
+/* Callable types that get a wraprec with the custom handlers. */
+static void test_wrapped_callable_types(void) {
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(wrapped_callables); i++) {
+    char* code = nr_formatf("$cb = %s; frankenphp_handle_request($cb);",
+                            wrapped_callables[i].expr);
+
+    request_start(FAKE_RETURN_ONLY);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    tlib_pass_if_true(wrapped_callables[i].label,
+                      wraprec_has_custom_handlers(wraprec_of("$cb")),
+                      "no wraprec with custom handlers");
+    tlib_php_request_end();
+    nr_free(code);
+  }
+  engine_destroy();
+}
+
+/*
+ * Callable types the agent doesn't wrap. Pinned: current behaviour, not
+ * necessarily the desired one. They get no per-request transactions, and
+ * nothing says so. Checked by behaviour, because nr_php_get_wraprec must not
+ * be given an internal function.
+ */
+static void test_rejected_callable_types(void) {
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    char* code = nr_formatf(
+        "$cb = %s; frankenphp_handle_request($cb); "
+        "frankenphp_handle_request($cb);",
+        rejected_callables[i].expr);
+
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    tlib_pass_if_int_equal(rejected_callables[i].label, 2, fake.entered);
+    tlib_pass_if_false(rejected_callables[i].label,
+                       fake.exception_after_call[0], "the callback threw");
+    tlib_pass_if_size_t_equal(rejected_callables[i].label, 1, captured_count);
+    tlib_php_request_end();
+    nr_free(code);
+  }
+  engine_destroy();
+}
+
+typedef struct {
+  const char* label;
+  const char* call;
+  const char* expected_error;
+} invalid_call_case_t;
+
+static const invalid_call_case_t invalid_calls[] = {
+    {"no argument", "frankenphp_handle_request()", "ArgumentCountError"},
+    {"integer", "frankenphp_handle_request(42)", "TypeError"},
+    {"unknown function name", "frankenphp_handle_request('no_such_fn')",
+     "TypeError"},
+};
+
+/*
+ * Invalid argument. Pinned: current behaviour, not necessarily the desired
+ * one. The agent ends and renames the bootstrap transaction before the
+ * argument is known to be valid.
+ */
+static void test_invalid_argument(void) {
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(invalid_calls); i++) {
+    char* code = nr_formatf(
+        "try { %s; $caught = 'nothing'; }"
+        " catch (TypeError $e) { $caught = get_class($e); }",
+        invalid_calls[i].call);
+
+    request_start(FAKE_RETURN_ONLY);
+    tlib_php_request_eval(code);
+    pass_if_php_string(invalid_calls[i].label, invalid_calls[i].expected_error,
+                       "$caught");
+    tlib_pass_if_int_equal(invalid_calls[i].label, 1, fake.entered);
+    tlib_pass_if_size_t_equal(invalid_calls[i].label, 1, captured_count);
+    tlib_pass_if_str_equal(invalid_calls[i].label, BOOTSTRAP_TXN_NAME,
+                           captured[0].name);
+    tlib_php_request_end();
+    nr_free(code);
+  }
+  engine_destroy();
+}
+
+/*
+ * Called outside worker mode. Pinned: current behaviour, not necessarily the
+ * desired one. The current transaction is ended and renamed before the real
+ * function throws, so the rest of the request goes unrecorded.
+ */
+static void test_called_outside_worker_mode(void) {
+  engine_create("");
+  request_start(FAKE_THROW_NOT_WORKER);
+
+  tlib_php_request_eval(
+      "try { frankenphp_handle_request(function () {}); $caught = 'nothing'; }"
+      " catch (RuntimeException $e) { $caught = $e->getMessage(); }");
+
+  pass_if_php_string(
+      "outside worker mode: the real function's exception reaches PHP",
+      "frankenphp_handle_request() called while not in worker mode",
+      "$caught");
+  tlib_pass_if_size_t_equal(
+      "outside worker mode: current transaction already sent", 1,
+      captured_count);
+  tlib_pass_if_str_equal("outside worker mode: and renamed", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_pass_if_null("outside worker mode: rest of the request unrecorded",
+                    NRPRG(txn));
+
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -423,5 +614,9 @@ void test_main(void* p NRUNUSED) {
   test_return_value_passes_through();
   test_same_callable_reuses_wraprec();
   test_agent_disabled_for_request();
+  test_wrapped_callable_types();
+  test_rejected_callable_types();
+  test_invalid_argument();
+  test_called_outside_worker_mode();
 #endif
 }
