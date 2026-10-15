@@ -857,7 +857,7 @@ static const char* fake_nodes
       "  function getParameters() { return $this->values; }"
       "}";
 
-static void test_node_instances(TSRMLS_D) {
+static void test_node_instances() {
   zval* node;
   zval* other;
   nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
@@ -867,7 +867,7 @@ static void test_node_instances(TSRMLS_D) {
   });
 
   tlib_php_request_start();
-  tlib_php_request_eval(fake_nodes TSRMLS_CC);
+  tlib_php_request_eval(fake_nodes);
 
   /*
    * A node that was never saved gets its instance from what the connection
@@ -875,19 +875,19 @@ static void test_node_instances(TSRMLS_D) {
    */
   node = tlib_php_request_eval_expr(
       "new \\Predis\\Connection\\FakeNode("
-      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])" TSRMLS_CC);
-  assert_datastore_instance_equals(
-      "built from the connection's parameters", expected,
-      nr_predis_retrieve_datastore_instance(node TSRMLS_CC));
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])");
+  assert_datastore_instance_equals("built from the connection's parameters",
+                                   expected,
+                                   nr_predis_retrieve_datastore_instance(node));
   tlib_pass_if_size_t_equal("one instance", 1, saved_count());
 
   /* A connection that keeps its parameters elsewhere is asked for them. */
   other = tlib_php_request_eval_expr(
       "new \\Predis\\Connection\\NodeWithoutProperty("
-      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])" TSRMLS_CC);
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])");
   assert_datastore_instance_equals(
       "built by asking the connection", expected,
-      nr_predis_retrieve_datastore_instance(other TSRMLS_CC));
+      nr_predis_retrieve_datastore_instance(other));
   tlib_pass_if_size_t_equal("two instances", 2, saved_count());
 
   nr_php_zval_free(&node);
@@ -901,7 +901,7 @@ static void test_node_instances(TSRMLS_D) {
  * An instance goes when its node connection is freed, and a node that takes
  * the freed one's handle finds nothing of the earlier node's.
  */
-static void test_node_instance_freed(TSRMLS_D) {
+static void test_node_instance_freed() {
   zval* node;
   zval* reused;
   nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
@@ -911,28 +911,27 @@ static void test_node_instance_freed(TSRMLS_D) {
   });
 
   tlib_php_request_start();
-  tlib_php_request_eval(fake_nodes TSRMLS_CC);
+  tlib_php_request_eval(fake_nodes);
 
   tlib_php_request_eval(
       "$node = new \\Predis\\Connection\\FakeNode("
-      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345]);" TSRMLS_CC);
-  node = tlib_php_request_eval_expr("$node" TSRMLS_CC);
-  tlib_pass_if_not_null("saved",
-                        nr_predis_retrieve_datastore_instance(node TSRMLS_CC));
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345]);");
+  node = tlib_php_request_eval_expr("$node");
+  tlib_pass_if_not_null("saved", nr_predis_retrieve_datastore_instance(node));
   tlib_pass_if_size_t_equal("one instance", 1, saved_count());
   nr_php_zval_free(&node);
 
-  tlib_php_request_eval("unset($node);" TSRMLS_CC);
+  tlib_php_request_eval("unset($node);");
   tlib_pass_if_size_t_equal("dropped with the node", 0, saved_count());
 
   /* The next node may take the freed handle: it gets its own instance. */
   tlib_php_request_eval(
       "$reused = new \\Predis\\Connection\\FakeNode("
-      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432]);" TSRMLS_CC);
-  reused = tlib_php_request_eval_expr("$reused" TSRMLS_CC);
+      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432]);");
+  reused = tlib_php_request_eval_expr("$reused");
   assert_datastore_instance_equals(
       "a node that reuses the handle", expected,
-      nr_predis_retrieve_datastore_instance(reused TSRMLS_CC));
+      nr_predis_retrieve_datastore_instance(reused));
   nr_php_zval_free(&reused);
 
   tlib_php_request_end();
@@ -944,7 +943,7 @@ static void test_node_instance_freed(TSRMLS_D) {
  * Before PHP 8.0 an instance saved for an earlier node can be found by a later
  * one that took its handle: reading the connection's parameters corrects it.
  */
-static void test_node_instance_refreshed(TSRMLS_D) {
+static void test_node_instance_refreshed() {
   zval* node;
   nr_datastore_instance_t* stale;
   nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
@@ -954,11 +953,11 @@ static void test_node_instance_refreshed(TSRMLS_D) {
   });
 
   tlib_php_request_start();
-  tlib_php_request_eval(fake_nodes TSRMLS_CC);
+  tlib_php_request_eval(fake_nodes);
 
   node = tlib_php_request_eval_expr(
       "new \\Predis\\Connection\\FakeNode("
-      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432])" TSRMLS_CC);
+      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432])");
 
   /* What an earlier node on the same handle left behind. */
   stale = nr_predis_create_datastore_instance_from_fields(NULL, NULL, NULL,
@@ -966,13 +965,12 @@ static void test_node_instance_refreshed(TSRMLS_D) {
   {
     char* key = nr_php_datastore_make_key(node, "predis");
 
-    nr_php_datastore_instance_save(key, stale TSRMLS_CC);
+    nr_php_datastore_instance_save(key, stale);
     nr_free(key);
   }
 
-  assert_datastore_instance_equals(
-      "the stale instance is replaced", expected,
-      nr_predis_retrieve_datastore_instance(node TSRMLS_CC));
+  assert_datastore_instance_equals("the stale instance is replaced", expected,
+                                   nr_predis_retrieve_datastore_instance(node));
   tlib_pass_if_size_t_equal("one instance", 1, saved_count());
 
   nr_php_zval_free(&node);
@@ -981,7 +979,7 @@ static void test_node_instance_refreshed(TSRMLS_D) {
 
 #endif
 
-static void test_command_start(TSRMLS_D) {
+static void test_command_start() {
   nrtime_t start = 0;
   nr_hashmap_t* saved_map = NULL;
 
@@ -1133,13 +1131,13 @@ void test_main(void* p NRUNUSED) {
   test_is_methods(TSRMLS_C);
   test_retrieve_datastore_instance(TSRMLS_C);
   test_save_datastore_instance(TSRMLS_C);
-  test_node_instances(TSRMLS_C);
+  test_node_instances();
 #ifdef NR_PHP_OBJTABLE_WEAK
-  test_node_instance_freed(TSRMLS_C);
+  test_node_instance_freed();
 #else
-  test_node_instance_refreshed(TSRMLS_C);
+  test_node_instance_refreshed();
 #endif
-  test_command_start(TSRMLS_C);
+  test_command_start();
 
   tlib_php_engine_destroy(TSRMLS_C);
 

@@ -419,7 +419,7 @@ nr_predis_create_datastore_instance_from_connection_params(
  * fall back to asking the connection.
  */
 static nr_datastore_instance_t* nr_predis_create_datastore_instance_from_node(
-    const zval* conn TSRMLS_DC) {
+    const zval* conn) {
   nr_datastore_instance_t* instance = NULL;
   zend_class_entry* connection_ce = NULL;
   zend_class_entry* parameters_ce = NULL;
@@ -427,19 +427,18 @@ static nr_datastore_instance_t* nr_predis_create_datastore_instance_from_node(
   zval* values = NULL;
   zval* params = NULL;
 
-  if (!nr_predis_is_node_connection(conn TSRMLS_CC)) {
+  if (!nr_predis_is_node_connection(conn)) {
     return NULL;
   }
 
-  connection_ce
-      = nr_php_find_class("predis\\connection\\abstractconnection" TSRMLS_CC);
-  parameters_ce = nr_php_find_class("predis\\connection\\parameters" TSRMLS_CC);
+  connection_ce = nr_php_find_class("predis\\connection\\abstractconnection");
+  parameters_ce = nr_php_find_class("predis\\connection\\parameters");
   if (connection_ce && parameters_ce) {
     parameters = nr_php_get_zval_object_property_with_class(
-        (zval*)conn, connection_ce, "parameters" TSRMLS_CC);
+        (zval*)conn, connection_ce, "parameters");
     if (nr_php_is_zval_valid_object(parameters)) {
       values = nr_php_get_zval_object_property_with_class(
-          parameters, parameters_ce, "parameters" TSRMLS_CC);
+          parameters, parameters_ce, "parameters");
       if (nr_php_is_zval_valid_array(values)) {
         return nr_predis_create_datastore_instance_from_array(values);
       }
@@ -447,8 +446,7 @@ static nr_datastore_instance_t* nr_predis_create_datastore_instance_from_node(
   }
 
   params = nr_php_call((zval*)conn, "getParameters");
-  instance = nr_predis_create_datastore_instance_from_connection_params(
-      params TSRMLS_CC);
+  instance = nr_predis_create_datastore_instance_from_connection_params(params);
   nr_php_zval_free(&params);
 
   return instance;
@@ -501,7 +499,7 @@ nr_datastore_instance_t* nr_predis_save_datastore_instance(const zval* conn,
   return instance;
 #else
   key = nr_php_datastore_make_key(conn, "predis");
-  nr_php_datastore_instance_save(key, instance TSRMLS_CC);
+  nr_php_datastore_instance_save(key, instance);
   nr_free(key);
   return instance;
 #endif
@@ -524,7 +522,7 @@ nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
    */
   instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
   if (NULL == instance && nr_php_is_zval_valid_object(conn)) {
-    instance = nr_predis_create_datastore_instance_from_node(conn TSRMLS_CC);
+    instance = nr_predis_create_datastore_instance_from_node(conn);
     if (instance && NRPRG_SHARED(predis_instances)) {
       nr_php_objtable_set(NRPRG_SHARED(predis_instances), conn, instance);
       instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
@@ -538,13 +536,13 @@ nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
     nr_datastore_instance_t* current = NULL;
 
     key = nr_php_datastore_make_key(conn, "predis");
-    instance = nr_php_datastore_instance_retrieve(key TSRMLS_CC);
+    instance = nr_php_datastore_instance_retrieve(key);
 
     /* A node connection is checked on every response; see above. */
-    current = nr_predis_create_datastore_instance_from_node(conn TSRMLS_CC);
+    current = nr_predis_create_datastore_instance_from_node(conn);
     if (current) {
       if (NULL == instance || !nr_predis_instance_matches(instance, current)) {
-        nr_php_datastore_instance_save(key, current TSRMLS_CC);
+        nr_php_datastore_instance_save(key, current);
         instance = current;
       } else {
         nr_datastore_instance_destroy(&current);
