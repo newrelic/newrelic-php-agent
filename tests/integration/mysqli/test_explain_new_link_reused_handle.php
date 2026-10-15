@@ -19,15 +19,15 @@ second user with the first user's password and be refused, and the slow query
 would have no explain plan.
 
 The users are in tests/tls. The test is skipped without the TLS test server and
-before PHP 8.1, where a null password falls back to mysqli.default_pw.
+before PHP 7.4, which the TLS test users need.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80100) {
-  die("skip: a null password uses mysqli.default_pw from PHP 8.1\n");
+if (PHP_VERSION_ID < 70400) {
+  die("skip: the TLS test users need PHP 7.4 or later\n");
 }
 if ('' == $MYSQL_TLS_HOST) {
   die("skip: MYSQL_TLS_HOST is not set\n");
