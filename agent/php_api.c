@@ -1699,10 +1699,7 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
         "newrelic_set_error_group_callback: overwriting previous callback");
   }
 
-  // Set global values
-  NRPRG_SHARED(error_group_user_callback).fci = fci;
-  NRPRG_SHARED(error_group_user_callback).fcc = fcc;
-  NRPRG_SHARED(error_group_user_callback).is_set = true;
+  nr_php_error_set_error_group_callback(&fci, &fcc);
 
   nrl_debug(
       NRL_API,

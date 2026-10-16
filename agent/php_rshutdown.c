@@ -59,6 +59,12 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
   /* nr_php_txn_shutdown will check for a NULL transaction. */
   nr_php_txn_shutdown(TSRMLS_C);
 
+  /*
+   * Release the error group callback here, not in post-deactivate: the
+   * executor shuts down between the two and frees the objects it refers to.
+   */
+  nr_php_error_release_error_group_callback();
+
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
   nr_php_pdo_rshutdown();
