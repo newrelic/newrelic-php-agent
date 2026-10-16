@@ -165,6 +165,9 @@ extern zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC);
 
 /*
  * Purpose : Save the options that were given when constructing a PDO object.
+ *           Only scalar options are kept, and they are kept for as long as the
+ *           PDO object lives, across transactions. A PDO object constructed
+ *           without options removes whatever was saved for its handle.
  *
  * Params  : 1. The PDO object.
  *           2. The options array.
@@ -201,8 +204,9 @@ extern void nr_php_pdo_free_data_sources(struct pdo_data_src_parser* parsed,
                                          size_t nparams);
 
 /*
- * Purpose : Frees reference incremented, transaction global zvals
- *           that must be cleaned up prior to postdeactivate
+ * Purpose : Create the table that keeps the options of each PDO connection.
+ *           Called once per request, in RINIT; the table is destroyed in
+ *           post-deactivate.
  */
-extern void nr_php_pdo_rshutdown();
+extern void nr_php_pdo_options_create_table(void);
 #endif

@@ -8,6 +8,8 @@
 
 #include "php_agent.h"
 #include "lib_predis_private.h"
+#include "php_datastore.h"
+#include "php_objtable.h"
 #include "util_system.h"
 
 tlib_parallel_info_t parallel_info
@@ -733,6 +735,15 @@ static void test_is_methods(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/* The number of datastore instances saved for node connections. */
+static size_t saved_count(void) {
+#ifdef NR_PHP_OBJTABLE_WEAK
+  return nr_php_objtable_count(NRPRG_SHARED(predis_instances));
+#else
+  return nr_hashmap_count(NRPRG_CTX(datastore_connections));
+#endif
+}
+
 static void test_retrieve_datastore_instance(TSRMLS_D) {
   nr_datastore_instance_t* instance;
   zval* predis;
@@ -796,8 +807,7 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(a, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("first connection", 1,
-                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
+  tlib_pass_if_size_t_equal("first connection", 1, saved_count());
 
   assert_datastore_instance_equals(
       "second connection",
@@ -807,8 +817,7 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(b, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("second connection", 2,
-                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
+  tlib_pass_if_size_t_equal("second connection", 2, saved_count());
 
   assert_datastore_instance_equals(
       "updated connection",
@@ -818,11 +827,275 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(b, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("second connection", 2,
-                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
+  tlib_pass_if_size_t_equal("second connection", 2, saved_count());
 
   nr_php_zval_free(&a);
   nr_php_zval_free(&b);
+
+  tlib_php_request_end();
+}
+
+static const char* fake_nodes
+    = "namespace Predis\\Connection;"
+      "interface NodeConnectionInterface {}"
+      "class Parameters {"
+      "  private $parameters;"
+      "  function __construct($parameters) { $this->parameters = $parameters; }"
+      "  function __get($name) { return $this->parameters[$name] ?? null; }"
+      "}"
+      "abstract class AbstractConnection implements NodeConnectionInterface {"
+      "  protected $parameters;"
+      "  function __construct($parameters) {"
+      "    $this->parameters = new Parameters($parameters);"
+      "  }"
+      "  function getParameters() { return $this->parameters; }"
+      "}"
+      "class FakeNode extends AbstractConnection {}"
+      "class NodeWithoutProperty implements NodeConnectionInterface {"
+      "  private $values;"
+      "  function __construct($values) { $this->values = $values; }"
+      "  function getParameters() { return $this->values; }"
+      "}";
+
+static void test_node_instances() {
+  zval* node;
+  zval* other;
+  nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
+      .database_name = "0",
+      .host = "spock",
+      .port_path_or_id = "2345",
+  });
+
+  tlib_php_request_start();
+  tlib_php_request_eval(fake_nodes);
+
+  /*
+   * A node that was never saved gets its instance from what the connection
+   * holds, without any call into PHP.
+   */
+  node = tlib_php_request_eval_expr(
+      "new \\Predis\\Connection\\FakeNode("
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])");
+  assert_datastore_instance_equals("built from the connection's parameters",
+                                   expected,
+                                   nr_predis_retrieve_datastore_instance(node));
+  tlib_pass_if_size_t_equal("one instance", 1, saved_count());
+
+  /* A connection that keeps its parameters elsewhere is asked for them. */
+  other = tlib_php_request_eval_expr(
+      "new \\Predis\\Connection\\NodeWithoutProperty("
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345])");
+  assert_datastore_instance_equals(
+      "built by asking the connection", expected,
+      nr_predis_retrieve_datastore_instance(other));
+  tlib_pass_if_size_t_equal("two instances", 2, saved_count());
+
+  nr_php_zval_free(&node);
+  nr_php_zval_free(&other);
+  tlib_php_request_end();
+}
+
+#ifdef NR_PHP_OBJTABLE_WEAK
+
+/*
+ * An instance goes when its node connection is freed, and a node that takes
+ * the freed one's handle finds nothing of the earlier node's.
+ */
+static void test_node_instance_freed() {
+  zval* node;
+  zval* reused;
+  nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
+      .database_name = "0",
+      .host = "bones",
+      .port_path_or_id = "5432",
+  });
+
+  tlib_php_request_start();
+  tlib_php_request_eval(fake_nodes);
+
+  tlib_php_request_eval(
+      "$node = new \\Predis\\Connection\\FakeNode("
+      "['scheme' => 'tcp', 'host' => 'spock', 'port' => 2345]);");
+  node = tlib_php_request_eval_expr("$node");
+  tlib_pass_if_not_null("saved", nr_predis_retrieve_datastore_instance(node));
+  tlib_pass_if_size_t_equal("one instance", 1, saved_count());
+  nr_php_zval_free(&node);
+
+  tlib_php_request_eval("unset($node);");
+  tlib_pass_if_size_t_equal("dropped with the node", 0, saved_count());
+
+  /* The next node may take the freed handle: it gets its own instance. */
+  tlib_php_request_eval(
+      "$reused = new \\Predis\\Connection\\FakeNode("
+      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432]);");
+  reused = tlib_php_request_eval_expr("$reused");
+  assert_datastore_instance_equals(
+      "a node that reuses the handle", expected,
+      nr_predis_retrieve_datastore_instance(reused));
+  nr_php_zval_free(&reused);
+
+  tlib_php_request_end();
+}
+
+#else
+
+/*
+ * Before PHP 8.0 an instance saved for an earlier node can be found by a later
+ * one that took its handle: reading the connection's parameters corrects it.
+ */
+static void test_node_instance_refreshed() {
+  zval* node;
+  nr_datastore_instance_t* stale;
+  nr_datastore_instance_t* expected = &((nr_datastore_instance_t){
+      .database_name = "0",
+      .host = "bones",
+      .port_path_or_id = "5432",
+  });
+
+  tlib_php_request_start();
+  tlib_php_request_eval(fake_nodes);
+
+  node = tlib_php_request_eval_expr(
+      "new \\Predis\\Connection\\FakeNode("
+      "['scheme' => 'tcp', 'host' => 'bones', 'port' => 5432])");
+
+  /* What an earlier node on the same handle left behind. */
+  stale = nr_predis_create_datastore_instance_from_fields(NULL, NULL, NULL,
+                                                          NULL, NULL);
+  {
+    char* key = nr_php_datastore_make_key(node, "predis");
+
+    nr_php_datastore_instance_save(key, stale);
+    nr_free(key);
+  }
+
+  assert_datastore_instance_equals("the stale instance is replaced", expected,
+                                   nr_predis_retrieve_datastore_instance(node));
+  tlib_pass_if_size_t_equal("one instance", 1, saved_count());
+
+  nr_php_zval_free(&node);
+  tlib_php_request_end();
+}
+
+#endif
+
+static void test_command_start() {
+  nrtime_t start = 0;
+  nr_hashmap_t* saved_map = NULL;
+
+  tlib_php_request_start();
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_bool_equal("NULL output", false,
+                          nr_predis_command_start_take(1, 0, NULL));
+
+  /*
+   * Test : A handle with no saved start time reports nothing and leaves the
+   * output alone.
+   */
+  start = 99;
+  tlib_pass_if_bool_equal("unsaved handle", false,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("output unchanged", 99, start);
+
+  /*
+   * Test : A saved start time is returned once, then removed, so a second
+   * response for the same command object, or a later command object that gets
+   * the same handle without being written, finds nothing.
+   */
+  nr_predis_command_start_save(1, 1000);
+  tlib_pass_if_size_t_equal("saved", 1,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("saved handle", true,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("start time", 1000, start);
+  tlib_pass_if_size_t_equal("removed", 0,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+
+  start = 99;
+  tlib_pass_if_bool_equal("second take", false,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("output unchanged after second take", 99, start);
+
+  /*
+   * Test : Saving again for the same handle replaces the start time.
+   */
+  nr_predis_command_start_save(2, 10);
+  nr_predis_command_start_save(2, 20);
+  tlib_pass_if_size_t_equal("replaced", 1,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("replaced handle", true,
+                          nr_predis_command_start_take(2, 0, &start));
+  tlib_pass_if_time_equal("replaced start time", 20, start);
+  tlib_pass_if_size_t_equal("replaced then removed", 0,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+
+  /*
+   * Test : Handles are independent, and handle 0 is an ordinary key.
+   */
+  nr_predis_command_start_save(0, 5);
+  nr_predis_command_start_save(3, 30);
+  nr_predis_command_start_save(4, 40);
+  tlib_pass_if_size_t_equal("three saved", 3,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("take 4", true,
+                          nr_predis_command_start_take(4, 0, &start));
+  tlib_pass_if_time_equal("start time 4", 40, start);
+  tlib_pass_if_size_t_equal("two left", 2,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("take 0", true,
+                          nr_predis_command_start_take(0, 0, &start));
+  tlib_pass_if_time_equal("start time 0", 5, start);
+  tlib_pass_if_bool_equal("take 3", true,
+                          nr_predis_command_start_take(3, 0, &start));
+  tlib_pass_if_time_equal("start time 3", 30, start);
+
+  /*
+   * Test : The saved time is absolute and the result is relative to the start
+   * of the transaction that reads it.
+   */
+  nr_predis_command_start_save(5, 1500);
+  start = 99;
+  tlib_pass_if_bool_equal("later than the transaction start", true,
+                          nr_predis_command_start_take(5, 1000, &start));
+  tlib_pass_if_time_equal("offset from the transaction start", 500, start);
+
+  nr_predis_command_start_save(5, 1000);
+  start = 99;
+  tlib_pass_if_bool_equal("at the transaction start", true,
+                          nr_predis_command_start_take(5, 1000, &start));
+  tlib_pass_if_time_equal("offset zero", 0, start);
+
+  /*
+   * Test : A request written before the transaction began is not used, and
+   * its entry is removed.
+   */
+  nr_predis_command_start_save(6, 999);
+  start = 99;
+  tlib_pass_if_bool_equal("before the transaction start", false,
+                          nr_predis_command_start_take(6, 1000, &start));
+  tlib_pass_if_time_equal("output unchanged", 99, start);
+  tlib_pass_if_bool_equal("entry removed", false,
+                          nr_predis_command_start_take(6, 0, &start));
+
+  /*
+   * Test : An entry that is never taken is freed with the map.
+   */
+  nr_predis_command_start_save(7, 70);
+
+  /*
+   * Test : No map (not in a request): nothing is saved and nothing crashes.
+   */
+  saved_map = NRPRG_CTX(predis_commands);
+  NRPRG_CTX(predis_commands) = NULL;
+  nr_predis_command_start_save(8, 80);
+  start = 99;
+  tlib_pass_if_bool_equal("no map", false,
+                          nr_predis_command_start_take(8, 0, &start));
+  tlib_pass_if_time_equal("output unchanged with no map", 99, start);
+  NRPRG_CTX(predis_commands) = saved_map;
 
   tlib_php_request_end();
 }
@@ -858,6 +1131,13 @@ void test_main(void* p NRUNUSED) {
   test_is_methods(TSRMLS_C);
   test_retrieve_datastore_instance(TSRMLS_C);
   test_save_datastore_instance(TSRMLS_C);
+  test_node_instances();
+#ifdef NR_PHP_OBJTABLE_WEAK
+  test_node_instance_freed();
+#else
+  test_node_instance_refreshed();
+#endif
+  test_command_start();
 
   tlib_php_engine_destroy(TSRMLS_C);
 
