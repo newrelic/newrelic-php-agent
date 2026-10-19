@@ -47,6 +47,9 @@ opcache.protect_memory = 1
 
 $error = new Error('Sample Error');
 $trace = new ReflectionProperty(Error::class, 'trace');
+if (PHP_VERSION_ID < 80100) {
+  $trace->setAccessible(true);
+}
 $trace->setValue($error, [['file' => 'framework.php', 'line' => 1]]);
 
 newrelic_notice_error($error);
