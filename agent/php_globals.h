@@ -82,7 +82,7 @@ typedef struct _nrphpglobals_t {
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
   bool laravel_horizon_worker_used; /* Set to true if Laravel Horizon is used */
 #ifdef ZTS
-  int ini_wraprecs_staged; /* Set in MINIT once the INI wraprecs are staged */
+  int ini_startup_done; /* Set in MINIT once the INI entries are registered */
 #endif
 
   /* Original PHP callback pointer contents */
