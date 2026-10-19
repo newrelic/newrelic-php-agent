@@ -125,7 +125,13 @@ static void sql_obfuscate_testcase_fn(const char* testname,
                                       const char* expected,
                                       const char* file,
                                       int line) {
-  char* output = nr_sql_obfuscate(sql);
+  /*
+   * The input is copied into an exactly sized allocation so that valgrind can
+   * see reads past the end of it. A string literal would have readable bytes
+   * after its NUL, hiding them.
+   */
+  char* input = sql ? nr_strdup(sql) : NULL;
+  char* output = nr_sql_obfuscate(input);
   char* idempotent = output ? nr_sql_obfuscate(output) : 0;
 
   test_pass_if_true(testname, 0 == nr_strcmp(expected, output),
@@ -137,6 +143,7 @@ static void sql_obfuscate_testcase_fn(const char* testname,
 
   nr_free(idempotent);
   nr_free(output);
+  nr_free(input);
 }
 
 static void test_sql_obfuscate(void) {
@@ -170,6 +177,12 @@ static void test_sql_obfuscate(void) {
   sql_obfuscate_testcase("escaped quotes",
                          "SELECT * FROM test WHERE foo IN (1,\"\\\"\",'\\'')",
                          "SELECT * FROM test WHERE foo IN (?,?,?)");
+
+  sql_obfuscate_testcase("trailing backslash in a single quote string",
+                         "SELECT 'abc\\", "SELECT ?");
+
+  sql_obfuscate_testcase("trailing backslash in a double quote string",
+                         "SELECT \"abc\\", "SELECT ?");
 
   sql_obfuscate_testcase("stuttered quotes",
                          "SELECT * FROM test WHERE foo IN (1,\"\"\"\",'''',14)",
