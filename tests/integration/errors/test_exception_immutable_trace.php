@@ -6,8 +6,9 @@
 
 /*DESCRIPTION
 The agent should record an exception whose trace property holds an immutable
-array. Frameworks set the property from a literal, and with opcache that array
-lives in shared memory, so the agent must not change its refcount.
+array. Frameworks set the property from a literal. Such an array has no
+refcount and can be in memory that is not writable, for example opcache shared
+memory with memory protection enabled, so the agent must not change it.
 */
 
 /*INI
