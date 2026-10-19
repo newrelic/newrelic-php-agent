@@ -390,10 +390,15 @@ static zval* nr_php_error_exception_stack_trace(zval* exception TSRMLS_DC) {
   if (NULL == trace || nr_php_is_zval_null(trace)) {
     return NULL;
   }
-  Z_ADDREF_P(trace);
+  /*
+   * The trace can be an immutable array, for example when a framework sets
+   * the property to a literal. Immutable arrays are not refcounted and may
+   * live in read-only memory, so only touch the refcount when there is one.
+   */
+  Z_TRY_ADDREF_P(trace);
 
   if (!nr_php_is_zval_valid_array(trace)) {
-    Z_DELREF_P(trace);
+    Z_TRY_DELREF_P(trace);
     return NULL;
   }
   return trace;
@@ -762,7 +767,9 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
   nr_free(klass);
   nr_free(message);
   nr_free(stack_json);
-  Z_DELREF_P(stack_trace);
+  if (stack_trace) {
+    Z_TRY_DELREF_P(stack_trace);
+  }
 
   return NR_SUCCESS;
 }
