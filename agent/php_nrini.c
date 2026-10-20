@@ -444,12 +444,51 @@ static PHP_INI_DISP(nr_framework_dh) {
  *   ZEND_INI_STAGE_HTACCESS
  */
 
+#ifdef ZTS
+/*
+ * ZTS: PHP re-runs every INI handler with ZEND_INI_STAGE_STARTUP on each new
+ * thread (zend_ini_refresh_caches), long after MINIT. The refill is how the
+ * new thread gets its own INI values, so a handler must still run; only its
+ * process-global work is skipped.
+ *
+ * When does a handler need NR_INI_SKIP_STARTUP_REFRESH? When what it does on
+ * a refresh can be seen by a thread that is already running, that is when it
+ *   - frees or replaces something those threads read without a lock (the
+ *     collector string, read on every transaction begin),
+ *   - closes, reopens, clears or rebuilds state they use (the log file, the
+ *     log level mask, special_flags), or
+ *   - sets a value MINIT changed after registering the entries (enabled).
+ * It does not when it stores the value already there: these settings are
+ * system scope, so every thread gets the same value, and a reader on a
+ * running thread sees no change. Such a store can still happen while another
+ * thread reads the field (high_security and daemon_app_connect_timeout are
+ * read per transaction); that is a data race by the memory model, accepted
+ * because the bytes written equal the bytes already there. Refreshes of
+ * different new threads never overlap (TSRM holds tsmm_mutex), so only
+ * readers on running threads matter.
+ */
+#define NR_INI_STARTUP_REFRESH(stage) \
+  (ZEND_INI_STAGE_STARTUP == (stage)  \
+   && NR_PHP_PROCESS_GLOBALS(ini_startup_done))
+#else
+#define NR_INI_STARTUP_REFRESH(stage) 0
+#endif
+
+/* For handlers whose only effect is on process-global state. */
+#define NR_INI_SKIP_STARTUP_REFRESH(stage) \
+  do {                                     \
+    if (NR_INI_STARTUP_REFRESH(stage)) {   \
+      return SUCCESS;                      \
+    }                                      \
+  } while (0)
+
 static PHP_INI_MH(nr_logfile_mh) {
   (void)entry;
   (void)mh_arg1;
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (0 != NEW_VALUE_LEN) {
@@ -559,6 +598,7 @@ static PHP_INI_MH(nr_loglevel_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (0 != NEW_VALUE_LEN) {
@@ -686,12 +726,18 @@ static PHP_INI_MH(nr_daemon_ssl_capath_mh) {
   return SUCCESS;
 }
 
+/*
+ * Unlike the other daemon strings, which only MINIT reads, collector is
+ * copied on every transaction begin (php_txn.c), so a refresh must not free
+ * and replace it under a running thread.
+ */
 static PHP_INI_MH(nr_daemon_collector_host_mh) {
   (void)entry;
   (void)mh_arg1;
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(collector));
@@ -984,6 +1030,7 @@ static PHP_INI_MH(nr_special_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
 
   NR_PHP_PROCESS_GLOBALS(special_flags).no_sql_parsing = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_sql_parsing = 0;
@@ -1164,7 +1211,7 @@ static PHP_INI_MH(nr_enabled_mh) {
     return FAILURE;
   }
 
-  if (PHP_INI_STAGE_STARTUP == stage) {
+  if (PHP_INI_STAGE_STARTUP == stage && !NR_INI_STARTUP_REFRESH(stage)) {
     /*
      * This behaviour is different depending on whether we are doing MINIT
      * or RINIT. In the MINIT case (this one) if we were disabled then this
@@ -1719,8 +1766,7 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
      * on each new thread is skipped so it doesn't write the process-global
      * hashmaps while other threads are reading them.
      */
-    if (ZEND_INI_STAGE_STARTUP == stage
-        && !NR_PHP_PROCESS_GLOBALS(ini_wraprecs_staged)) {
+    if (ZEND_INI_STAGE_STARTUP == stage && !NR_INI_STARTUP_REFRESH(stage)) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn);
     }
 #else
@@ -1746,8 +1792,7 @@ static PHP_INI_MH(nr_ttcustom_mh) {
      * on each new thread is skipped so it doesn't write the process-global
      * hashmaps while other threads are reading them.
      */
-    if (ZEND_INI_STAGE_STARTUP == stage
-        && !NR_PHP_PROCESS_GLOBALS(ini_wraprecs_staged)) {
+    if (ZEND_INI_STAGE_STARTUP == stage && !NR_INI_STARTUP_REFRESH(stage)) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer);
     }
 #else
