@@ -1,3 +1,17 @@
+# PHP 8.4 and later: pgsql's GINIT allocates persistent regex strings for
+# every thread and only MSHUTDOWN (once, for the first thread) releases them,
+# so each thread that starts and exits through TSRM leaks them. The ZTS tests
+# that start threads (test_php_minit) hit this.
+{
+   <PHP 8.4+ pgsql per-thread globals leak>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:__zend_malloc
+   fun:zm_globals_ctor_pgsql
+   ...
+}
+
 {
    <PHP 8.1 Fiber Defect #1>
    Memcheck:Leak
