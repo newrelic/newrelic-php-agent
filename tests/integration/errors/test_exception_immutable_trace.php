@@ -16,6 +16,28 @@ opcache.enable = 1
 opcache.protect_memory = 1
 */
 
+/*EXPECT_TRACED_ERRORS
+[
+  "?? agent run id",
+  [
+    [
+      "?? when",
+      "OtherTransaction/php__FILE__",
+      "Noticed exception 'Error' with message 'Sample Error' in __FILE__:??",
+      "Error",
+      {
+        "stack_trace": [
+          " in ? called at framework.php (??)"
+        ],
+        "agentAttributes": "??",
+        "intrinsics": "??"
+      },
+      "?? transaction ID"
+    ]
+  ]
+]
+*/
+
 /*EXPECT_ERROR_EVENTS
 [
   "?? agent run id",
