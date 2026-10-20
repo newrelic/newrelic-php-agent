@@ -14,34 +14,16 @@ EXPLAIN and replays the arguments of mysqli_ssl_set(), the options and the
 flags on it. This test guards that the replay of the CA together with the
 verification option does not break that connection: if it passed the arguments
 in the wrong order or lost the option, the connection would fail and the
-explain plan would be missing.
-
-This is a control: it passes with and without the replay of mysqli_ssl_set(),
-because without a CA the explain connection is not refused and mysqlnd does not
-verify the server, which is not visible in the explain plan. It therefore does
-not show that the CA reached the explain connection; the unit test of the saved
-arguments covers that. The TLS setup is in tests/tls; the test is skipped
-without it and on PHP below 7.4.
+explain plan would be missing. The TLS setup is in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-mysqli_ssl_set($link, null, null, "$MYSQL_TLS_CERTS/ca.pem", null, null);
-mysqli_options($link, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, 1);
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_required', 'tls_required',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT, null, MYSQLI_CLIENT_SSL)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'verify_ca';
+require("skipif_tls.inc");
 */
 
 /*INI

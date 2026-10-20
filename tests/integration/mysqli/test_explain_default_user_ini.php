@@ -14,26 +14,16 @@ positional. If the agent only passed the arguments the application gave, the
 password would take the place of the user and the login would be refused. The
 agent fills in the missing leading arguments from the mysqli.default_* settings.
 
-The TLS test server is used for the users; the test is skipped without it and
-on PHP below 7.4.
+The TLS test server is used for the users.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'optional';
+require("skipif_tls.inc");
 */
 
 /*INI

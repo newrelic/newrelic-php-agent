@@ -12,31 +12,16 @@ constructor and the query runs in the same transaction.
 The agent opens its own connection to run EXPLAIN. The user for this test
 requires TLS, so that connection is refused unless it also gets the TLS options.
 The agent saves the options passed to the constructor for the transaction, so
-they reach it and the explain plan is produced. The TLS setup is in tests/tls;
-the test is skipped without it and on PHP below 7.4.
-
-This is a control: it passes with the current agent. The same options on a
-connection used in a later transaction are lost when the transaction ends, which
-is not covered here.
+they reach it and the explain plan is produced. The TLS setup is in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
-require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
-require_once(realpath(dirname(__FILE__)) . '/../../../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-try {
-  new PDO("mysql:host=$MYSQL_TLS_HOST;port=$MYSQL_TLS_PORT;dbname=$MYSQL_TLS_DB",
-          'tls_required', 'tls_required',
-          array(PDO::MYSQL_ATTR_SSL_CA => "$MYSQL_TLS_CERTS/ca.pem"));
-} catch (Exception $e) {
-  die("skip: TLS MySQL server not available: " . $e->getMessage() . "\n");
-}
+require(realpath(dirname(__FILE__)) . '/../../skipif_mysql.inc');
+$tls_profile = 'required';
+require(realpath(dirname(__FILE__)) . '/../skipif_tls.inc');
 */
 
 /*INI
