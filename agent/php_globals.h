@@ -21,7 +21,7 @@ typedef struct _nrphpglobals_t {
   int cli;                  /* Set to 1 if this is a cli/cgi invocation */
   char* ssl_cafile;         /* Path to SSL CA bundle */
   char* ssl_capath;         /* Path to directory of SSL CA certs */
-  char* collector;          /* Collector host */
+  char* collector;          /* Collector host; read per transaction */
   char* proxy;              /* Egress proxy */
   char* daemon;             /* Path to daemon executable */
   char* pidfile;            /* Path to PID file */
