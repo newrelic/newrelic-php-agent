@@ -458,10 +458,14 @@ static PHP_INI_DISP(nr_framework_dh) {
  *   - closes, reopens, clears or rebuilds state they use (the log file, the
  *     log level mask, special_flags), or
  *   - sets a value MINIT changed after registering the entries (enabled).
- * It does not when it stores the value already there and nothing reads the
- * field after MINIT: these settings are system scope, so every thread gets the
- * same value. Refreshes of different new threads never overlap (TSRM holds
- * tsmm_mutex), so only readers on running threads matter.
+ * It does not when it stores the value already there: these settings are
+ * system scope, so every thread gets the same value, and a reader on a
+ * running thread sees no change. Such a store can still happen while another
+ * thread reads the field (high_security and daemon_app_connect_timeout are
+ * read per transaction); that is a data race by the memory model, accepted
+ * because the bytes written equal the bytes already there. Refreshes of
+ * different new threads never overlap (TSRM holds tsmm_mutex), so only
+ * readers on running threads matter.
  */
 #define NR_INI_STARTUP_REFRESH(stage) \
   (ZEND_INI_STAGE_STARTUP == (stage)  \
