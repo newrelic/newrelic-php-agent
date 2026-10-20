@@ -326,8 +326,17 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   int error_reporting;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
-  zend_object* previous_exception = EG(exception);
   zval* stmt = NULL;
+
+  /*
+   * An exception is pending when the application's own call threw, for
+   * example a failed query on PHP 8.1 and later. There is nothing to explain,
+   * and no call into PHP runs while an exception is pending, so the explain
+   * connection could not be created.
+   */
+  if (NULL != EG(exception)) {
+    return NULL;
+  }
 
   error_reporting = nr_php_silence_errors(TSRMLS_C);
   NRTXNGLOBAL(generating_explain_plan) = 1;
@@ -359,9 +368,9 @@ end:
    * On PHP 8.1 and later mysqli throws mysqli_sql_exception when a call on
    * the explain connection fails, for example when the connection is refused.
    * That exception must not reach the application: clear any exception thrown
-   * while the plan was generated, and keep one that was already pending.
+   * while the plan was generated.
    */
-  if ((NULL != EG(exception)) && (EG(exception) != previous_exception)) {
+  if (NULL != EG(exception)) {
     zend_clear_exception();
   }
 
