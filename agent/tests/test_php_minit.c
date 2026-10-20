@@ -502,6 +502,34 @@ static void test_refreshes_of_new_threads_do_not_overlap(void) {
                          overlap_max);
   tlib_php_engine_destroy();
 }
+
+/*
+ * A refresh must not close and reopen a log file that is open. The marker is a
+ * file status flag on the open file description; reopening the file creates a
+ * new description without it. (The fd number is usually reused, so comparing
+ * numbers would not show the reopen.)
+ */
+static void test_refresh_keeps_an_open_log_file(void) {
+  int fd;
+  int flags;
+
+  tlib_php_engine_create("");
+
+  fd = nrl_get_log_fd();
+  tlib_pass_if_true("the log file is open", fd >= 0, "fd=%d", fd);
+  flags = fcntl(fd, F_GETFL);
+  tlib_pass_if_int_equal("the marker is set on the open log file", 0,
+                         fcntl(fd, F_SETFL, flags | O_NONBLOCK));
+
+  zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
+
+  fd = nrl_get_log_fd();
+  tlib_pass_if_true("the log file is still open", fd >= 0, "fd=%d", fd);
+  tlib_pass_if_true("a refresh must not reopen the log file",
+                    fd >= 0 && (fcntl(fd, F_GETFL) & O_NONBLOCK),
+                    "the marker is gone");
+  tlib_php_engine_destroy();
+}
 #endif /* ZTS */
 
 tlib_parallel_info_t parallel_info
@@ -517,5 +545,6 @@ void test_main(void* p NRUNUSED) {
   test_new_thread_does_not_reenable_a_disabled_agent();
   test_refresh_is_invisible_to_running_threads();
   test_refreshes_of_new_threads_do_not_overlap();
+  test_refresh_keeps_an_open_log_file();
 #endif
 }
