@@ -6,7 +6,11 @@
 #include "tlib_php.h"
 
 #ifdef ZTS
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <sched.h>
+#include <time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -15,7 +19,6 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_newrelic.h"
-#include "nr_commands.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "util_logging.h"
@@ -127,6 +130,7 @@ static void test_nr_php_get_daemon_startup_mode(void) {
  * thread (zend_new_thread_end_handler -> zend_ini_refresh_caches). That must
  * not redo the process-global part of the handlers.
  */
+#define TORN_READ_REFRESHES 20000
 #define TEST_NAMING_FN "test_ini_naming_fn"
 #define TEST_CUSTOM_FN "test_ini_custom_fn"
 
@@ -287,39 +291,22 @@ static void test_new_thread_gets_its_own_ini_values(void) {
 static void test_minit_applies_settings_refresh_keeps_them(void) {
   tlib_php_engine_create(
       "newrelic.daemon.collector_host=first.example.com\n"
-      "newrelic.daemon.dont_launch=2\n"
-      "newrelic.special.expensive_node_min=750ms\n"
-      "newrelic.special=no_sql_parsing,show_executes\n"
-      "newrelic.transaction_tracer.internal_functions_enabled=1\n");
+      "newrelic.special=no_sql_parsing,show_executes\n");
 
   tlib_pass_if_str_equal("MINIT applies a string setting", "first.example.com",
                          NR_PHP_PROCESS_GLOBALS(collector));
-  tlib_pass_if_int_equal("MINIT applies dont_launch", 2,
-                         NR_PHP_PROCESS_GLOBALS(no_daemon_launch));
-  tlib_pass_if_time_equal("MINIT applies expensive_node_min",
-                          750 * NR_TIME_DIVISOR_MS,
-                          NR_PHP_PROCESS_GLOBALS(expensive_min));
   tlib_pass_if_int_equal("MINIT applies the no_sql_parsing flag", 1,
                          NR_PHP_PROCESS_GLOBALS(special_flags).no_sql_parsing);
   tlib_pass_if_int_equal("MINIT applies the show_executes flag", 1,
                          NR_PHP_PROCESS_GLOBALS(special_flags).show_executes);
-  tlib_pass_if_int_equal("MINIT applies internal_functions_enabled", 1,
-                         NR_PHP_PROCESS_GLOBALS(instrument_internal));
 
   /* Different from what the INI says, so a rerun would change them. */
-  NR_PHP_PROCESS_GLOBALS(no_daemon_launch) = 0;
-  NR_PHP_PROCESS_GLOBALS(expensive_min) = 1;
   NR_PHP_PROCESS_GLOBALS(special_flags).no_sql_parsing = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_executes = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).enable_path_translated = 1;
-  NR_PHP_PROCESS_GLOBALS(instrument_internal) = 0;
 
   zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
 
-  tlib_pass_if_int_equal("a refresh keeps no_daemon_launch", 0,
-                         NR_PHP_PROCESS_GLOBALS(no_daemon_launch));
-  tlib_pass_if_time_equal("a refresh keeps expensive_min", 1,
-                          NR_PHP_PROCESS_GLOBALS(expensive_min));
   tlib_pass_if_int_equal("a refresh keeps no_sql_parsing", 0,
                          NR_PHP_PROCESS_GLOBALS(special_flags).no_sql_parsing);
   tlib_pass_if_int_equal("a refresh keeps show_executes", 0,
@@ -327,159 +314,192 @@ static void test_minit_applies_settings_refresh_keeps_them(void) {
   tlib_pass_if_int_equal(
       "a refresh keeps enable_path_translated", 1,
       NR_PHP_PROCESS_GLOBALS(special_flags).enable_path_translated);
-  tlib_pass_if_int_equal("a refresh keeps instrument_internal", 0,
-                         NR_PHP_PROCESS_GLOBALS(instrument_internal));
   tlib_php_engine_destroy();
 }
 
 /*
- * Every process-global string and number that an INI handler writes. For each
- * one: set a value the INI cannot produce, refresh, and check it is still
- * there. A handler that repeats its write on the refresh overwrites it.
+ * A bad daemon address makes MINIT disable the agent for the whole process
+ * (it takes "goto disbad": log file closed, no app list). A thread started
+ * afterwards must not turn the agent back on.
  */
-#define REFRESH_STRING_FIELDS(X) \
-  X(daemon_auditlog)             \
-  X(daemon_logfile)              \
-  X(daemon_loglevel)             \
-  X(udspath)                     \
-  X(address_path)                \
-  X(ssl_cafile)                  \
-  X(ssl_capath)                  \
-  X(collector)                   \
-  X(proxy)                       \
-  X(daemon)                      \
-  X(pidfile)                     \
-  X(daemon_app_timeout)          \
-  X(daemon_start_timeout)
+static void* disabled_agent_thread(void* arg NRUNUSED) {
+  (void)ts_resource(0);
+  end_tsrm_thread();
+  return NULL;
+}
 
-#define REFRESH_INT_FIELDS(X)            \
-  X(high_security)                       \
-  X(preload_framework_library_detection) \
-  X(composer_api_per_process_detection)  \
-  X(no_daemon_launch)                    \
-  X(daemon_special_curl_verbose)         \
-  X(daemon_special_integration)          \
-  X(instrument_extensions)               \
-  X(instrument_internal)
+static void test_new_thread_does_not_reenable_a_disabled_agent(void) {
+  pthread_t thread;
 
-#define REFRESH_TIME_FIELDS(X)  \
-  X(daemon_app_connect_timeout) \
-  X(expensive_min)
+  tlib_php_engine_create("newrelic.daemon.address=relative/path\n");
 
-/* One bit each, so flip the value instead of using a sentinel. */
-#define REFRESH_UTILIZATION_FIELDS(X) \
-  X(aws) X(azure) X(gcp) X(pcf) X(docker) X(kubernetes)
+  tlib_pass_if_int_equal("a bad daemon address disables the agent in MINIT", 0,
+                         NR_PHP_PROCESS_GLOBALS(enabled));
+  tlib_pass_if_int_equal("MINIT closes the log file of a disabled agent", -1,
+                         nrl_get_log_fd());
 
-#define REFRESH_SENTINEL 12345
-#define REFRESH_SENTINEL_STR "sentinel."
+  pthread_create(&thread, NULL, disabled_agent_thread, NULL);
+  pthread_join(thread, NULL);
 
-static void test_refresh_keeps_every_setting(void) {
-  int flipped[6];
-  int n;
+  tlib_pass_if_int_equal("a new thread must not re-enable a disabled agent", 0,
+                         NR_PHP_PROCESS_GLOBALS(enabled));
+  tlib_pass_if_int_equal("a new thread must not reopen the log file", -1,
+                         nrl_get_log_fd());
 
-  /* Settings that a handler only writes when the INI value is not empty. */
+  tlib_php_request_start();
+  tlib_pass_if_null("a request on a disabled agent starts no transaction",
+                    NRPRG(txn));
+  tlib_php_request_end();
+
+  tlib_php_engine_destroy();
+}
+
+/*
+ * Torn reads. While a thread starts, its refresh used to clear and rebuild
+ * shared state that threads already running read without a lock. Here one
+ * thread polls that state while another runs many refreshes. With the guards
+ * the state is never written, so the reader cannot see anything odd; without
+ * them it does, with very high probability.
+ */
+typedef struct {
+  volatile int stop;
+  volatile int started;
+  volatile long closed_log_fd;   /* log fd that was closed under the reader */
+  volatile long empty_level;     /* error level reported as not printable */
+  volatile long empty_collector; /* collector read as an empty string */
+  volatile long flag_off;        /* a configured special flag read as off */
+} torn_reader_t;
+
+static void* torn_reader_thread(void* arg) {
+  torn_reader_t* r = (torn_reader_t*)arg;
+
+  r->started = 1;
+  while (!r->stop) {
+    int fd = nrl_get_log_fd();
+    char* collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
+
+    if (fd >= 0 && -1 == fcntl(fd, F_GETFD) && EBADF == errno) {
+      r->closed_log_fd++;
+    }
+    if (!nrl_should_print(NRL_ERROR, NRL_AGENT)) {
+      r->empty_level++;
+    }
+    if (NULL != collector && '\0' == collector[0]) {
+      r->empty_collector++;
+    }
+    if (0 == NR_PHP_PROCESS_GLOBALS(special_flags).no_sql_parsing) {
+      r->flag_off++;
+    }
+    nr_free(collector);
+  }
+  return NULL;
+}
+
+static void test_refresh_is_invisible_to_running_threads(void) {
+  static torn_reader_t reader;
+  pthread_t thread;
+  struct timespec start;
+  struct timespec now;
+  int i;
+
+  memset(&reader, 0, sizeof(reader));
   tlib_php_engine_create(
-      "newrelic.daemon.dont_launch=2\n"
-      "newrelic.daemon.special.curl_verbose=1\n"
-      "newrelic.daemon.special.integration=1\n"
-      "newrelic.daemon.app_connect_timeout=3s\n"
-      "newrelic.special.appinfo_timeout=5s\n"
-      "newrelic.special.expensive_node_min=750ms\n"
-      "newrelic.high_security=0\n"
-      "newrelic.special=no_sql_parsing\n"
-      "newrelic.transaction_tracer.internal_functions_enabled=1\n");
+      "newrelic.daemon.collector_host=collector.example.com\n"
+      "newrelic.special=no_sql_parsing\n");
 
-#define SET_STRING(f)                 \
-  nr_free(NR_PHP_PROCESS_GLOBALS(f)); \
-  NR_PHP_PROCESS_GLOBALS(f) = nr_strdup(REFRESH_SENTINEL_STR #f);
-  REFRESH_STRING_FIELDS(SET_STRING)
-#undef SET_STRING
-#define SET_NUMBER(f) NR_PHP_PROCESS_GLOBALS(f) = REFRESH_SENTINEL;
-  REFRESH_INT_FIELDS(SET_NUMBER)
-  REFRESH_TIME_FIELDS(SET_NUMBER)
-#undef SET_NUMBER
-  n = 0;
-#define FLIP(f)                                        \
-  flipped[n] = !NR_PHP_PROCESS_GLOBALS(utilization).f; \
-  NR_PHP_PROCESS_GLOBALS(utilization).f = flipped[n];  \
-  n++;
-  REFRESH_UTILIZATION_FIELDS(FLIP)
-#undef FLIP
-  nr_cmd_appinfo_timeout_us = REFRESH_SENTINEL;
+  pthread_create(&thread, NULL, torn_reader_thread, &reader);
+  while (!reader.started) {
+    sched_yield();
+  }
+  /*
+   * Stop after a fixed number of refreshes or after a second, whichever comes
+   * first: under valgrind a refresh is far slower.
+   */
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  for (i = 0; i < TORN_READ_REFRESHES; i++) {
+    zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    if (now.tv_sec - start.tv_sec >= 1) {
+      break;
+    }
+  }
+  reader.stop = 1;
+  pthread_join(thread, NULL);
 
-  zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
-
-#define CHECK_STRING(f)                                                  \
-  tlib_pass_if_str_equal("a refresh keeps " #f, REFRESH_SENTINEL_STR #f, \
-                         NR_PHP_PROCESS_GLOBALS(f));
-  REFRESH_STRING_FIELDS(CHECK_STRING)
-#undef CHECK_STRING
-#define CHECK_NUMBER(f)                                            \
-  tlib_pass_if_time_equal("a refresh keeps " #f, REFRESH_SENTINEL, \
-                          NR_PHP_PROCESS_GLOBALS(f));
-  REFRESH_INT_FIELDS(CHECK_NUMBER)
-  REFRESH_TIME_FIELDS(CHECK_NUMBER)
-#undef CHECK_NUMBER
-  n = 0;
-#define CHECK_FLIP(f)                                                   \
-  tlib_pass_if_int_equal("a refresh keeps utilization." #f, flipped[n], \
-                         NR_PHP_PROCESS_GLOBALS(utilization).f);        \
-  n++;
-  REFRESH_UTILIZATION_FIELDS(CHECK_FLIP)
-#undef CHECK_FLIP
-  tlib_pass_if_time_equal("a refresh keeps the appinfo timeout",
-                          REFRESH_SENTINEL, nr_cmd_appinfo_timeout_us);
-
-  /* Not every one of these is freed at MSHUTDOWN. */
-#define FREE_STRING(f)                \
-  nr_free(NR_PHP_PROCESS_GLOBALS(f)); \
-  NR_PHP_PROCESS_GLOBALS(f) = NULL;
-  REFRESH_STRING_FIELDS(FREE_STRING)
-#undef FREE_STRING
+  printf(
+      "TORN closed_fd=%ld empty_level=%ld empty_collector=%ld flag_off=%ld\n",
+      reader.closed_log_fd, reader.empty_level, reader.empty_collector,
+      reader.flag_off);
+  tlib_pass_if_long_equal("the log fd is never closed under a reader", 0,
+                          reader.closed_log_fd);
+  tlib_pass_if_long_equal("the log level mask is never empty for a reader", 0,
+                          reader.empty_level);
+  tlib_pass_if_long_equal("collector is never empty for a reader", 0,
+                          reader.empty_collector);
+  tlib_pass_if_long_equal("a configured special flag never reads as off", 0,
+                          reader.flag_off);
   tlib_php_engine_destroy();
 }
 
 /*
- * Catch-all for settings the table above does not list, including ones added
- * later: poison the whole process-global struct, refresh, and require every
- * byte to be as poisoned. A handler that writes any field changes it, and one
- * that frees a string or object in it crashes on the poison pointer. This
- * runs in a child so that a crash is a failure and not the end of the tests.
+ * The guards, and not guarding settings that only MINIT reads, rely on PHP
+ * running the refreshes of different new threads one at a time:
+ * ts_resource_ex holds tsmm_mutex while it runs the end-of-thread handler
+ * that refreshes the INI. This wraps that handler, counts how many run at the
+ * same time (sleeping inside so an overlap would show), and requires one.
  */
-static void test_refresh_writes_no_process_global(void) {
-  pid_t pid;
-  int status = 0;
+static tsrm_thread_end_func_t overlap_original_handler;
+static volatile int overlap_running;
+static volatile int overlap_max;
+static pthread_barrier_t overlap_barrier;
+
+static void overlap_counting_handler(THREAD_T thread_id) {
+  int now = __sync_add_and_fetch(&overlap_running, 1);
+  int seen;
+
+  while ((seen = overlap_max) < now
+         && !__sync_bool_compare_and_swap(&overlap_max, seen, now)) {
+  }
+  usleep(300);
+  if (NULL != overlap_original_handler) {
+    overlap_original_handler(thread_id);
+  }
+  __sync_fetch_and_sub(&overlap_running, 1);
+}
+
+static void* overlap_thread(void* arg NRUNUSED) {
+  pthread_barrier_wait(&overlap_barrier);
+  (void)ts_resource(0);
+  end_tsrm_thread();
+  return NULL;
+}
+
+static void test_refreshes_of_new_threads_do_not_overlap(void) {
+  enum { THREADS = 16, ROUNDS = 20 };
+  pthread_t threads[THREADS];
+  int round;
+  int i;
 
   tlib_php_engine_create("");
-  fflush(NULL);
+  overlap_max = 0;
+  overlap_original_handler
+      = (tsrm_thread_end_func_t)tsrm_set_new_thread_end_handler(
+          overlap_counting_handler);
 
-  pid = fork();
-  if (0 == pid) {
-    static nrphpglobals_t saved;
-    static nrphpglobals_t expected;
-    int same;
-
-    memcpy(&saved, &nr_php_per_process_globals, sizeof(saved));
-    memset(&nr_php_per_process_globals, 0xA5,
-           sizeof(nr_php_per_process_globals));
-    NR_PHP_PROCESS_GLOBALS(ini_startup_done) = 1;
-    memcpy(&expected, &nr_php_per_process_globals, sizeof(expected));
-
-    zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
-
-    same
-        = 0 == memcmp(&expected, &nr_php_per_process_globals, sizeof(expected));
-    /* Put the pointers back and shut the engine down, so a leak check of
-     * this child stays quiet. */
-    memcpy(&nr_php_per_process_globals, &saved, sizeof(saved));
-    tlib_php_engine_destroy();
-    _exit(same ? 0 : 1);
+  for (round = 0; round < ROUNDS; round++) {
+    pthread_barrier_init(&overlap_barrier, NULL, THREADS);
+    for (i = 0; i < THREADS; i++) {
+      pthread_create(&threads[i], NULL, overlap_thread, NULL);
+    }
+    for (i = 0; i < THREADS; i++) {
+      pthread_join(threads[i], NULL);
+    }
+    pthread_barrier_destroy(&overlap_barrier);
   }
-  waitpid(pid, &status, 0);
-  tlib_pass_if_true("a refresh writes no process-global field and frees none",
-                    WIFEXITED(status) && 0 == WEXITSTATUS(status),
-                    "child status 0x%x", status);
 
+  (void)tsrm_set_new_thread_end_handler(overlap_original_handler);
+  tlib_pass_if_int_equal("refreshes of new threads run one at a time", 1,
+                         overlap_max);
   tlib_php_engine_destroy();
 }
 #endif /* ZTS */
@@ -494,7 +514,8 @@ void test_main(void* p NRUNUSED) {
   test_new_threads_keep_process_globals();
   test_new_thread_gets_its_own_ini_values();
   test_minit_applies_settings_refresh_keeps_them();
-  test_refresh_keeps_every_setting();
-  test_refresh_writes_no_process_global();
+  test_new_thread_does_not_reenable_a_disabled_agent();
+  test_refresh_is_invisible_to_running_threads();
+  test_refreshes_of_new_threads_do_not_overlap();
 #endif
 }
