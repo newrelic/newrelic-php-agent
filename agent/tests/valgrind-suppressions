@@ -1,15 +1,19 @@
 # PHP 8.4 and later: pgsql's GINIT allocates persistent regex strings for
 # every thread and only MSHUTDOWN (once, for the first thread) releases them,
 # so each thread that starts and exits through TSRM leaks them. The ZTS tests
-# that start threads (test_php_minit) hit this.
+# that start threads (test_php_minit) hit this. Valgrind reports the block as
+# definitely or possibly lost, depending on stale pointers left in the freed
+# thread's memory. Only the allocation made when TSRM creates a new thread's
+# resources is matched.
 {
    <PHP 8.4+ pgsql per-thread globals leak>
    Memcheck:Leak
-   match-leak-kinds: definite
+   match-leak-kinds: definite,possible
    fun:malloc
    fun:__zend_malloc
    fun:zm_globals_ctor_pgsql
-   ...
+   fun:allocate_new_resource
+   fun:ts_resource_ex
 }
 
 {
