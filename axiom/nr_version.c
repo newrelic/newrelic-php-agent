@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is gemstones
  *
- *   snapdragon         23Jan2024 (10.16)
  *   tulip              21Feb2024 (10.17)
  *   ulmus              04Mar2024 (10.18)
  *   viburnum           18Mar2024 (10.19)
@@ -52,8 +51,9 @@
  *   sapphire           29Jun2026 (12.8)
  *   topaz              27Jul2026 (12.9)
  *   unakite            31Aug2026 (12.10)
+ *   variscite          21Sept2026 (12.11)
  */
-#define NR_CODENAME "variscite"
+#define NR_CODENAME "witherite"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

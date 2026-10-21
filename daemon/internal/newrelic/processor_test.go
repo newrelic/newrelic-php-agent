@@ -57,7 +57,6 @@ var (
 	idTwo = AgentRunID("two")
 
 	data        = JSONString(`{"age":29}`)
-	encoded     = `"eJyqVkpMT1WyMrKsBQQAAP//EVgDDw=="`
 	sampleTrace = &TxnTrace{Data: data}
 
 	sampleCustomEvent = []byte("half birthday")
@@ -192,6 +191,10 @@ var (
 	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
 		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
 	})
+	txnMetricSample = AggregaterIntoFn(func(h *Harvest) {
+		h.Metrics.AddCount("WebTransaction/Uri/race", "", 1, 0)
+		h.Metrics.AddValue("WebTransactionTotalTime/Uri/race", "", 1, 0)
+	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for range times {
@@ -263,10 +266,26 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 
 	<-m.p.trackProgress // unblock processor after harvest
 
+	encoded, err := collector.CompressEncode(data)
+	if err != nil {
+		t.Fatal("failed to encode data: ", err)
+	}
+
+	decoded, err := collector.UncompressDecode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(decoded) != string(data) {
+		t.Fatalf("expected: %s, got: %s", data, decoded)
+	}
+
+	encoded = `"` + encoded + `"`
+
 	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
 
 	if string(cp.data) != toTest {
-		t.Error(string(append(cp.data, cp2.data...)))
+		t.Errorf("expected: %s, got: %s", toTest, string(cp.data))
 	}
 	time1 := strings.Split(string(cp2.data), ",")[1]
 	time2 := strings.Split(string(cp2.data), ",")[2]
@@ -1806,4 +1825,40 @@ func TestMissingAgentAndCollectorHarvestLimit(t *testing.T) {
 	}
 
 	m.p.quit()
+}
+
+func TestProcessorHarvestDefaultDataMetricRace(t *testing.T) {
+
+	m := NewMockedProcessor(500)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	ah := m.p.harvests[idOne]
+
+	// Pre-fill the client replies so that the harvest goroutines never have to
+	// synchronize with this goroutine while the race window is open.
+	for range 400 {
+		m.clientReturn <- ClientReturn{nil, nil, 202}
+	}
+
+	for range 20 {
+		m.TxnData(t, idOne, txnMetricSample)
+
+		m.processorHarvestChan <- ProcessorHarvest{
+			AppHarvest: ah,
+			ID:         idOne,
+			Type:       HarvestDefaultData,
+		}
+
+		// Do not wait for the harvest to finish: queue transaction data that
+		// the processor aggregates while the harvest goroutine is running.
+		m.p.IncomingTxnData(idOne, txnMetricSample)
+
+		<-m.p.trackProgress // harvest
+		<-m.p.trackProgress // txn data
+	}
+
+	m.QuitTestProcessor()
 }
