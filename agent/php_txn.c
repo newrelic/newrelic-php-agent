@@ -1257,8 +1257,7 @@ void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC) {
 
 static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
                                                       const char* content_type,
-                                                      int content_length
-                                                          TSRMLS_DC) {
+                                                      int content_length) {
   char* response_content_type = NULL;
 
   if (NULL == txn) {
@@ -1270,9 +1269,9 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
   }
 
   if (NULL == content_type) {
-    response_content_type = nr_php_get_response_content_type(TSRMLS_C);
+    response_content_type = nr_php_get_response_content_type();
     content_type = response_content_type;
-    content_length = nr_php_get_response_content_length(TSRMLS_C);
+    content_length = nr_php_get_response_content_length();
   }
 
   nr_txn_set_string_attribute(txn, nr_txn_response_content_type, content_type);
@@ -1289,7 +1288,7 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
 static nr_status_t nr_php_txn_end_internal(int ignoretxn,
                                            int in_post_deactivate,
                                            const char* content_type,
-                                           int content_length TSRMLS_DC) {
+                                           int content_length) {
   nr_status_t ret;
 
   if (NULL == NRPRG(txn)) {
@@ -1362,7 +1361,7 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
     nr_framework_create_metric(TSRMLS_C);
 
     nr_php_txn_set_response_header_attributes(txn, content_type,
-                                              content_length TSRMLS_CC);
+                                              content_length);
 
     nr_php_txn_handle_fpm_error(txn TSRMLS_CC);
 
@@ -1432,8 +1431,7 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
 }
 
 nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
-  return nr_php_txn_end_internal(ignoretxn, in_post_deactivate, NULL,
-                                 -1 TSRMLS_CC);
+  return nr_php_txn_end_internal(ignoretxn, in_post_deactivate, NULL, -1);
 }
 
 nr_status_t nr_php_txn_end_with_response_headers(const char* content_type,
