@@ -37,9 +37,6 @@ openssl req -newkey rsa:2048 -nodes -subj "/CN=nr_tls_client" \
 openssl x509 -req -in client.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial \
   -days 3650 -out client-cert.pem 2> /dev/null
 
-openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-  -subj "/CN=Other CA" -keyout other-ca-key.pem -out other-ca.pem 2> /dev/null
-
 rm -f server.csr client.csr san.cnf ca.srl
 
 # The MySQL server runs as another user inside its container.

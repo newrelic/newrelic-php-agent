@@ -13,26 +13,19 @@ password, so nothing it saves replaces the first link's password. If the first
 link's data were still kept, the explain connection would log in with the wrong
 password and be refused, and the query would have no explain plan.
 
-The users are in tests/tls. The test is skipped without the TLS test server and
-before PHP 8.1, where a null password falls back to mysqli.default_pw.
+The users are in tests/tls. The test is skipped only if
+MYSQL_TLS_HOST is not set or PHP is below 8.0, where the link data is not kept
+across transactions; an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80100) {
-  die("skip: a null password uses mysqli.default_pw from PHP 8.1\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'nr_nopass', null,
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: user nr_nopass not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'nopass';
+require("skipif_tls.inc");
 */
 
 /*INI

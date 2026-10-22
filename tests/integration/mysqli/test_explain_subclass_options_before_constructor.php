@@ -17,26 +17,28 @@ discards what is saved for that handle, because a new link can take the handle
 of a freed one; an object it has seen keeps it.
 
 The TLS test server is used so that the test has a database where it can create
-tables; the test is skipped without it and on PHP below 8.0, where the agent
-cannot tell a new link from one it has seen.
+tables. The test is skipped only if MYSQL_TLS_HOST is not set, on PHP below 8.0,
+where the agent cannot tell a new link from one it has seen, and on PHP 8.5 and
+above; an unusable server or user fails it.
+
+PHP 8.5 and above throw "Cannot call constructor twice" when the constructor
+runs on a link that init() or an earlier constructor call has initialized, so
+the pattern does not exist there. The same options can be set before
+real_connect() on those versions, and
+test_explain_subclass_options_before_real_connect.php covers that.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80000) {
-  die("skip: PHP >= 8.0 required\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 not supported\n");
 }
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'optional';
+require("skipif_tls.inc");
 */
 
 /*INI

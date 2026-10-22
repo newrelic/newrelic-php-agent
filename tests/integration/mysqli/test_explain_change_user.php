@@ -11,7 +11,7 @@ database that the application switched to.
 The agent opens its own connection to run EXPLAIN with the user, password and
 database that it saved when the application connected. mysqli_change_user()
 replaces all three on the application's connection. The test connects to
-information_schema and then changes user to a table in the test database. The
+information_schema and then changes to the test database, as the same user. The
 query names the table without a database, so the explain connection can resolve
 it only if the agent saved the new database. The TLS test server is used so that
 the test has a database where it can create tables.
