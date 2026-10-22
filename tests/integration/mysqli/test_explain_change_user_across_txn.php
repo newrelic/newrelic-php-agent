@@ -7,9 +7,9 @@
 /*DESCRIPTION
 What mysqli_change_user() saved SHALL be kept after the transaction in which it
 was called has ended. The test connects to information_schema and then changes
-user to the test database. The query in the second transaction names a table
-without a database, so the explain connection can resolve it only if the agent
-kept the new database.
+to the test database, as the same user. The query in the second transaction
+names a table without a database, so the explain connection can resolve it only
+if the agent kept the new database.
 
 The table is created by tests/tls/init.sql. The test is skipped without the TLS
 test server and on PHP below 7.4.
