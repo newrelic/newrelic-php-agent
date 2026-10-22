@@ -615,6 +615,11 @@ NR_INNER_WRAPPER(mysqli_close) {
                                   ZEND_NUM_ARGS() TSRMLS_CC, "|o",
                                   &mysqli_obj)) {
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
+    if (nr_php_mysqli_zval_is_link(mysqli_obj)) {
+      nr_mysqli_metadata_remove(
+          NRTXNGLOBAL(mysqli_links),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+    }
   }
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -650,7 +655,13 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
@@ -679,8 +690,12 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
   if (nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
     mysqli_obj = return_value;
-  } else {
+  } else if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli_connect")) {
     /*
+     * Not for the function mysqli_connect(): when it fails it returns false,
+     * and the object in scope is then whatever object called it, such as a
+     * mysqli subclass that is connected to another server.
+     *
      * We have to get the object instance the constructor has been called on,
      * but because of the way MySQLi object instantiation is handled (with a
      * custom create_object handler), the zval returned by
@@ -704,6 +719,18 @@ NR_INNER_WRAPPER(mysqli_construct) {
     char* password_term = password ? nr_strndup(password, password_len) : NULL;
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
+
+    /*
+     * PHP reuses the handle of a freed object, so a new link must not inherit
+     * what was saved for an earlier one (its password, TLS settings and
+     * options). mysqli::connect() is called on a link that exists already and
+     * may have had options and TLS settings set, so it keeps them.
+     */
+    if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
+      nr_mysqli_metadata_remove(
+          NRTXNGLOBAL(mysqli_links),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+    }
 
     nr_mysqli_metadata_set_connect(
         NRTXNGLOBAL(mysqli_links),
@@ -731,18 +758,20 @@ NR_INNER_WRAPPER(mysqli_construct) {
 NR_INNER_WRAPPER(mysqli_options) {
   zval* mysqli_obj = NULL;
   zend_long option;
-  char* value = NULL;
-  nr_string_len_t value_len = 0;
+  zval* value_zv = NULL;
   int zcaught = 0;
 
+  /*
+   * The value is taken as a zval rather than a string: under strict_types=1 a
+   * string parameter rejects the integers and booleans that most options take,
+   * and the option would then never reach the explain connection.
+   */
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "ols", &mysqli_obj,
-                                  &option, &value, &value_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "olz", &mysqli_obj, &option, &value_zv)) {
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
-                                    &value, &value_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "lz", &option, &value_zv)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -753,16 +782,90 @@ NR_INNER_WRAPPER(mysqli_options) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-  if (value && (0 == NRTXNGLOBAL(generating_explain_plan))
+  if (value_zv && (0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
       && nr_php_is_zval_true(return_value)) {
-    char* value_term = nr_strndup(value, value_len);
+    char* value_term = nr_php_mysqli_option_to_string(value_zv);
 
-    nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
-                                  Z_OBJ_HANDLE_P(mysqli_obj), option,
-                                  value_term);
+    if (value_term) {
+      nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
+                                    Z_OBJ_HANDLE_P(mysqli_obj), option,
+                                    value_term);
+    }
 
     nr_free(value_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_ssl_set ( object $link, ?string $key, ?string $certificate,
+ *                         ?string $ca_certificate, ?string $ca_path,
+ *                         ?string $cipher_algos )
+ *   bool mysqli::ssl_set ( ?string $key, ?string $certificate,
+ *                          ?string $ca_certificate, ?string $ca_path,
+ *                          ?string $cipher_algos )
+ *
+ * The settings are kept with the link metadata so they can be replayed on the
+ * connection that is opened to get an explain plan.
+ */
+NR_INNER_WRAPPER(mysqli_ssl_set) {
+  zval* mysqli_obj = NULL;
+  char* key = NULL;
+  nr_string_len_t key_len = 0;
+  char* cert = NULL;
+  nr_string_len_t cert_len = 0;
+  char* ca = NULL;
+  nr_string_len_t ca_len = 0;
+  char* capath = NULL;
+  nr_string_len_t capath_len = 0;
+  char* cipher = NULL;
+  nr_string_len_t cipher_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os!s!s!s!s!", &mysqli_obj, &key, &key_len,
+                                  &cert, &cert_len, &ca, &ca_len, &capath,
+                                  &capath_len, &cipher, &cipher_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s!s!s!s!s!", &key, &key_len, &cert,
+                                    &cert_len, &ca, &ca_len, &capath,
+                                    &capath_len, &cipher, &cipher_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
+      && nr_php_is_zval_true(return_value)) {
+    char* key_term = key ? nr_strndup(key, key_len) : NULL;
+    char* cert_term = cert ? nr_strndup(cert, cert_len) : NULL;
+    char* ca_term = ca ? nr_strndup(ca, ca_len) : NULL;
+    char* capath_term = capath ? nr_strndup(capath, capath_len) : NULL;
+    char* cipher_term = cipher ? nr_strndup(cipher, cipher_len) : NULL;
+
+    nr_mysqli_metadata_set_ssl(NRTXNGLOBAL(mysqli_links),
+                               Z_OBJ_HANDLE_P(mysqli_obj), key_term, cert_term,
+                               ca_term, capath_term, cipher_term);
+
+    nr_free(key_term);
+    nr_free(cert_term);
+    nr_free(ca_term);
+    nr_free(capath_term);
+    nr_free(cipher_term);
   }
 
   if (zcaught) {
@@ -880,14 +983,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-  /* PHP 8.1 and later will report a deprecation warning if null is sent where
-   * a non-null argument value is expected.  For these PHP versions we use the
-   * same argument type specification as the mysqli::real_connect() extension
-   * uses to avoid creating this deprecation warning.
-   * For older PHPs continue to use the same specification string as previously
-   * to minimize any chances of introducing new problems.
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user. From PHP 8.1 a null sent where a non-null
+   * argument value is expected also reports a deprecation warning. For these
+   * PHP versions we use the same argument type specification as the
+   * mysqli::real_connect() extension uses. PHP 7.2 and 7.3 treat a null user
+   * as an empty string, so they keep the previous specification.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* proc_type_spec = "o|s!s!s!s!l!s!l";
   const char* oo_type_spec = "|s!s!s!s!l!s!l";
@@ -956,6 +1062,67 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_change_user ( object $link, string $user, string $password,
+ *                             ?string $database )
+ *   bool mysqli::change_user ( string $user, string $password,
+ *                              ?string $database )
+ *
+ * The explain connection has to log in as the user the application is
+ * currently using, so the stored credentials are replaced when it succeeds.
+ */
+NR_INNER_WRAPPER(mysqli_change_user) {
+  zval* mysqli_obj = NULL;
+  char* user = NULL;
+  nr_string_len_t user_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  char* database = NULL;
+  nr_string_len_t database_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "oss|s!", &mysqli_obj, &user, &user_len,
+                                  &password, &password_len, &database,
+                                  &database_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "ss|s!", &user, &user_len, &password,
+                                    &password_len, &database, &database_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (user && (0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
+      && nr_php_is_zval_true(return_value)) {
+    char* user_term = nr_strndup(user, user_len);
+    char* password_term = nr_strndup(password, password_len);
+    char* database_term = database ? nr_strndup(database, database_len) : NULL;
+
+    nr_mysqli_metadata_set_user(NRTXNGLOBAL(mysqli_links),
+                                Z_OBJ_HANDLE_P(mysqli_obj), user_term,
+                                password_term, database_term);
+
+    nr_free(user_term);
+    nr_free(password_term);
+    nr_free(database_term);
   }
 
   if (zcaught) {
@@ -1459,6 +1626,36 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
                                     sqlstrlen TSRMLS_CC);
     }
+  }
+}
+
+/*
+ * Handle
+ *   object mysqli_init ()
+ *
+ * Creates a link that has not connected yet: options and TLS settings are set
+ * on it before it does.
+ *
+ * The method mysqli::init() is not wrapped: it re-initializes an object that
+ * may already carry options and TLS settings, which real_connect() must keep.
+ * A subclass that never calls the parent constructor and reuses the handle of
+ * a freed link is a known gap.
+ */
+NR_INNER_WRAPPER(mysqli_init) {
+  int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                         INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(return_value)) {
+    /* A new link must not inherit what was saved for an earlier one. */
+    nr_mysqli_metadata_remove(
+        NRTXNGLOBAL(mysqli_links),
+        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(return_value));
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
   }
 }
 
@@ -2267,6 +2464,53 @@ NR_INNER_WRAPPER(pdo_construct) {
     /* NOTREACHED */
   }
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+/*
+ * Handle
+ *   static PDO::connect (string $dsn, ?string $username = null,
+ *                        ?string $password = null, ?array $options = null)
+ *
+ * PDO::connect() and the connect() methods of the driver subclasses create the
+ * connection without calling the constructor, so the options have to be
+ * persisted here as well. Our interest is the same as in pdo_construct: the
+ * options are the only part of the connection metadata that the pdo_dbh_t
+ * structure does not hold.
+ */
+NR_INNER_WRAPPER(pdo_connect) {
+  char* dsn = NULL;
+  nr_string_len_t dsn_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  zval* options = NULL;
+  char* username = NULL;
+  nr_string_len_t username_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|s!s!a!", &dsn, &dsn_len,
+          &username, &username_len, &password, &password_len, &options)) {
+    options = NULL;
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The new connection is the return value. nr_php_pdo_options_save checks
+   * both the PDO object and the options array for validity.
+   */
+  if (0 == zcaught) {
+    nr_php_pdo_options_save(return_value, options);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+#endif
 
 /*
  * Handle
@@ -3117,12 +3361,16 @@ NR_OUTER_WRAPPER(mysql_unbuffered_query)
 NR_OUTER_WRAPPER(mysql_db_query)
 
 NR_OUTER_WRAPPER(mysqli_close)
+NR_OUTER_WRAPPER(mysqli_init)
 NR_OUTER_WRAPPER(mysqli_connect)
 NR_OUTER_WRAPPER(mysqli_multi_query)
 NR_OUTER_WRAPPER(mysqli_options)
 NR_OUTER_WRAPPER(mysqli_prepare)
 NR_OUTER_WRAPPER(mysqli_query)
 NR_OUTER_WRAPPER(mysqli_real_connect)
+NR_OUTER_WRAPPER(mysqli_ssl_set)
+NR_OUTER_WRAPPER(mysqli_change_user)
+NR_OUTER_WRAPPER(mysqli_set_opt)
 NR_OUTER_WRAPPER(mysqli_real_query)
 NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
@@ -3134,6 +3382,10 @@ NR_OUTER_WRAPPER(mysqliC_options)
 NR_OUTER_WRAPPER(mysqliC_prepare)
 NR_OUTER_WRAPPER(mysqliC_query)
 NR_OUTER_WRAPPER(mysqliC_real_connect)
+NR_OUTER_WRAPPER(mysqliC_ssl_set)
+NR_OUTER_WRAPPER(mysqliC_change_user)
+NR_OUTER_WRAPPER(mysqliC_connect)
+NR_OUTER_WRAPPER(mysqliC_set_opt)
 NR_OUTER_WRAPPER(mysqliC_real_query)
 NR_OUTER_WRAPPER(mysqliC_select_db)
 NR_OUTER_WRAPPER(mysqliC_stmt_init)
@@ -3505,6 +3757,9 @@ NR_OUTER_WRAPPER(sqlite3_querysingle)
 NR_OUTER_WRAPPER(sqlite3_exec)
 
 NR_OUTER_WRAPPER(pdo_construct)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+NR_OUTER_WRAPPER(pdo_connect)
+#endif
 NR_OUTER_WRAPPER(pdo_query)
 NR_OUTER_WRAPPER(pdo_exec)
 NR_OUTER_WRAPPER(pdo_prepare)
@@ -3607,6 +3862,7 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysql_db_query", mysql_db_query, mysql_db_query, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli_close", mysqli_close, mysqli_close, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_init", mysqli_init, mysqli_init, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_connect", mysqli_connect, mysqli_construct, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_multi_query", mysqli_multi_query,
                       mysqli_general_query, 0, 0)
@@ -3617,6 +3873,11 @@ void nr_php_generate_internal_wrap_records(void) {
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_real_connect", mysqli_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_ssl_set", mysqli_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_change_user", mysqli_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli_set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli_set_opt", mysqli_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_select_db", mysqli_select_db, mysqli_select_db, 0,
                       0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
@@ -3634,6 +3895,14 @@ void nr_php_generate_internal_wrap_records(void) {
                       0)
   NR_INTERNAL_WRAPREC("mysqli::real_connect", mysqliC_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::ssl_set", mysqliC_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::change_user", mysqliC_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli::connect() is an alias of mysqli_connect(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::connect", mysqliC_connect, mysqli_construct, 0,
+                      0)
+  /* mysqli::set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::set_opt", mysqliC_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::real_query", mysqliC_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::select_db", mysqliC_select_db, mysqli_select_db,
@@ -4310,6 +4579,13 @@ void nr_php_generate_internal_wrap_records(void) {
                       0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct,
                       0, 0)
+
+  NR_INTERNAL_WRAPREC("pdo::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\firebird::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::connect", pdo_connect, pdo_connect, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdo::query", pdo_query, pdo_query, 0, 0)
 #if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO

@@ -446,6 +446,7 @@ endif
 include make/release.mk
 
 test-services-start:
+	tests/tls/generate-certs.sh
 	docker compose --profile test pull $(SERVICES)
 	docker compose --profile test up --wait --remove-orphans -d $(SERVICES)
 
@@ -457,6 +458,7 @@ test-services-stop:
 #
 
 devenv-image:
+	tests/tls/generate-certs.sh
 	@docker compose --profile dev build devenv
 
 dev-shell: devenv-image

@@ -341,6 +341,36 @@ static void test_create_datastore_instance() {
                 }));
 }
 
+static void test_option_to_string() {
+  struct {
+    const char* expr;
+    const char* expected; /* NULL: not captured */
+  } cases[] = {
+      {"'abc'", "abc"},       {"''", ""},     {"42", "42"},
+      {"true", "1"},          {"false", "0"}, {"1.5", "1.5"},
+      {"1.0", "1"},           {"null", ""},   {"[1]", NULL},
+      {"new stdClass", NULL},
+  };
+  size_t i;
+
+  tlib_pass_if_null("NULL value", nr_php_mysqli_option_to_string(NULL));
+
+  tlib_php_request_start();
+  for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+    zval* value = tlib_php_request_eval_expr(cases[i].expr);
+    char* term = nr_php_mysqli_option_to_string(value);
+
+    if (cases[i].expected) {
+      tlib_pass_if_str_equal(cases[i].expr, cases[i].expected, term);
+    } else {
+      tlib_pass_if_null(cases[i].expr, term);
+    }
+    nr_free(term);
+    nr_php_zval_free(&value);
+  }
+  tlib_php_request_end();
+}
+
 static void test_strip_persistent_prefix(void) {
   tlib_pass_if_null("a NULL host should return NULL",
                     nr_php_mysqli_strip_persistent_prefix(NULL));
@@ -375,6 +405,7 @@ void test_main(void* p NRUNUSED) {
     test_default_port_host_and_socket();
     test_get_host_and_port_path_or_id();
     test_create_datastore_instance();
+    test_option_to_string();
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
