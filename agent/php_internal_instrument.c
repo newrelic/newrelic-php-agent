@@ -659,6 +659,8 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zend_long port = 0;
   zval* mysqli_obj = NULL;
   int zcaught = 0;
+  zend_object* previous_exception = EG(exception);
+  int keep_saved = 0;
 
   /*
    * From PHP 7.4 a null host, user or password is replaced by the
@@ -715,10 +717,22 @@ NR_INNER_WRAPPER(mysqli_construct) {
     }
   }
 
-  nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
-                                        database TSRMLS_CC);
+  /*
+   * From PHP 8.5 a constructor called on a link that is still open throws
+   * and leaves the connection as it was. What the call was given is then not
+   * what the link uses, so the saved data and the datastore instance of a link
+   * the agent already knows are kept.
+   */
+  keep_saved = (NULL != EG(exception)) && (EG(exception) != previous_exception)
+               && mysqli_obj && nr_php_mysqli_metadata_known(mysqli_obj);
 
-  if (mysqli_obj && (0 == NRTXNGLOBAL(generating_explain_plan))) {
+  if (!keep_saved) {
+    nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
+                                          database TSRMLS_CC);
+  }
+
+  if (!keep_saved && mysqli_obj
+      && (0 == NRTXNGLOBAL(generating_explain_plan))) {
     char* host_term = host ? nr_strndup(host, host_len) : NULL;
     char* username_term = username ? nr_strndup(username, username_len) : NULL;
     char* password_term = password ? nr_strndup(password, password_len) : NULL;
