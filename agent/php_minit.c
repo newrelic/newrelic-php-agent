@@ -433,6 +433,46 @@ static void nr_php_populate_apache_process_globals(void) {
   }
 }
 
+static void nr_php_populate_cli_process_globals(void) {
+  /*
+   * The CLI SAPI reports its name as cli. The CLI Web server reports its name
+   * as cli-server.
+   */
+  if (0 == nr_strcmp(sapi_module.name, "cli")) {
+    NR_PHP_PROCESS_GLOBALS(cli) = 1;
+  }
+}
+
+#ifdef ZTS
+static void nr_php_populate_frankenphp_process_globals(void) {
+  if (0 == nr_strcmp(sapi_module.name, "frankenphp")) {
+    NR_PHP_PROCESS_GLOBALS(is_frankenphp) = 1;
+  }
+}
+#endif
+
+static void nr_php_populate_sapi_process_globals(void) {
+  nr_php_populate_apache_process_globals();
+  nr_php_populate_cli_process_globals();
+#ifdef ZTS
+  nr_php_populate_frankenphp_process_globals();
+#endif
+}
+
+static bool nr_php_process_may_fork(void) {
+  if (NR_PHP_PROCESS_GLOBALS(cli)) {
+    return false;
+  }
+
+#ifdef ZTS
+  if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+    return false;
+  }
+#endif
+
+  return true;
+}
+
 static char* nr_php_get_php_version_number(TSRMLS_D) {
   char* version = 0;
   zval* php_ver = nr_php_get_constant("PHP_VERSION" TSRMLS_CC);
@@ -476,15 +516,8 @@ PHP_MINIT_FUNCTION(newrelic) {
       = nr_php_check_for_upgrade_license_key();
   NR_PHP_PROCESS_GLOBALS(high_security) = 0;
   NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection) = 1;
-  nr_php_populate_apache_process_globals();
+  nr_php_populate_sapi_process_globals();
   nr_php_api_distributed_trace_register_userland_class(TSRMLS_C);
-  /*
-   * The CLI SAPI reports its name as cli. The CLI Web server reports its name
-   * as cli-server.
-   */
-  if (0 == nr_strcmp(sapi_module.name, "cli")) {
-    NR_PHP_PROCESS_GLOBALS(cli) = 1;
-  }
 
   /*
    * As of 01Jan2014, we don't even try to support Apache threaded mpm.
@@ -659,8 +692,10 @@ PHP_MINIT_FUNCTION(newrelic) {
    * If this is a web server master process (eg Apache mod_php), it may
    * fork worker processes.  In order to prevent sharing of the daemon
    * connection fd, we want to close the connection before the fork.
-   * If the process is not going to fork (eg CLI), then closing the connection
-   * would necessitate another connect (which is quite costly using TCP).
+   * If the process is not going to fork (eg CLI, FrankenPHP), keep the
+   * connection: the socket is non-blocking, so over TCP a new connect
+   * returns EINPROGRESS and the first transaction would be dropped for
+   * having no daemon connection.
    *
    * Previously, an atfork handler was registered in order to close
    * the connection only if a fork occurred.  However, this was problematic
@@ -668,7 +703,7 @@ PHP_MINIT_FUNCTION(newrelic) {
    * atfork handler function pointer referenced extension code which could be
    * removed by Apache.
    */
-  if (0 == NR_PHP_PROCESS_GLOBALS(cli)) {
+  if (nr_php_process_may_fork()) {
     nr_agent_close_daemon_connection();
   }
 
