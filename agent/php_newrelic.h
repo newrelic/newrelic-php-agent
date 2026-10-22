@@ -580,7 +580,15 @@ typedef struct _ctx_globals_t {
   bool check_cufa;  // Whether we need to check cufa because we are
                     // instrumenting hooks, or whether we can skip cufa
 
-  nr_hashmap_t* predis_commands;
+  /*
+   * The start time of each Predis command that has been written, kept for as
+   * long as the command object lives (PHP 8.0 and later) so that a later
+   * command object that gets the freed object's handle cannot find it. Before
+   * PHP 8.0 the entries are keyed by handle. The time is an absolute time.
+   * Copied by pointer into the context of each Fiber, as the map it replaces
+   * was: a command written in one Fiber can be read in another.
+   */
+  nr_php_objtable_t* predis_command_starts;
 
   nr_segment_t* context_root;  // Pointer to the root segment of a fiber
 
