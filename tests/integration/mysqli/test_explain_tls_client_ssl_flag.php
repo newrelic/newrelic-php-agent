@@ -9,10 +9,9 @@ A slow query on a mysqli connection to a MySQL server that requires TLS SHALL ge
 an explain plan when the connection was opened with MYSQLI_CLIENT_SSL.
 
 The agent opens its own connection to run EXPLAIN. The user for this test
-requires TLS, so that connection is refused unless it also asks for TLS. The
-agent replays the flags the application passed to mysqli_real_connect(), so
-MYSQLI_CLIENT_SSL reaches it and the explain plan is produced. The TLS setup is
-in tests/tls.
+requires TLS, so that connection needs TLS too. The agent replays the flags the
+application passed to mysqli_real_connect(), including MYSQLI_CLIENT_SSL, and
+the explain plan is produced. The TLS setup is in tests/tls.
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
 */

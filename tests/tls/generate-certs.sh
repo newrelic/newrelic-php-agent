@@ -4,11 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Generate the throwaway certificates used by the TLS integration tests: a
-# private CA, a server certificate for the MySQL TLS service, a client
-# certificate signed by the CA, and a second CA that the server does not use
-# (for tests that expect a certificate check to fail). Nothing is generated if
-# the certificates already exist. The certificates are written to
-# tests/tls/certs, which is not tracked.
+# private CA, a server certificate for the MySQL TLS service, and a client
+# certificate signed by the CA. Nothing is generated if the certificates
+# already exist. The certificates are written to tests/tls/certs, which is not
+# tracked.
 #
 set -e
 
@@ -36,9 +35,6 @@ openssl req -newkey rsa:2048 -nodes -subj "/CN=nr_tls_client" \
   -keyout client-key.pem -out client.csr 2> /dev/null
 openssl x509 -req -in client.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial \
   -days 3650 -out client-cert.pem 2> /dev/null
-
-openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-  -subj "/CN=Other CA" -keyout other-ca-key.pem -out other-ca.pem 2> /dev/null
 
 rm -f server.csr client.csr san.cnf ca.srl
 

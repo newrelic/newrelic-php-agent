@@ -10,10 +10,9 @@ explain plan when the connection was created with the TLS options in the PDO
 constructor and the query runs in the same transaction.
 
 The agent opens its own connection to run EXPLAIN. The user for this test
-requires TLS, so that connection is refused unless it also gets the TLS options.
-The agent keeps the options passed to the constructor for as long as the PDO
-object lives, so they reach it and the explain plan is produced. The TLS setup
-is in tests/tls.
+requires TLS, so that connection needs the TLS options too. The agent keeps the
+options passed to the constructor for as long as the PDO object lives and
+replays them, and the explain plan is produced. The TLS setup is in tests/tls.
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
 */
