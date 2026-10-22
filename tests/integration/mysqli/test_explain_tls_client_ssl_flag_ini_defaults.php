@@ -17,26 +17,16 @@ can only pass them on if it also passes the three leading arguments. It fills
 those in from the mysqli.default_* settings.
 
 The arguments are null, which PHP replaces by the mysqli.default_* settings
-from PHP 7.4. The TLS setup is in tests/tls; the test is skipped without it and
-on PHP below 7.4.
+from PHP 7.4. The TLS setup is in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_required', 'tls_required',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT, null, MYSQLI_CLIENT_SSL)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'required';
+require("skipif_tls.inc");
 */
 
 /*INI

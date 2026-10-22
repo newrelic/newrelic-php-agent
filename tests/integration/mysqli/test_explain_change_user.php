@@ -14,26 +14,16 @@ replaces all three on the application's connection. The test connects to
 information_schema and then changes user to a table in the test database. The
 query names the table without a database, so the explain connection can resolve
 it only if the agent saved the new database. The TLS test server is used so that
-the test has a database where it can create tables; the test is skipped without
-it and on PHP below 7.4. The table is created by tests/tls/init.sql.
+the test has a database where it can create tables.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it. The table is created by tests/tls/init.sql.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'optional';
+require("skipif_tls.inc");
 */
 
 /*INI

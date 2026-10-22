@@ -46,6 +46,10 @@ services:
     volumes:
       - ${AGENT_CODE:-$PWD}/tests/tls/certs:/certs:ro
       - ${AGENT_CODE:-$PWD}/tests/tls/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # The data directory is empty at every start so that init.sql always runs,
+    # also after it changed. Nothing here needs to persist.
+    tmpfs:
+      - /var/lib/mysql
   redisdb:
     image: redis
     restart: always

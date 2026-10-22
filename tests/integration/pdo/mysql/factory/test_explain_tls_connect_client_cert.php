@@ -13,26 +13,17 @@ requires a client certificate, so that connection is refused unless it gets the
 key, certificate and CA that the application gave to Pdo\Mysql::connect(). The
 connect() method of a driver subclass has its own record in the agent; this test
 exercises the one for Pdo\Mysql, with the options of a client certificate. The
-TLS setup is in tests/tls; the test is skipped without it and on PHP below 8.4.
+TLS setup is in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 8.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
-require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
-require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
-require_once(realpath(dirname(__FILE__)) . '/../../../../include/config.php');
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-try {
-  Pdo\Mysql::connect("mysql:host=$MYSQL_TLS_HOST;port=$MYSQL_TLS_PORT;dbname=$MYSQL_TLS_DB",
-               'tls_clientcert', 'tls_clientcert',
-               array(Pdo\Mysql::ATTR_SSL_CA => "$MYSQL_TLS_CERTS/ca.pem",
-                     Pdo\Mysql::ATTR_SSL_KEY => "$MYSQL_TLS_CERTS/client-key.pem",
-                     Pdo\Mysql::ATTR_SSL_CERT => "$MYSQL_TLS_CERTS/client-cert.pem"));
-} catch (Exception $e) {
-  die("skip: TLS MySQL server not available: " . $e->getMessage() . "\n");
-}
+require(realpath(dirname(__FILE__)) . '/../../skipif_mysql.inc');
+require(realpath(dirname(__FILE__)) . '/../../skipif_pdo_subclasses.inc');
+$tls_profile = 'clientcert';
+require(realpath(dirname(__FILE__)) . '/../skipif_tls.inc');
 */
 
 /*INI

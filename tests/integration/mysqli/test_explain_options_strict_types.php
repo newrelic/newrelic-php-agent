@@ -11,33 +11,20 @@ An integer option set with mysqli_options() under strict_types=1 SHALL NOT
 break the query or its explain plan.
 
 The agent wraps mysqli_options() to record the options for the connection it
-opens to run EXPLAIN. The wrapper used to read the value as a string, which
-strict_types=1 rejects for an integer, so the option was not recorded. It now
-reads the value as any scalar. This is a control: the effect of the integer
-options that the explain connection can use is not visible in the explain plan
-(MYSQLI_OPT_INT_AND_FLOAT_NATIVE, used here, does not change it), so the test
-passes without the change as well. It shows that the integer option is accepted
-by the wrapper and the application's query and plan are intact. The TLS test
-server is used only for its MySQL version, so that the plan is the same
-everywhere; the test is skipped without it and on PHP below 7.4.
+opens to run EXPLAIN. The wrapper reads the value as any scalar, because
+strict_types=1 rejects an integer that is read as a string. The test sets
+MYSQLI_OPT_INT_AND_FLOAT_NATIVE and checks that the wrapper accepts it and that
+the application's query and its explain plan are intact. The TLS test server is
+used only for its MySQL version, so that the plan is the same everywhere.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'optional';
+require("skipif_tls.inc");
 */
 
 /*INI
