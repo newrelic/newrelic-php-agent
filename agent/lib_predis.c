@@ -82,52 +82,51 @@ const zend_long nr_predis_default_port = 6379;
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_readResponse);
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_writeRequest);
 
-static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  return NRPRG_CTX(predis_commands);
-}
-
-// An entry for a command that is never read stays until its handle is written
-// again. The time is absolute, so that the transaction that reads the response
-// can tell whether the request was written before it started.
-void nr_predis_command_start_save(uint64_t handle, nrtime_t start) {
-  nr_hashmap_t* commands = nr_predis_get_commands();
+// The start time is kept with the command object. On PHP 8.0 and later an
+// entry is removed when its command object is freed, so a command object that
+// takes the freed object's handle cannot find it. Before PHP 8.0 the object
+// table keys entries by handle, and an entry for a command that is never read
+// stays until its handle is written again. The time is absolute, so that the
+// transaction that reads the response can tell whether the request was
+// written before it started.
+void nr_predis_command_start_save(const zval* command, nrtime_t start) {
+  nr_php_objtable_t* table = NRPRG_CTX(predis_command_starts);
   nrtime_t* saved = NULL;
 
-  if (NULL == commands) {
+  if ((NULL == table) || !nr_php_is_zval_valid_object(command)) {
     return;
   }
 
   saved = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
   *saved = start;
-  nr_hashmap_index_update(commands, handle, saved);
+  nr_php_objtable_set(table, command, saved);
 }
 
-bool nr_predis_command_start_take(uint64_t handle,
+bool nr_predis_command_start_take(const zval* command,
                                   nrtime_t txn_start,
                                   nrtime_t* start) {
-  nr_hashmap_t* commands = nr_predis_get_commands();
+  nr_php_objtable_t* table = NRPRG_CTX(predis_command_starts);
   nrtime_t* saved = NULL;
   nrtime_t saved_start;
 
-  if ((NULL == commands) || (NULL == start)) {
+  if ((NULL == table) || (NULL == start)
+      || !nr_php_is_zval_valid_object(command)) {
     return false;
   }
 
-  saved = (nrtime_t*)nr_hashmap_index_get(commands, handle);
+  saved = (nrtime_t*)nr_php_objtable_get(table, command);
   if (NULL == saved) {
     return false;
   }
 
   /*
    * The start time is only valid for the response that pairs with the
-   * writeRequest() that stored it. Copy it, then remove the entry: PHP reuses
-   * the handle of a freed command object, and a later command object with the
-   * same handle that never went through writeRequest() (such as the handshake
-   * commands of Predis v3) would otherwise be timed from this stale start.
-   * Deleting the entry frees the stored value, so the copy must come first.
+   * writeRequest() that stored it. Copy it, then remove the entry, so that a
+   * second response for the same object cannot use it. Deleting the entry
+   * frees the stored value, so the copy must come first.
    */
   saved_start = *saved;
-  nr_hashmap_index_delete(commands, handle);
+  nr_php_objtable_del(table, command);
 
   /*
    * A request written before this transaction began belongs to an earlier
@@ -649,7 +648,6 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   char* async_context = NULL;
   zval* command = NULL;
   zval* conn = NULL;
-  uint64_t index;
   nr_segment_t* segment = NULL;
   nr_segment_datastore_params_t params = {
     .datastore = {
@@ -678,11 +676,9 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   operation = nr_predis_get_operation_name_from_object(command TSRMLS_CC);
 
   /*
-   * Get the original start time of the paired writeRequest() method from the
-   * hashmap.
+   * Get the original start time of the paired writeRequest() method.
    */
-  index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  if (!nr_predis_command_start_take(index, nr_txn_start_time(NRPRG(txn)),
+  if (!nr_predis_command_start_take(command, nr_txn_start_time(NRPRG(txn)),
                                     &start)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: NULL start time", __func__);
     goto end;
@@ -741,7 +737,8 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   zval* command = NULL;
-  uint64_t index;
+  nrtime_t start = nr_get_time();
+  zend_object* previous_exception = EG(exception);
 
   (void)wraprec;
 
@@ -754,15 +751,23 @@ NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   command = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_valid_object(command)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: command is not an object", __func__);
+    NR_PHP_WRAPPER_CALL;
     goto end;
   }
 
-  index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  nr_predis_command_start_save(index, nr_get_time());
+  NR_PHP_WRAPPER_CALL;
+
+  /*
+   * A write that threw (the connection could not be opened, or the bytes could
+   * not be sent) is never followed by a read of its response, so nothing is
+   * saved for it.
+   */
+  if ((NULL == EG(exception)) || (EG(exception) == previous_exception)) {
+    nr_predis_command_start_save(command, start);
+  }
 
 end:
   nr_php_arg_release(&command);
-  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 

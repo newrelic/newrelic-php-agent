@@ -151,8 +151,8 @@ PHP_RINIT_FUNCTION(newrelic) {
 #endif
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
-  NRPRG_CTX(predis_commands)
-      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
+  NRPRG_CTX(predis_command_starts)
+      = nr_php_objtable_create((void (*)(void*))nr_predis_command_destroy);
 
   nr_php_txn_begin(0, 0 TSRMLS_CC);
 
