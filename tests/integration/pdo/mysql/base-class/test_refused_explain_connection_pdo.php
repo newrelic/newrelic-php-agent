@@ -15,29 +15,17 @@ explain connection is refused.
 
 PDO is not affected: the agent builds the explain connection with
 nr_php_call_user_func_catch(), which catches and clears the exception, and the
-later calls run in silent error mode. This test guards that behavior. Its
-counterpart, test_refused_explain_connection_mysqli.php, shows the same scenario
-with mysqli, which throws mysqli_sql_exception into the application's query
-unless the agent clears it. The TLS setup is in tests/tls (the user is created by
-init.sql); the test is skipped without it and on PHP below 7.4.
+later calls run in silent error mode. This test guards that behavior. The TLS
+setup is in tests/tls (the user is created by init.sql).
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
-require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
-require_once(realpath(dirname(__FILE__)) . '/../../../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-try {
-  new PDO("mysql:host=$MYSQL_TLS_HOST;port=$MYSQL_TLS_PORT;dbname=$MYSQL_TLS_DB",
-          'nr_one_conn', 'nr_one_conn');
-} catch (Exception $e) {
-  die("skip: limited MySQL user not available: " . $e->getMessage() . "\n");
-}
+require(realpath(dirname(__FILE__)) . '/../../skipif_mysql.inc');
+$tls_profile = 'one_conn';
+require(realpath(dirname(__FILE__)) . '/../skipif_tls.inc');
 */
 
 /*INI
