@@ -7,8 +7,7 @@
 /*DESCRIPTION
 A mysqli link made by the constructor that takes the handle of a freed link
 SHALL NOT inherit its credentials for the connection the agent opens to run
-EXPLAIN. This is the constructor form of test_explain_link_reused_handle.php,
-which creates the second link with mysqli_init().
+EXPLAIN.
 
 The first link connects as a user with a password and is freed. Links are
 created with new mysqli() until one takes the first's handle. It connects as a
@@ -18,26 +17,16 @@ saved password for that handle, the explain connection would log in as the
 second user with the first user's password and be refused, and the slow query
 would have no explain plan.
 
-The users are in tests/tls. The test is skipped without the TLS test server and
-before PHP 7.4, which the TLS test users need.
+The users are in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'nr_nopass', null,
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: user nr_nopass not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'nopass';
+require("skipif_tls.inc");
 */
 
 /*INI

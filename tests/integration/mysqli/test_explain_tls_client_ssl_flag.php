@@ -12,29 +12,16 @@ The agent opens its own connection to run EXPLAIN. The user for this test
 requires TLS, so that connection is refused unless it also asks for TLS. The
 agent replays the flags the application passed to mysqli_real_connect(), so
 MYSQLI_CLIENT_SSL reaches it and the explain plan is produced. The TLS setup is
-in tests/tls; the test is skipped without it and on PHP below 7.4.
-
-This is a control: it passes with the current agent. The mysqli connection
-settings that the agent does not replay yet (the arguments of mysqli_ssl_set())
-are not covered here.
+in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_required', 'tls_required',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT, null, MYSQLI_CLIENT_SSL)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'required';
+require("skipif_tls.inc");
 */
 
 /*INI

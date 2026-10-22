@@ -175,4 +175,24 @@ extern nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
  */
 extern int nr_php_error_zval_is_exception(zval* zv TSRMLS_DC);
 
+/*
+ * Purpose : Set the user callback that names error groups, replacing any
+ *           previous one. The agent holds a reference to the callable until
+ *           it's replaced or released, so the callable stays valid after the
+ *           application's own references to it are gone.
+ *
+ * Params  : 1. The function call info for the callback.
+ *           2. The function call info cache for the callback.
+ */
+extern void nr_php_error_set_error_group_callback(
+    const zend_fcall_info* fci,
+    const zend_fcall_info_cache* fcc);
+
+/*
+ * Purpose : Release the user callback that names error groups, if one is set.
+ *           This must happen before the executor shuts down, because the
+ *           callable can refer to objects that the shutdown frees.
+ */
+extern void nr_php_error_release_error_group_callback(void);
+
 #endif /* PHP_ERROR_HDR */

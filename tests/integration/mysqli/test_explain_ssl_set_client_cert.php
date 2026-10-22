@@ -14,29 +14,16 @@ presents the key and certificate that the application gave to mysqli_ssl_set().
 The agent saves the arguments of mysqli_ssl_set() and replays them on the
 explain connection, so the explain plan is produced. Without that, the
 connection is refused and, on PHP 8.1 and later, the error is thrown into the
-application's query. The TLS setup is in tests/tls; the test is skipped without
-it and on PHP below 7.4.
+application's query. The TLS setup is in tests/tls.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-mysqli_ssl_set($link, "$MYSQL_TLS_CERTS/client-key.pem",
-               "$MYSQL_TLS_CERTS/client-cert.pem", "$MYSQL_TLS_CERTS/ca.pem",
-               null, null);
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_clientcert', 'tls_clientcert',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT, null, MYSQLI_CLIENT_SSL)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'clientcert';
+require("skipif_tls.inc");
 */
 
 /*INI

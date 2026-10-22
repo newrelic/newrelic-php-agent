@@ -14,27 +14,16 @@ EXPLAIN on its own connection with the same user, so the EXPLAIN is refused. On
 PHP 8.1 and later mysqli throws mysqli_sql_exception for that, and the
 exception must not reach the application's query.
 
-The user, table and view are in tests/tls/init.sql; the test is skipped without
-the TLS test server and on PHP below 7.4.
+The user, table and view are in tests/tls/init.sql.
+The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
+an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = @mysqli_connect($MYSQL_TLS_HOST, 'nr_view_only', 'nr_view_only',
-                        $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT);
-if (!$link || !@mysqli_query($link, "SELECT id FROM nr_view_priv_v")) {
-  die("skip: user nr_view_only or its view is not available\n");
-}
-mysqli_close($link);
+$tls_profile = 'view_only';
+require("skipif_tls.inc");
 */
 
 /*INI
