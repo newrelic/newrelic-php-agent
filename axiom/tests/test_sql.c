@@ -350,6 +350,18 @@ static void test_sql_obfuscate(void) {
                          "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = 5",
                          "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = ?");
 
+  sql_obfuscate_testcase("identifier containing a digit",
+                         "SELECT * FROM a1$b$c WHERE id = 5",
+                         "SELECT * FROM a?$b$c WHERE id = ?");
+
+  sql_obfuscate_testcase("dollar quote after a number",
+                         "SELECT * FROM test WHERE y IN (5$$PASSWORD$$)",
+                         "SELECT * FROM test WHERE y IN (?\?)");
+
+  sql_obfuscate_testcase("dollar quote after a masked literal",
+                         "SELECT * FROM test WHERE y = 5 AND z = ?$$PASSWORD$$",
+                         "SELECT * FROM test WHERE y = ? AND z = ?\?");
+
   /*
    * Monstrous integers don't cause us to topple over.
    */

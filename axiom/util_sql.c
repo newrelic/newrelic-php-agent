@@ -76,10 +76,18 @@ char* nr_sql_obfuscate(const char* raw) {
              * to it rather than opening a quote.
              */
             if (p > raw) {
-              char prev = p[-1];
+              const char* start = p;
 
-              if (nr_isalnum(prev) || ('_' == prev) || ('$' == prev)
-                  || (((unsigned char)prev) >= 0x80)) {
+              while ((start > raw)
+                     && (nr_isalnum(start[-1]) || ('_' == start[-1])
+                         || ('$' == start[-1]) || ('?' == start[-1])
+                         || (((unsigned char)start[-1]) >= 0x80))) {
+                start--;
+              }
+
+              if ((start < p)
+                  && (nr_isalpha(*start) || ('_' == *start)
+                      || (((unsigned char)*start) >= 0x80))) {
                 *q++ = *p++;
                 break;
               }
