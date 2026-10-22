@@ -47,6 +47,10 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
                                                  long option,
                                                  const char* value TSRMLS_DC);
 
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata);
+
 /*
  * Purpose : Create a blank query metadata array.
  *
@@ -119,6 +123,11 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
         return NULL;
       }
     }
+  }
+
+  if (NR_FAILURE == nr_php_mysqli_link_set_ssl(dup, &metadata)) {
+    nr_php_zval_free(&dup);
+    return NULL;
   }
 
   if (NR_FAILURE == nr_php_mysqli_link_real_connect(dup, &metadata TSRMLS_CC)) {
@@ -402,6 +411,9 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   zval* argv[7] = {0};
   zend_ulong i;
   zval* retval = NULL;
+  const char* host;
+  const char* user;
+  const char* password;
 
 #define ADD_IF_INT_SET(null_ok, args, argc, value) \
   if (value) {                                    \
@@ -425,10 +437,47 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     argc++;                                       \
   }
 
-  ADD_IF_STR_SET(false, argv, argc,
-                 nr_php_mysqli_strip_persistent_prefix(metadata->host));
-  ADD_IF_STR_SET(false, argv, argc, metadata->user);
-  ADD_IF_STR_SET(false, argv, argc, metadata->password);
+  /*
+   * The application may have left out a leading argument and relied on the
+   * mysqli.default_* ini setting. The arguments that follow are positional, so
+   * a missing one cannot just be skipped: the next argument would take its
+   * place. If any of the arguments was given, fill in the missing host, user
+   * and password from the ini settings, read when the explain runs and not
+   * when the link connected. This includes the case where the
+   * application left out all three and only gave a later one, such as the
+   * flags: without the three leading arguments the flags (for example
+   * MYSQLI_CLIENT_SSL) cannot be passed on.
+   */
+  host = nr_php_mysqli_strip_persistent_prefix(metadata->host);
+  user = metadata->user;
+  password = metadata->password;
+  if (host || user || password || metadata->database || metadata->port
+      || metadata->socket || metadata->flags) {
+    if (NULL == host) {
+      /* The ini value may carry the "p:" prefix too: no persistent link. */
+      host = nr_php_mysqli_strip_persistent_prefix(
+          nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0));
+    }
+    if (NULL == user) {
+      user = nr_php_zend_ini_string(NR_PSTR("mysqli.default_user"), 0);
+    }
+    if (NULL == password) {
+      password = nr_php_zend_ini_string(NR_PSTR("mysqli.default_pw"), 0);
+    }
+    if (NULL == host) {
+      host = "";
+    }
+    if (NULL == user) {
+      user = "";
+    }
+    if (NULL == password) {
+      password = "";
+    }
+  }
+
+  ADD_IF_STR_SET(false, argv, argc, host);
+  ADD_IF_STR_SET(false, argv, argc, user);
+  ADD_IF_STR_SET(false, argv, argc, password);
 
   /*
    * We can only add the remaining metadata fields if we already have three
@@ -497,6 +546,53 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
   nr_php_zval_free(&option_zv);
   nr_php_zval_free(&retval);
   nr_php_zval_free(&value_zv);
+
+  return status;
+}
+
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata) {
+  const char* values[5];
+  zval* argv[5] = {0};
+  zval* retval = NULL;
+  nr_status_t status = NR_SUCCESS;
+  size_t i;
+
+  values[0] = metadata->ssl_key;
+  values[1] = metadata->ssl_cert;
+  values[2] = metadata->ssl_ca;
+  values[3] = metadata->ssl_capath;
+  values[4] = metadata->ssl_cipher;
+
+  /*
+   * The application never called mysqli_ssl_set(), or called it with no
+   * values, so there is nothing to replay.
+   */
+  if ((NULL == values[0]) && (NULL == values[1]) && (NULL == values[2])
+      && (NULL == values[3]) && (NULL == values[4])) {
+    return NR_SUCCESS;
+  }
+
+  for (i = 0; i < 5; i++) {
+    argv[i] = nr_php_zval_alloc();
+    if (values[i]) {
+      nr_php_zval_str(argv[i], values[i]);
+    } else {
+      ZVAL_NULL(argv[i]);
+    }
+  }
+
+  retval = nr_php_call(link, "ssl_set", argv[0], argv[1], argv[2], argv[3],
+                       argv[4]);
+  if (!nr_php_is_zval_true(retval)) {
+    status = NR_FAILURE;
+  }
+
+  for (i = 0; i < 5; i++) {
+    nr_php_zval_free(&argv[i]);
+  }
+  nr_php_zval_free(&retval);
 
   return status;
 }
@@ -679,6 +775,42 @@ void nr_php_mysqli_remove_datastore_instance(const zval* mysqli_obj TSRMLS_DC) {
   nr_php_datastore_instance_remove(key TSRMLS_CC);
 
   nr_free(key);
+}
+
+char* nr_php_mysqli_option_to_string(zval* value) {
+  zend_string* str;
+  char* term;
+
+  if (NULL == value) {
+    return NULL;
+  }
+
+  switch (Z_TYPE_P(value)) {
+    case IS_STRING:
+      return nr_strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
+    case IS_LONG:
+      return nr_formatf("%ld", (long)Z_LVAL_P(value));
+    case IS_TRUE:
+      return nr_strdup("1");
+    case IS_FALSE:
+      return nr_strdup("0");
+    case IS_DOUBLE:
+    case IS_NULL:
+      /*
+       * mysqli converts these the way PHP does, and converting them here runs
+       * no user code.
+       */
+      str = zval_get_string(value);
+      term = nr_strndup(ZSTR_VAL(str), ZSTR_LEN(str));
+      zend_string_release(str);
+      return term;
+    default:
+      /*
+       * mysqli refuses an array or a resource. An object's __toString() would
+       * run user code a second time, so an object is not captured.
+       */
+      return NULL;
+  }
 }
 
 const char* nr_php_mysqli_strip_persistent_prefix(const char* host) {

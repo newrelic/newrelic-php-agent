@@ -67,7 +67,7 @@ RUN apt-get install -y --no-install-recommends libpq-dev
 RUN docker-php-ext-install pgsql
 
 # install latest go to work with the daemon
-COPY --from=golang:1.27.2 /usr/local/go /usr/local/go
+COPY --from=golang:1.27.3 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:$PATH
 
 #
@@ -95,7 +95,7 @@ COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 #   and 8.0 has problems with how the explanation for informational_schema
 #   work (refer to bug https://bugs.mysql.com/bug.php?id=102536) so to run
 #   the mysql tests a separate machine running mysql server 5.6 is required.
-RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
+RUN docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql
 
 # install redis extension required by test_redis:
 RUN \
