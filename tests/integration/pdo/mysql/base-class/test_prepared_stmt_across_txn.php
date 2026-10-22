@@ -5,11 +5,12 @@
  */
 
 /*DESCRIPTION
-The SQL of a PDOStatement SHALL be known to the agent when the statement is
-prepared in one transaction and executed in a later one. The agent reads the
-SQL from the statement (PDOStatement::$queryString) and does not save it, so
-ending the transaction does not lose it. The slow SQL trace of the second
-transaction names the statement and the table.
+A statement prepared in one transaction and executed in a later transaction of
+the same PHP request SHALL be reported with its SQL: the datastore operation
+and statement metrics, the slow SQL and the span db.statement.
+
+The agent reads the SQL from the statement (PDOStatement::$queryString) and
+does not save it, so ending the transaction does not lose it.
 */
 
 /*SKIPIF
@@ -32,15 +33,24 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 /*EXPECT_ERROR_EVENTS null*/
 
 /*EXPECT
-ok - prepared statement
-ok - execute prepared statement in the next transaction
+ok - execute prepared statement
+*/
+
+/*EXPECT_METRICS_EXIST
+Datastore/all, 1
+Datastore/allOther, 1
+Datastore/ENV[DATASTORE_PRODUCT]/all, 1
+Datastore/ENV[DATASTORE_PRODUCT]/allOther, 1
+Datastore/operation/ENV[DATASTORE_PRODUCT]/select, 1
+Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select, 1
+Supportability/TxnData/SlowSQL, 2
 */
 
 /*EXPECT_SLOW_SQLS
 [
   [
     [
-      "OtherTransaction/php__FILE__",
+      "OtherTransaction/Custom/after_restart",
       "<unknown>",
       "?? SQL id",
       "select * from information_schema.tables limit ?;",
@@ -51,9 +61,39 @@ ok - execute prepared statement in the next transaction
       "?? max time",
       {
         "explain_plan": "??",
-        "backtrace": "??"
+        "backtrace": [
+          "/ in PDOStatement::execute called at .*\/",
+          " in exec_stmt called at __FILE__ (??)"
+        ]
       }
     ]
+  ]
+]
+*/
+
+/*EXPECT_SPAN_EVENTS_LIKE
+[
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "ENV[DATASTORE_PRODUCT]"
+    },
+    {},
+    {
+      "peer.address": "unknown:unknown",
+      "db.statement": "select * from information_schema.tables limit ?;"
+    }
   ]
 ]
 */
@@ -61,11 +101,16 @@ ok - execute prepared statement in the next transaction
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
+function exec_stmt($stmt) {
+  tap_assert($stmt->execute(), 'execute prepared statement');
+}
+
 $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD);
 $stmt = $conn->prepare('select * from information_schema.tables limit 1;');
-tap_assert(false !== $stmt, 'prepared statement');
 
+// The prepare belongs to the first transaction; execute it in a second one.
 newrelic_end_transaction();
 newrelic_start_transaction(ini_get("newrelic.appname"));
 
-tap_assert($stmt->execute(), 'execute prepared statement in the next transaction');
+exec_stmt($stmt);
+newrelic_name_transaction("after_restart");
