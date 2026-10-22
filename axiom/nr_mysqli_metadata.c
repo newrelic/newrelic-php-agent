@@ -13,6 +13,7 @@
 #include "nr_mysqli_metadata_private.h"
 #include "util_memory.h"
 #include "util_object.h"
+#include "util_strings.h"
 
 static inline void nr_mysqli_metadata_add_property(nrobj_t* link,
                                                    const char* name,
@@ -47,6 +48,7 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
                                    nr_mysqli_metadata_link_handle_t handle,
                                    nr_mysqli_metadata_link_t* link) {
   const nrobj_t* link_obj;
+  const nrobj_t* ssl_obj;
   char id[NR_MYSQLI_METADATA_ID_SIZE];
 
   if ((NULL == metadata) || (NULL == link)) {
@@ -67,6 +69,15 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
   link->port = (uint16_t)nro_get_hash_int(link_obj, "port", NULL);
   link->flags = (long)nro_get_hash_long(link_obj, "flags", NULL);
   link->options = nro_get_hash_value(link_obj, "options", NULL);
+
+  ssl_obj = nro_get_hash_hash(link_obj, "ssl", NULL);
+  link->ssl_key = ssl_obj ? nro_get_hash_string(ssl_obj, "key", NULL) : NULL;
+  link->ssl_cert = ssl_obj ? nro_get_hash_string(ssl_obj, "cert", NULL) : NULL;
+  link->ssl_ca = ssl_obj ? nro_get_hash_string(ssl_obj, "ca", NULL) : NULL;
+  link->ssl_capath
+      = ssl_obj ? nro_get_hash_string(ssl_obj, "capath", NULL) : NULL;
+  link->ssl_cipher
+      = ssl_obj ? nro_get_hash_string(ssl_obj, "cipher", NULL) : NULL;
 
   return NR_SUCCESS;
 }
@@ -126,6 +137,46 @@ nr_status_t nr_mysqli_metadata_set_database(
   return NR_SUCCESS;
 }
 
+nr_status_t nr_mysqli_metadata_set_user(nr_mysqli_metadata_t* metadata,
+                                        nr_mysqli_metadata_link_handle_t handle,
+                                        const char* user,
+                                        const char* password,
+                                        const char* database) {
+  nrobj_t* link;
+
+  if (NULL == user) {
+    return NR_FAILURE;
+  }
+
+  link = nr_mysqli_metadata_create_or_get(metadata, handle);
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  nr_mysqli_metadata_add_property(link, "user", user);
+  if (password) {
+    nro_set_hash_string(link, "password", password);
+  } else {
+    nro_set_hash_none(link, "password");
+  }
+
+  /*
+   * mysqli_change_user() selects the given database, or none if it is
+   * omitted, so a database from an earlier call must not be kept.
+   */
+  if (database) {
+    nro_set_hash_string(link, "database", database);
+  } else {
+    nro_set_hash_none(link, "database");
+  }
+
+  nr_mysqli_metadata_save(metadata, handle, link);
+
+  nro_delete(link);
+
+  return NR_SUCCESS;
+}
+
 nr_status_t nr_mysqli_metadata_set_option(
     nr_mysqli_metadata_t* metadata,
     nr_mysqli_metadata_link_handle_t handle,
@@ -166,6 +217,81 @@ nr_status_t nr_mysqli_metadata_set_option(
   nro_delete(options_dup);
 
   return NR_SUCCESS;
+}
+
+nr_status_t nr_mysqli_metadata_set_ssl(nr_mysqli_metadata_t* metadata,
+                                       nr_mysqli_metadata_link_handle_t handle,
+                                       const char* key,
+                                       const char* cert,
+                                       const char* ca,
+                                       const char* capath,
+                                       const char* cipher) {
+  nrobj_t* link;
+  nrobj_t* ssl;
+
+  link = nr_mysqli_metadata_create_or_get(metadata, handle);
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * A new hash replaces the previous one, so a later call that omits a value
+   * clears it, as mysqli_ssl_set() does.
+   */
+  ssl = nro_new_hash();
+  nr_mysqli_metadata_add_property(ssl, "key", key);
+  nr_mysqli_metadata_add_property(ssl, "cert", cert);
+  nr_mysqli_metadata_add_property(ssl, "ca", ca);
+  nr_mysqli_metadata_add_property(ssl, "capath", capath);
+  nr_mysqli_metadata_add_property(ssl, "cipher", cipher);
+  nro_set_hash(link, "ssl", ssl);
+
+  nr_mysqli_metadata_save(metadata, handle, link);
+
+  nro_delete(ssl);
+  nro_delete(link);
+
+  return NR_SUCCESS;
+}
+
+typedef struct {
+  const char* skip;
+  nrobj_t* kept;
+} nr_mysqli_metadata_remove_state_t;
+
+static nr_status_t nr_mysqli_metadata_keep_other_links(const char* key,
+                                                       const nrobj_t* value,
+                                                       void* ptr) {
+  nr_mysqli_metadata_remove_state_t* state = ptr;
+
+  if (0 != nr_strcmp(key, state->skip)) {
+    nro_set_hash(state->kept, key, value);
+  }
+
+  return NR_SUCCESS;
+}
+
+void nr_mysqli_metadata_remove(nr_mysqli_metadata_t* metadata,
+                               nr_mysqli_metadata_link_handle_t handle) {
+  char id[NR_MYSQLI_METADATA_ID_SIZE];
+  nr_mysqli_metadata_remove_state_t state;
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  nr_mysqli_metadata_id(handle, id);
+  if (NULL == nro_get_hash_hash(metadata->links, id, NULL)) {
+    return;
+  }
+
+  /* An object hash has no delete: copy the other links into a new one. */
+  state.skip = id;
+  state.kept = nro_new_hash();
+  nro_iteratehash(metadata->links, nr_mysqli_metadata_keep_other_links, &state);
+
+  nro_delete(metadata->links);
+  metadata->links = state.kept;
 }
 
 nrobj_t* nr_mysqli_metadata_create_or_get(
