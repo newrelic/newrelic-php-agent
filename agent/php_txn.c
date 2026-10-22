@@ -1374,7 +1374,5 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
   nr_mysqli_metadata_destroy(&NRTXNGLOBAL(mysqli_links));
   nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
 
-  nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
-
   return NR_SUCCESS;
 }
