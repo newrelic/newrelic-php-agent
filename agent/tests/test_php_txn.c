@@ -5,6 +5,8 @@
 
 #include "tlib_php.h"
 
+#include "nr_attributes.h"
+#include "nr_commands.h"
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_txn_private.h"
@@ -375,10 +377,117 @@ static void test_nr_php_txn_populate_app_info_identity() {
   tlib_php_request_end();
 }
 
+/* The response header attributes of the last transaction sent. */
+static struct {
+  int sent;
+  char* content_type;     /* NULL when absent */
+  int64_t content_length; /* -1 when absent */
+} captured;
+
+static void captured_reset(void) {
+  nr_free(captured.content_type);
+  nr_memset(&captured, 0, sizeof(captured));
+  captured.content_length = -1;
+}
+
+static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
+  nrobj_t* attrs = nr_attributes_agent_to_obj(
+      txn->attributes, NR_ATTRIBUTE_DESTINATION_TXN_EVENT);
+  const char* content_type
+      = nro_get_hash_string(attrs, "response.headers.contentType", NULL);
+  nr_status_t err = NR_FAILURE;
+  int64_t content_length
+      = nro_get_hash_long(attrs, "response.headers.contentLength", &err);
+
+  captured_reset();
+  captured.sent = 1;
+  captured.content_type = content_type ? nr_strdup(content_type) : NULL;
+  captured.content_length = (NR_SUCCESS == err) ? content_length : -1;
+
+  nro_delete(attrs);
+  return NR_SUCCESS;
+}
+
+/*
+ * Starts a request whose web transaction has a Content-Type of
+ * application/xml and a Content-Length of 7 in its response headers.
+ */
+static void request_start_with_response_headers(void) {
+  tlib_php_request_start();
+  tlib_php_request_eval(
+      "header('Content-Type: application/xml'); header('Content-Length: 7');");
+  nr_txn_set_as_web_transaction(NRPRG(txn), "test");
+}
+
+static void test_nr_php_txn_end_with_response_headers() {
+  nr_status_t (*orig_hook)(const nrtxn_t*) = nr_cmd_txndata_hook;
+
+  nr_cmd_txndata_hook = capture_txndata_tx;
+
+  /* Test : the given values are recorded, not the response headers. */
+  captured_reset();
+  request_start_with_response_headers();
+  tlib_pass_if_status_success(
+      "given headers", nr_php_txn_end_with_response_headers("text/plain", 42));
+  tlib_pass_if_null("given headers end the transaction", NRPRG(txn));
+  tlib_php_request_end();
+  tlib_pass_if_int_equal("given headers sent", 1, captured.sent);
+  tlib_pass_if_str_equal("given Content-Type", "text/plain",
+                         captured.content_type);
+  tlib_pass_if_int64_t_equal("given Content-Length", 42,
+                             captured.content_length);
+
+  /* Test : a Content-Length of -1 records none. */
+  captured_reset();
+  request_start_with_response_headers();
+  nr_php_txn_end_with_response_headers("text/plain", -1);
+  tlib_php_request_end();
+  tlib_pass_if_str_equal("no Content-Length: Content-Type", "text/plain",
+                         captured.content_type);
+  tlib_pass_if_int64_t_equal("no Content-Length", -1, captured.content_length);
+
+  /* Test : a NULL Content-Type reads both from the response headers. */
+  captured_reset();
+  request_start_with_response_headers();
+  nr_php_txn_end_with_response_headers(NULL, 42);
+  tlib_php_request_end();
+  tlib_pass_if_str_equal("NULL: response Content-Type", "application/xml",
+                         captured.content_type);
+  tlib_pass_if_int64_t_equal("NULL: response Content-Length", 7,
+                             captured.content_length);
+
+  /* Test : nr_php_txn_end still reads both from the response headers. */
+  captured_reset();
+  request_start_with_response_headers();
+  nr_php_txn_end(0, 0);
+  tlib_php_request_end();
+  tlib_pass_if_str_equal("nr_php_txn_end: Content-Type", "application/xml",
+                         captured.content_type);
+  tlib_pass_if_int64_t_equal("nr_php_txn_end: Content-Length", 7,
+                             captured.content_length);
+
+  /* Test : a background transaction records neither. */
+  captured_reset();
+  request_start_with_response_headers();
+  nr_txn_set_as_background_job(NRPRG(txn), "test");
+  nr_php_txn_end_with_response_headers("text/plain", 42);
+  tlib_php_request_end();
+  tlib_pass_if_int_equal("background sent", 1, captured.sent);
+  tlib_pass_if_null("background: no Content-Type", captured.content_type);
+  tlib_pass_if_int64_t_equal("background: no Content-Length", -1,
+                             captured.content_length);
+
+  nr_cmd_txndata_hook = orig_hook;
+  captured_reset();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   test_nr_php_txn_php_package_create_major_metric();
   test_nr_php_txn_create_packages_major_metrics();
+  /* Before test_nr_php_txn_populate_app_info_identity, which clears the
+   * license, so that later requests begin no transaction. */
+  test_nr_php_txn_end_with_response_headers();
   test_nr_php_txn_populate_app_info_identity();
   tlib_php_engine_destroy();
 }

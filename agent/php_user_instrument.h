@@ -114,9 +114,9 @@ typedef struct _nruserfn_t {
   // Custom fcall_begin and fcall_end handlers. Set both or neither: if both
   // are set, they are used instead of the default ones,
   // nr_php_observer_fcall_begin and nr_php_observer_fcall_end. If only one is
-  // set, both defaults are used, because the defaults work as a pair. This
-  // allows the agent to execute custom logic for any user function without
-  // disrupting default behavior of starting and stopping segments.
+  // set, both defaults are used, because the defaults work as a pair. Custom
+  // handlers replace the defaults entirely: the function gets no segment
+  // unless the custom handlers start and stop one themselves.
   zend_observer_fcall_handlers fcall_handlers;
 #endif
 } nruserfn_t;
