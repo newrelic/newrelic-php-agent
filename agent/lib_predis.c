@@ -761,6 +761,10 @@ NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
    * A write that threw (the connection could not be opened, or the bytes could
    * not be sent) is never followed by a read of its response, so nothing is
    * saved for it.
+   *
+   * If the same command object is written again and the second write
+   * throws, the entry from the first write stays. The response that is
+   * read pairs with the first write, so its start time is the right one.
    */
   if ((NULL == EG(exception)) || (EG(exception) == previous_exception)) {
     nr_predis_command_start_save(command, start);

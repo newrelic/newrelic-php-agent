@@ -72,6 +72,11 @@ function count_children($txn, $function, $name) {
 function subscribing_fiber() {
   global $REDIS_HOST, $REDIS_PORT;
 
+  /*
+   * The handles of the PubSub commands are not visible from here, so the
+   * test does not assert that one is reused. It runs the real flow; the
+   * unit test for the command start table pins the behaviour.
+   */
   for ($i = 0; $i < 30; $i++) {
     $subscriber = new Predis\Client(array('host' => $REDIS_HOST,
                                           'port' => $REDIS_PORT));
