@@ -14,15 +14,15 @@ link's data were still kept, the explain connection would log in with the wrong
 password and be refused, and the query would have no explain plan.
 
 The users are in tests/tls. The test is skipped without the TLS test server and
-before PHP 8.1, where a null password falls back to mysqli.default_pw.
+before PHP 8.0, where the link data is not kept across transactions.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80100) {
-  die("skip: a null password uses mysqli.default_pw from PHP 8.1\n");
+if (PHP_VERSION_ID < 80000) {
+  die("skip: the link data is kept across transactions from PHP 8.0\n");
 }
 if ('' == $MYSQL_TLS_HOST) {
   die("skip: MYSQL_TLS_HOST is not set\n");
