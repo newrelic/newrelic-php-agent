@@ -999,6 +999,14 @@ void nr_php_mysqli_remove_datastore_instance(const zval* mysqli_obj TSRMLS_DC) {
   nr_free(key);
 }
 
+/*
+ * mysqli_options() converts its value argument in place before it uses it, so
+ * after a successful call the value is a string for a string option and an
+ * integer for an integer option. The wrapper reads the value after that call:
+ * an object given to a string option is read as the string mysqli made from
+ * it, and its __toString() has run once. The cases other than a string or an
+ * integer are not reached from the wrapper.
+ */
 char* nr_php_mysqli_option_to_string(zval* value) {
   zend_string* str;
   char* term;
@@ -1019,8 +1027,7 @@ char* nr_php_mysqli_option_to_string(zval* value) {
     case IS_DOUBLE:
     case IS_NULL:
       /*
-       * mysqli converts these the way PHP does, and converting them here runs
-       * no user code.
+       * Converting these runs no user code.
        */
       str = zval_get_string(value);
       term = nr_strndup(ZSTR_VAL(str), ZSTR_LEN(str));
@@ -1028,8 +1035,8 @@ char* nr_php_mysqli_option_to_string(zval* value) {
       return term;
     default:
       /*
-       * mysqli refuses an array or a resource. An object's __toString() would
-       * run user code a second time, so an object is not captured.
+       * An object's __toString() would run user code a second time, so an
+       * object is not converted here.
        */
       return NULL;
   }
