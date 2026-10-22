@@ -1085,7 +1085,9 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nr_txn_set_as_background_job(NRPRG(txn), "CLI SAPI");
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   NRTXNGLOBAL(mysqli_links) = nr_mysqli_metadata_create();
+#endif
 
   nr_php_add_user_instrumentation(TSRMLS_C);
   nr_php_resource_usage_sampler_start(TSRMLS_C);
@@ -1422,10 +1424,10 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
   nr_hashmap_destroy(&NRTXNGLOBAL(curl_metadata));
   nr_hashmap_destroy(&NRTXNGLOBAL(curl_multi_metadata));
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   nr_mysqli_metadata_destroy(&NRTXNGLOBAL(mysqli_links));
+#endif
   nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
-
-  nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
 
   return NR_SUCCESS;
 }

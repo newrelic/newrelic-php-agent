@@ -67,7 +67,6 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
-  nr_php_pdo_rshutdown();
   nr_php_mysqli_rshutdown();
 #ifdef ZTS
   nr_php_frankenphp_rshutdown();
@@ -147,6 +146,18 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG_CTX(mysql_last_conn));
   nr_free(NRPRG_CTX(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG_CTX(datastore_connections));
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * Only here: the engine has freed its objects and dropped its weak
+   * references by now, and no weak reference call is made.
+   */
+  nr_php_objtable_destroy(&NRPRG_SHARED(pgsql_instances));
+#endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_objtable_destroy(&NRPRG_SHARED(predis_instances));
+#endif
+  nr_php_objtable_destroy(&NRPRG_SHARED(pdo_options));
+  nr_php_mysqli_links_destroy();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
