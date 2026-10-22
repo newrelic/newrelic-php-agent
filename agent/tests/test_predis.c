@@ -827,6 +827,127 @@ static void test_save_datastore_instance(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_command_start() {
+  nrtime_t start = 0;
+  nr_hashmap_t* saved_map = NULL;
+
+  tlib_php_request_start();
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_bool_equal("NULL output", false,
+                          nr_predis_command_start_take(1, 0, NULL));
+
+  /*
+   * Test : A handle with no saved start time reports nothing and leaves the
+   * output alone.
+   */
+  start = 99;
+  tlib_pass_if_bool_equal("unsaved handle", false,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("output unchanged", 99, start);
+
+  /*
+   * Test : A saved start time is returned once, then removed, so a second
+   * response for the same command object, or a later command object that gets
+   * the same handle without being written, finds nothing.
+   */
+  nr_predis_command_start_save(1, 1000);
+  tlib_pass_if_size_t_equal("saved", 1,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("saved handle", true,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("start time", 1000, start);
+  tlib_pass_if_size_t_equal("removed", 0,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+
+  start = 99;
+  tlib_pass_if_bool_equal("second take", false,
+                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_time_equal("output unchanged after second take", 99, start);
+
+  /*
+   * Test : Saving again for the same handle replaces the start time.
+   */
+  nr_predis_command_start_save(2, 10);
+  nr_predis_command_start_save(2, 20);
+  tlib_pass_if_size_t_equal("replaced", 1,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("replaced handle", true,
+                          nr_predis_command_start_take(2, 0, &start));
+  tlib_pass_if_time_equal("replaced start time", 20, start);
+  tlib_pass_if_size_t_equal("replaced then removed", 0,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+
+  /*
+   * Test : Handles are independent, and handle 0 is an ordinary key.
+   */
+  nr_predis_command_start_save(0, 5);
+  nr_predis_command_start_save(3, 30);
+  nr_predis_command_start_save(4, 40);
+  tlib_pass_if_size_t_equal("three saved", 3,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("take 4", true,
+                          nr_predis_command_start_take(4, 0, &start));
+  tlib_pass_if_time_equal("start time 4", 40, start);
+  tlib_pass_if_size_t_equal("two left", 2,
+                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_bool_equal("take 0", true,
+                          nr_predis_command_start_take(0, 0, &start));
+  tlib_pass_if_time_equal("start time 0", 5, start);
+  tlib_pass_if_bool_equal("take 3", true,
+                          nr_predis_command_start_take(3, 0, &start));
+  tlib_pass_if_time_equal("start time 3", 30, start);
+
+  /*
+   * Test : The saved time is absolute and the result is relative to the start
+   * of the transaction that reads it.
+   */
+  nr_predis_command_start_save(5, 1500);
+  start = 99;
+  tlib_pass_if_bool_equal("later than the transaction start", true,
+                          nr_predis_command_start_take(5, 1000, &start));
+  tlib_pass_if_time_equal("offset from the transaction start", 500, start);
+
+  nr_predis_command_start_save(5, 1000);
+  start = 99;
+  tlib_pass_if_bool_equal("at the transaction start", true,
+                          nr_predis_command_start_take(5, 1000, &start));
+  tlib_pass_if_time_equal("offset zero", 0, start);
+
+  /*
+   * Test : A request written before the transaction began is not used, and
+   * its entry is removed.
+   */
+  nr_predis_command_start_save(6, 999);
+  start = 99;
+  tlib_pass_if_bool_equal("before the transaction start", false,
+                          nr_predis_command_start_take(6, 1000, &start));
+  tlib_pass_if_time_equal("output unchanged", 99, start);
+  tlib_pass_if_bool_equal("entry removed", false,
+                          nr_predis_command_start_take(6, 0, &start));
+
+  /*
+   * Test : An entry that is never taken is freed with the map.
+   */
+  nr_predis_command_start_save(7, 70);
+
+  /*
+   * Test : No map (not in a request): nothing is saved and nothing crashes.
+   */
+  saved_map = NRPRG_CTX(predis_commands);
+  NRPRG_CTX(predis_commands) = NULL;
+  nr_predis_command_start_save(8, 80);
+  start = 99;
+  tlib_pass_if_bool_equal("no map", false,
+                          nr_predis_command_start_take(8, 0, &start));
+  tlib_pass_if_time_equal("output unchanged with no map", 99, start);
+  NRPRG_CTX(predis_commands) = saved_map;
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   default_database = nr_formatf("%ld", (long)nr_predis_default_database);
   default_port = nr_formatf("%ld", (long)nr_predis_default_port);
@@ -858,6 +979,7 @@ void test_main(void* p NRUNUSED) {
   test_is_methods(TSRMLS_C);
   test_retrieve_datastore_instance(TSRMLS_C);
   test_save_datastore_instance(TSRMLS_C);
+  test_command_start();
 
   tlib_php_engine_destroy(TSRMLS_C);
 
