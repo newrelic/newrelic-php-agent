@@ -458,6 +458,7 @@ test-services-stop:
 #
 
 devenv-image:
+	tests/tls/generate-certs.sh
 	@docker compose --profile dev build devenv
 
 dev-shell: devenv-image

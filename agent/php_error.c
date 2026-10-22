@@ -103,7 +103,15 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   fci = NRPRG_SHARED(error_group_user_callback).fci;
   fcc = NRPRG_SHARED(error_group_user_callback).fcc;
 
+  /*
+   * The callback can replace itself, which releases the agent's reference to
+   * it. zend_call_function keeps a closure alive while it runs, but not the
+   * object of an [$object, 'method'] callable, so hold a reference until the
+   * call returns.
+   */
+  Z_TRY_ADDREF(fci.function_name);
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
+  zval_ptr_dtor(&fci.function_name);
 
   if (!nr_php_is_zval_non_empty_string(group_name_zv)) {
     nrl_debug(NRL_MISC,
@@ -127,6 +135,43 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_free(group_name_str);
 }
 #undef FREE_MEM
+
+void nr_php_error_set_error_group_callback(const zend_fcall_info* fci,
+                                           const zend_fcall_info_cache* fcc) {
+  nrcallbackfn_t old = NRPRG_SHARED(error_group_user_callback);
+
+  /*
+   * Store the new callback before releasing the old one: they can be the same
+   * callable, and the release can run a destructor that sets another callback.
+   */
+  NRPRG_SHARED(error_group_user_callback).fci = *fci;
+  NRPRG_SHARED(error_group_user_callback).fcc = *fcc;
+  NRPRG_SHARED(error_group_user_callback).is_set = true;
+  Z_TRY_ADDREF(NRPRG_SHARED(error_group_user_callback).fci.function_name);
+
+  if (old.is_set) {
+    zval_ptr_dtor(&old.fci.function_name);
+  }
+}
+
+void nr_php_error_release_error_group_callback(void) {
+  zval callable;
+
+  if (!is_error_callback_set()) {
+    return;
+  }
+
+  /*
+   * Unset the callback before releasing it: the release can run a destructor
+   * that records an error or sets another callback.
+   */
+  ZVAL_COPY_VALUE(&callable,
+                  &NRPRG_SHARED(error_group_user_callback).fci.function_name);
+  ZVAL_UNDEF(&NRPRG_SHARED(error_group_user_callback).fci.function_name);
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
+
+  zval_ptr_dtor(&callable);
+}
 
 void nr_php_exception_filters_init(zend_llist* chain) {
   if (chain) {
@@ -280,7 +325,12 @@ PHP_FUNCTION(newrelic_exception_handler) {
    * if this handler wasn't installed. Happily, PHP exposes an API function
    * that we can use to do this, rather than having to replicate that logic
    * ourselves.
+   *
+   * zend_exception_error() releases the reference it is given. Our caller
+   * only lends us the exception and releases its own reference after we
+   * return, so add one for zend_exception_error() to release.
    */
+  Z_ADDREF_P(exception);
   zend_exception_error(Z_OBJ_P(exception), E_ERROR TSRMLS_CC);
 }
 
@@ -624,9 +674,12 @@ void nr_php_error_cb(int type,
 #else
   /*
    * In PHP 8.0+, the type is OR'ed with the new E_DONT_BAIL error value. None
-   * of our existing routines can handle this addition so we remove it before
-   * proceeding.
+   * of our existing routines can handle this addition so we work on a copy
+   * with it removed. The original type must still be passed through to PHP's
+   * error handler, which bails out on a fatal error unless E_DONT_BAIL is set.
    */
+  int orig_type = type;
+
   type = type & ~E_DONT_BAIL;
   if (nr_php_should_record_error(type, ZSTR_VAL(message))) {
     msg = nr_strdup(ZSTR_VAL(message));
@@ -667,7 +720,7 @@ void nr_php_error_cb(int type,
     (type, error_filename, error_lineno, format, args);
 #else
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
-    (type, error_filename, error_lineno, message);
+    (orig_type, error_filename, error_lineno, message);
 #endif /* PHP < 8.0 */
   }
 }
