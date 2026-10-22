@@ -34,10 +34,15 @@ extern zend_module_entry newrelic_module_entry;
 #define phpext_newrelic_ptr &newrelic_module_entry
 
 /*
- * Compile guard for ZTS support for only PHPs that FrankenPHP supports */
+ * Compile guard: ZTS is only supported on PHP 8.3+. Before PHP 8.3, each
+ * thread gets its own copy of every internal function, so the agent's handler
+ * patch on an internal function reaches only the thread that ran the first
+ * RINIT. php-src 3b75f07 ("Stop copying internal functions into each
+ * thread", first in PHP 8.3.0) makes the threads share them.
+ */
 #ifdef ZTS
-#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
-#error "ZTS is only supported with PHP 8.2+"
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
+#error "ZTS is only supported with PHP 8.3+"
 #endif
 #endif
 
