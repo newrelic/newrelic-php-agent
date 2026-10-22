@@ -10,29 +10,19 @@ the link was opened has ended. The user requires TLS, so the connection the agen
 opens to run EXPLAIN is refused unless it also asks for TLS: if the settings
 were lost, the slow query in the second transaction would have no explain plan.
 
-The TLS setup is in tests/tls; the test is skipped without it and on PHP below
-7.4.
+The TLS setup is in tests/tls. The test is skipped only if
+MYSQL_TLS_HOST is not set or PHP is below 8.0, where the link data is not kept
+across transactions; an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80000) {
-  die("skip: the link data is kept across transactions from PHP 8.0\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_required', 'tls_required',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT, null, MYSQLI_CLIENT_SSL)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'required';
+require("skipif_tls.inc");
 */
 
 /*INI

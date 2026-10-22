@@ -11,29 +11,19 @@ selects the test database. The query in the second transaction names a table
 without a database, so the explain connection can resolve it only if the agent
 kept the selected database.
 
-The table is created by tests/tls/init.sql. The test is skipped without the TLS
-test server and on PHP below 7.4.
+The table is created by tests/tls/init.sql. The test is skipped only if
+MYSQL_TLS_HOST is not set or PHP is below 8.0, where the link data is not kept
+across transactions; an unusable server or user fails it.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
-require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
-if (PHP_VERSION_ID < 80000) {
-  die("skip: the link data is kept across transactions from PHP 8.0\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
-if (PHP_VERSION_ID < 70400) {
-  die("skip: the TLS test users need PHP 7.4 or later\n");
-}
-if ('' == $MYSQL_TLS_HOST) {
-  die("skip: MYSQL_TLS_HOST is not set\n");
-}
-mysqli_report(MYSQLI_REPORT_OFF);
-$link = mysqli_init();
-if (!@mysqli_real_connect($link, $MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
-                          $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT)) {
-  die("skip: TLS MySQL server not available: " . mysqli_connect_error() . "\n");
-}
+$tls_profile = 'optional';
+require("skipif_tls.inc");
 */
 
 /*INI

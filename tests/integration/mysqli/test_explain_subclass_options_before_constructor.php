@@ -31,10 +31,10 @@ test_explain_subclass_options_before_real_connect.php covers that.
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (PHP_VERSION_ID < 80000) {
+if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: PHP < 8.0.0 not supported\n");
 }
-if (PHP_VERSION_ID >= 80500) {
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
   die("skip: PHP >= 8.5.0 not supported\n");
 }
 $tls_profile = 'optional';

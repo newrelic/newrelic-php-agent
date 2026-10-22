@@ -18,7 +18,7 @@ across transactions; an unusable server or user fails it.
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (PHP_VERSION_ID < 80000) {
+if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: PHP < 8.0.0 not supported\n");
 }
 $tls_profile = 'view_only';

@@ -23,7 +23,7 @@ an unusable server or user fails it. The table is created by tests/tls/init.sql.
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (PHP_VERSION_ID < 80500) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP < 8.5.0 not supported\n");
 }
 $tls_profile = 'view_only';
