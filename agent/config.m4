@@ -43,11 +43,11 @@ PHP_ARG_WITH(pcre-static,,
 if test "$PHP_NEWRELIC" = "yes"; then
   AC_DEFINE(HAVE_NEWRELIC, 1, [Whether you have New Relic])
 
-  dnl ZTS is only supported on PHP 8.2+.
+  dnl ZTS is only supported on PHP 8.3+; php_newrelic.h's compile guard says why.
   if test "$PHP_THREAD_SAFETY" = "yes"; then
     php_version=`$PHP_CONFIG --version 2>/dev/null`
-    AS_VERSION_COMPARE([$php_version], [8.2],
-      [AC_MSG_ERROR([ZTS (thread-safe) PHP requires PHP 8.2 or newer (found $php_version)])])
+    AS_VERSION_COMPARE([$php_version], [8.3],
+      [AC_MSG_ERROR([ZTS (thread-safe) PHP requires PHP 8.3 or newer (found $php_version)])])
   fi
 
   LT_AC_PROG_SED
