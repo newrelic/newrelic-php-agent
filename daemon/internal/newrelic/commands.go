@@ -86,9 +86,9 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 		syntheticsResourceID = string(x)
 	}
 
-	pid := int(txn.Pid())
-	if _, ok := h.pidSet[pid]; !ok {
-		h.pidSet[pid] = struct{}{}
+	key := pidKey{pid: int(txn.Pid()), threadID: txn.ThreadId()}
+	if _, ok := h.pidSet[key]; !ok {
+		h.pidSet[key] = struct{}{}
 	}
 
 	if event := txn.TxnEvent(nil); event != nil {
@@ -324,9 +324,12 @@ func processBinary(data []byte, handler AgentDataHandler) ([]byte, error) {
 		}
 
 		if id := msg.AgentRunId(); len(id) > 0 {
+			var txn protocol.Transaction
+			txn.Init(tbl.Bytes, tbl.Pos)
+			info := TxnProcessInfo{PID: int(txn.Pid()), ThreadID: txn.ThreadId()}
 			// Send the data directly to the processor without a
 			// copy because each message is in its own buffer.
-			handler.IncomingTxnData(AgentRunID(id), FlatTxn(data))
+			handler.IncomingTxnData(AgentRunID(id), FlatTxn(data), info)
 			return nil, nil
 		}
 		return nil, errors.New("missing agent run id for txn data command")

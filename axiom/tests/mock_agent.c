@@ -5,13 +5,27 @@
 
 #include "nr_axiom.h"
 #include "nr_agent.h"
-#include "nr_app.h"
+#include "util_threads.h"
 
 /* This is defined only to satisfy link requirements, and is not shared amongst
  * threads. */
-nrapplist_t* nr_agent_applist = 0;
+
+nrt_thread_local int nr_agent_daemon_fd = -1;
+
+void nr_set_daemon_fd(int fd) {
+  nr_agent_daemon_fd = fd;
+}
+
+nr_status_t nr_agent_get_daemon_fd_locked(int* daemon_fd) {
+  *daemon_fd = nr_agent_daemon_fd;
+  return NR_SUCCESS;
+}
 
 void nr_agent_close_daemon_connection(void) {}
+
+nr_status_t nr_agent_close_daemon_connection_locked(void) {
+  return NR_SUCCESS;
+}
 
 nr_status_t nr_agent_lock_daemon_mutex(void) {
   return NR_SUCCESS;
@@ -19,13 +33,4 @@ nr_status_t nr_agent_lock_daemon_mutex(void) {
 
 nr_status_t nr_agent_unlock_daemon_mutex(void) {
   return NR_SUCCESS;
-}
-
-int nr_get_daemon_fd(void) {
-  return 0;
-}
-
-nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
-                          const char* agent_run_id NRUNUSED) {
-  return 0;
 }

@@ -124,6 +124,27 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
    * cope with an uninitialised extensions structure.
    */
   nr_php_extension_instrument_destroy(&newrelic_globals->shared.extensions);
+
+  /*
+   * Remove this thread's per-thread harvest stats entry from every app's
+   * harvest_map so it is not left dangling after the thread exits.
+   * Also removes the per-thread RNG state entry from rnd_map and the
+   * per-thread Composer detection status entry from composer_map.
+   */
+  if (nr_agent_applist) {
+    uint64_t key = (uint64_t)nr_gettid();
+
+    nrt_mutex_lock(&nr_agent_applist->applist_lock);
+    for (int i = 0; i < nr_agent_applist->num_apps; i++) {
+      nrapp_t* app = nr_agent_applist->apps[i];
+      if (app && (app->harvest_map || app->rnd_map || app->composer_map)) {
+        nrt_mutex_lock(&app->app_lock);
+        nr_app_tid_maps_evict(app, key);
+        nrt_mutex_unlock(&app->app_lock);
+      }
+    }
+    nrt_mutex_unlock(&nr_agent_applist->applist_lock);
+  }
 }
 
 #if defined(__GNUC__)
@@ -455,7 +476,6 @@ PHP_MINIT_FUNCTION(newrelic) {
       = nr_php_check_for_upgrade_license_key();
   NR_PHP_PROCESS_GLOBALS(high_security) = 0;
   NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection) = 1;
-  NR_PHP_PROCESS_GLOBALS(composer_api_status) = NR_COMPOSER_API_STATUS_UNSET;
   nr_php_populate_apache_process_globals();
   nr_php_api_distributed_trace_register_userland_class(TSRMLS_C);
   /*
@@ -492,16 +512,21 @@ PHP_MINIT_FUNCTION(newrelic) {
    */
   nr_php_generate_internal_wrap_records();
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /*
-   * The user function wraprec hashmap must be initialized before INI processing
-   * because INI processing adds wraprecs:
-   *  - newrelic.webtransaction.name.functions
-   *  - newrelic.transaction_tracer.custom
+   * Initialize wraprec hashmaps before INI registration so that INI OnModify
+   * handlers (nr_wtfuncs_mh, nr_ttcustom_mh) can create wraprecs.
+   *
+   * NTS: creates file-scoped statics that persist until MSHUTDOWN.
+   * ZTS: creates process-global ini_scope_ht / ini_global_funcs_ht that are
+   * deep copied into per-request hashmaps at RINIT.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef ZTS
+  nr_php_user_instrument_wraprec_hashmap_ini_init();
+#else
   nr_php_user_instrument_wraprec_hashmap_init();
 #endif
-
+#endif
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
