@@ -184,6 +184,9 @@ static void test_sql_obfuscate(void) {
   sql_obfuscate_testcase("trailing backslash in a double quote string",
                          "SELECT \"abc\\", "SELECT ?");
 
+  sql_obfuscate_testcase("backslash before the closing quote at end of input",
+                         "SELECT 'abc\\'", "SELECT ?");
+
   sql_obfuscate_testcase("stuttered quotes",
                          "SELECT * FROM test WHERE foo IN (1,\"\"\"\",'''',14)",
                          "SELECT * FROM test WHERE foo IN (?,?,?,?)");
