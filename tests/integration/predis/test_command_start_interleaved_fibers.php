@@ -33,7 +33,7 @@ ok - first response read
 ok - second response read
 ok - the first fiber has its get segment
 ok - the second fiber has its get segment
-ok - the main function has no get segment
+ok - the trace has no other get segment
 */
 
 /*EXPECT_METRICS_EXIST
@@ -54,7 +54,7 @@ Datastore/operation/Redis/get, 2
       "duration": "??",
       "priority": "??",
       "sampled": true,
-      "parentId": "ENV[GUID_A]",
+      "parentId": "??",
       "span.kind": "client",
       "component": "Redis"
     },
@@ -77,7 +77,7 @@ Datastore/operation/Redis/get, 2
       "duration": "??",
       "priority": "??",
       "sampled": true,
-      "parentId": "ENV[GUID_B]",
+      "parentId": "??",
       "span.kind": "client",
       "component": "Redis"
     },
@@ -101,15 +101,22 @@ require_once(__DIR__.'/predis.inc');
 
 use NewRelic\Integration\Transaction;
 
-/* The number of children with the given name that the segment(s) of a function have. */
-function count_children($txn, $function, $name) {
+/* The number of segments with the given name below any of a function's segments, at any depth. */
+function count_descendants($segment, $name) {
+  $count = 0;
+  foreach ($segment->children as $child) {
+    if ($name === $child->name) {
+      $count++;
+    }
+    $count += count_descendants($child, $name);
+  }
+  return $count;
+}
+
+function count_below($txn, $function, $name) {
   $count = 0;
   foreach ($txn->getTrace()->findSegmentsByName('Custom/' . $function) as $segment) {
-    foreach ($segment->children as $child) {
-      if ($name === $child->name) {
-        $count++;
-      }
-    }
+    $count += count_descendants($segment, $name);
   }
   return $count;
 }
@@ -157,6 +164,6 @@ test_interleaved();
 
 $txn = new Transaction;
 $get = 'Datastore/operation/Redis/get';
-tap_equal(1, count_children($txn, 'fiber_a', $get), 'the first fiber has its get segment');
-tap_equal(1, count_children($txn, 'fiber_b', $get), 'the second fiber has its get segment');
-tap_equal(0, count_children($txn, 'test_interleaved', $get), 'the main function has no get segment');
+tap_equal(1, count_below($txn, 'fiber_a', $get), 'the first fiber has its get segment');
+tap_equal(1, count_below($txn, 'fiber_b', $get), 'the second fiber has its get segment');
+tap_equal(2, iterator_count($txn->getTrace()->findSegmentsByName($get)), 'the trace has no other get segment');

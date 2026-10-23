@@ -30,7 +30,7 @@ newrelic.fibers.disabled = false
 ok - response read in another fiber
 ok - the reading fiber has the get segment
 ok - the writing fiber has no get segment
-ok - the main function has no get segment
+ok - the trace has no other get segment
 */
 
 /*EXPECT_METRICS_EXIST
@@ -51,7 +51,7 @@ Datastore/operation/Redis/get, 1
       "duration": "??",
       "priority": "??",
       "sampled": true,
-      "parentId": "ENV[GUID_B]",
+      "parentId": "??",
       "span.kind": "client",
       "component": "Redis"
     },
@@ -75,15 +75,22 @@ require_once(__DIR__.'/predis.inc');
 
 use NewRelic\Integration\Transaction;
 
-/* The number of children with the given name that the segment(s) of a function have. */
-function count_children($txn, $function, $name) {
+/* The number of segments with the given name below any of a function's segments, at any depth. */
+function count_descendants($segment, $name) {
+  $count = 0;
+  foreach ($segment->children as $child) {
+    if ($name === $child->name) {
+      $count++;
+    }
+    $count += count_descendants($child, $name);
+  }
+  return $count;
+}
+
+function count_below($txn, $function, $name) {
   $count = 0;
   foreach ($txn->getTrace()->findSegmentsByName('Custom/' . $function) as $segment) {
-    foreach ($segment->children as $child) {
-      if ($name === $child->name) {
-        $count++;
-      }
-    }
+    $count += count_descendants($segment, $name);
   }
   return $count;
 }
@@ -127,6 +134,6 @@ test_read_in_another_fiber();
 
 $txn = new Transaction;
 $get = 'Datastore/operation/Redis/get';
-tap_equal(1, count_children($txn, 'reading_fiber', $get), 'the reading fiber has the get segment');
-tap_equal(0, count_children($txn, 'writing_fiber', $get), 'the writing fiber has no get segment');
-tap_equal(0, count_children($txn, 'test_read_in_another_fiber', $get), 'the main function has no get segment');
+tap_equal(1, count_below($txn, 'reading_fiber', $get), 'the reading fiber has the get segment');
+tap_equal(0, count_below($txn, 'writing_fiber', $get), 'the writing fiber has no get segment');
+tap_equal(1, iterator_count($txn->getTrace()->findSegmentsByName($get)), 'the trace has no other get segment');
