@@ -719,6 +719,7 @@ void nr_php_curl_exec_post(zval* curlres, bool duration_from_handle TSRMLS_DC) {
   }
 
   nr_segment_external_end(&segment, &external_params);
+  nr_php_curl_md_reset_segment(curlres TSRMLS_CC);
 
   nr_free(external_params.uri);
   nr_free(external_params.procedure);
@@ -738,11 +739,20 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
   }
 
   /*
-   * If this is the first call to curl_multi_exec, the asynchronous root
-   * segment has to be initialized.
+   * A call made while no curl handle waits on the multi handle, such as one
+   * made again once all of its transfers have finished, starts no segment.
+   */
+  handles = nr_php_curl_multi_md_get_handles(curlres TSRMLS_CC);
+  if (0 == nr_vector_size(handles)) {
+    return;
+  }
+
+  /*
+   * If this is the first call to curl_multi_exec since the handle was created
+   * or last finalized, the asynchronous root segment has to be initialized.
    *
-   * The segment is ended right away, and with every subsequent call to
-   * curl_multi_exec, the end time of the segment is updated.
+   * With every subsequent call to curl_multi_exec, the end time of the segment
+   * is updated, until nr_php_curl_multi_exec_finalize ends it.
    */
   if (!nr_guzzle_in_call_stack(TSRMLS_C)) {
     /*
@@ -782,7 +792,6 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
    * segment is NULL to ensure that we re-add any user headers, even if we're
    * not instrumenting this particular call.
    */
-  handles = nr_php_curl_multi_md_get_handles(curlres TSRMLS_CC);
   async_context = nr_php_curl_multi_md_get_async_context(curlres TSRMLS_CC);
 
   for (pos = 0; pos < nr_vector_size(handles); pos++) {
@@ -860,5 +869,8 @@ void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC) {
   }
 
   segment = nr_php_curl_multi_md_get_segment(curlres TSRMLS_CC);
-  nr_segment_end(&segment);
+  if (NULL != segment) {
+    nr_segment_end(&segment);
+  }
+  nr_php_curl_multi_md_reset(curlres TSRMLS_CC);
 }
