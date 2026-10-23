@@ -106,7 +106,9 @@ extern void nr_php_curl_exec_pre(zval* curlres,
                                  const char* async_context TSRMLS_DC);
 
 /*
- * Purpose : End an external segment for a curl resource.
+ * Purpose : End an external segment for a curl resource, and forget it, so
+ *           that a later use of the curl resource cannot end or discard it
+ *           again.
  *
  * Params  : 1. The curl resource.
  *           2. If true, the duration of the external segment is set to the
@@ -124,7 +126,7 @@ extern void nr_php_curl_exec_post(zval* curlres,
  *           curl multi resource.
  *
  *           If this function has already been called on the given curl multi
- *           resource, it does nothing.
+ *           resource since it was created or last finalized, it does nothing.
  *
  * Params  : 1. The curl multi resource.
  */
@@ -148,6 +150,9 @@ extern void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC);
  *           ended yet. This is the case for handles for which no request could
  *           be made. Those cases aren't caught by nr_php_curl_multi_exec_post,
  *           as curl_getinfo can't tell us about failed requests.
+ *
+ *           It then ends the segment of the curl multi resource and forgets
+ *           it, so that the next call to curl_multi_exec starts a new one.
  *
  * Params  : 1. The curl multi resource.
  */

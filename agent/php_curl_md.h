@@ -25,7 +25,8 @@ typedef struct _nr_php_curl_multi_md_t {
   char* async_context; /* The async context name, shared by the multi handle
                           with the single handles added to it */
   bool initialized; /* Whether this metadata struct was initialized. Set on the
-                       first call to curl_multi_exec. */
+                       first call to curl_multi_exec, and cleared once the
+                       segment is ended by nr_php_curl_multi_exec_finalize. */
   nrtime_t txn_start_time; /* Time at which the associated segment's parent
                              transaction was created. Used in detection of
                              transaction restarts in between multi_execs */
@@ -119,6 +120,16 @@ extern bool nr_php_curl_md_set_segment(zval* ch,
  * Returns : The segment associated to this curl handle if set, otherwise NULL.
  */
 extern nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC);
+
+/*
+ * Purpose : Forgets the segment of a curl handle, once it has been ended or
+ *           discarded.
+ *
+ * Params  : 1. The associated curl handle zval
+ *
+ * Returns : true upon successful operation, otherwise false
+ */
+extern bool nr_php_curl_md_reset_segment(const zval* ch TSRMLS_DC);
 
 /*
  * Purpose : Retrieves a pointer to the nr_php_curl_multi_md_t struct associated
@@ -216,6 +227,16 @@ extern bool nr_php_curl_multi_md_set_initialized(const zval* mh TSRMLS_DC);
  * Returns : true if the metadata has been initialized, false otherwise.
  */
 extern bool nr_php_curl_multi_md_is_initialized(const zval* mh TSRMLS_DC);
+
+/*
+ * Purpose : Forgets the segment and the initialized state of a curl multi
+ *           handle, once its segment has been ended.
+ *
+ * Params  : 1. The associated curl multi handle zval
+ *
+ * Returns : true upon successful operation, otherwise false
+ */
+extern bool nr_php_curl_multi_md_reset(const zval* mh TSRMLS_DC);
 
 /*
  * Purpose : Performs tasks that we need performed on RSHUTDOWN in the Curl

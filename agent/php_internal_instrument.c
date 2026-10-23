@@ -2789,6 +2789,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
       segment = nr_php_curl_md_get_segment(curlres TSRMLS_CC);
       if (NULL != segment) {
         nr_segment_discard(&segment);
+        nr_php_curl_md_reset_segment(curlres TSRMLS_CC);
       }
     }
   }

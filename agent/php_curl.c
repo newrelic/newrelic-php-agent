@@ -719,6 +719,7 @@ void nr_php_curl_exec_post(zval* curlres, bool duration_from_handle TSRMLS_DC) {
   }
 
   nr_segment_external_end(&segment, &external_params);
+  nr_php_curl_md_reset_segment(curlres TSRMLS_CC);
 
   nr_free(external_params.uri);
   nr_free(external_params.procedure);
@@ -738,11 +739,11 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
   }
 
   /*
-   * If this is the first call to curl_multi_exec, the asynchronous root
-   * segment has to be initialized.
+   * If this is the first call to curl_multi_exec since the handle was created
+   * or last finalized, the asynchronous root segment has to be initialized.
    *
-   * The segment is ended right away, and with every subsequent call to
-   * curl_multi_exec, the end time of the segment is updated.
+   * With every subsequent call to curl_multi_exec, the end time of the segment
+   * is updated, until nr_php_curl_multi_exec_finalize ends it.
    */
   if (!nr_guzzle_in_call_stack(TSRMLS_C)) {
     /*
@@ -861,4 +862,5 @@ void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC) {
 
   segment = nr_php_curl_multi_md_get_segment(curlres TSRMLS_CC);
   nr_segment_end(&segment);
+  nr_php_curl_multi_md_reset(curlres TSRMLS_CC);
 }
