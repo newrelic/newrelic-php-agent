@@ -25,8 +25,9 @@ typedef struct _nr_php_curl_multi_md_t {
   char* async_context; /* The async context name, shared by the multi handle
                           with the single handles added to it */
   bool initialized; /* Whether this metadata struct was initialized. Set on the
-                       first call to curl_multi_exec, and cleared once the
-                       segment is ended by nr_php_curl_multi_exec_finalize. */
+                       first call to curl_multi_exec made with a curl handle
+                       added, and cleared once the segment is ended by
+                       nr_php_curl_multi_exec_finalize. */
   nrtime_t txn_start_time; /* Time at which the associated segment's parent
                              transaction was created. Used in detection of
                              transaction restarts in between multi_execs */

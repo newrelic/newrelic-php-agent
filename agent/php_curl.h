@@ -126,7 +126,8 @@ extern void nr_php_curl_exec_post(zval* curlres,
  *           curl multi resource.
  *
  *           If this function has already been called on the given curl multi
- *           resource since it was created or last finalized, it does nothing.
+ *           resource since it was created or last finalized, or if no curl
+ *           handle has been added to it since, it does nothing.
  *
  * Params  : 1. The curl multi resource.
  */
@@ -152,7 +153,8 @@ extern void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC);
  *           as curl_getinfo can't tell us about failed requests.
  *
  *           It then ends the segment of the curl multi resource and forgets
- *           it, so that the next call to curl_multi_exec starts a new one.
+ *           it, so that the next call to curl_multi_exec made with a curl
+ *           handle added starts a new one.
  *
  * Params  : 1. The curl multi resource.
  */

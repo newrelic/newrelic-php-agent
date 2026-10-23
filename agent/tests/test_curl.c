@@ -292,6 +292,39 @@ static void test_curl_multi_remove_handle_forgets_segment(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * Runs one burst of one file:// transfer, then calls curl_multi_exec three
+ * more times with no curl handle left on the multi handle.
+ */
+static void test_curl_multi_exec_without_handles(TSRMLS_D) {
+  nrtxn_t* txn;
+  int saved_cli = NR_PHP_PROCESS_GLOBALS(cli);
+
+  /* A CLI transaction keeps its ended segments in the segment heap. */
+  NR_PHP_PROCESS_GLOBALS(cli) = 1;
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  tlib_php_request_eval(
+      "$path = tempnam(sys_get_temp_dir(), 'nr');"
+      "file_put_contents($path, 'x');"
+      "$mh = curl_multi_init();"
+      "$ch = curl_init('file://' . $path);"
+      "curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);"
+      "curl_multi_add_handle($mh, $ch);"
+      "do { curl_multi_exec($mh, $running); } while ($running);"
+      "curl_multi_remove_handle($mh, $ch);"
+      "for ($i = 0; $i < 3; ++$i) { curl_multi_exec($mh, $running); }"
+      "unlink($path);" TSRMLS_CC);
+
+  tlib_pass_if_size_t_equal(
+      "calls with no curl handle left start no curl_multi_exec segment", 1,
+      count_distinct_heap_segments(txn));
+
+  tlib_php_request_end();
+  NR_PHP_PROCESS_GLOBALS(cli) = saved_cli;
+}
+
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
@@ -305,6 +338,7 @@ void test_main(void* p NRUNUSED) {
     test_curl_reuse_after_segment_end(true TSRMLS_CC);
     test_curl_reuse_after_segment_end(false TSRMLS_CC);
     test_curl_multi_remove_handle_forgets_segment(TSRMLS_C);
+    test_curl_multi_exec_without_handles(TSRMLS_C);
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
