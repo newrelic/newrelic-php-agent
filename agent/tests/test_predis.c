@@ -981,124 +981,174 @@ static void test_node_instance_refreshed() {
 
 static void test_command_start() {
   nrtime_t start = 0;
-  nr_hashmap_t* saved_map = NULL;
+  nr_php_objtable_t* saved_table = NULL;
+  zval* a = NULL;
+  zval* b = NULL;
+  zval* not_object = NULL;
 
   tlib_php_request_start();
+
+  tlib_php_request_eval("$a = new stdClass; $b = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
+  b = tlib_php_request_eval_expr("$b");
+  not_object = tlib_php_request_eval_expr("42");
 
   /*
    * Test : Bad parameters.
    */
   tlib_pass_if_bool_equal("NULL output", false,
-                          nr_predis_command_start_take(1, 0, NULL));
+                          nr_predis_command_start_take(a, 0, NULL));
+  tlib_pass_if_bool_equal("NULL command", false,
+                          nr_predis_command_start_take(NULL, 0, &start));
+  tlib_pass_if_bool_equal("not an object", false,
+                          nr_predis_command_start_take(not_object, 0, &start));
+  nr_predis_command_start_save(NULL, 10);
+  nr_predis_command_start_save(not_object, 10);
+  tlib_pass_if_size_t_equal(
+      "nothing saved for a bad command", 0,
+      nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
 
   /*
-   * Test : A handle with no saved start time reports nothing and leaves the
+   * Test : An object with no saved start time reports nothing and leaves the
    * output alone.
    */
   start = 99;
-  tlib_pass_if_bool_equal("unsaved handle", false,
-                          nr_predis_command_start_take(1, 0, &start));
+  tlib_pass_if_bool_equal("unsaved object", false,
+                          nr_predis_command_start_take(a, 0, &start));
   tlib_pass_if_time_equal("output unchanged", 99, start);
 
   /*
    * Test : A saved start time is returned once, then removed, so a second
-   * response for the same command object, or a later command object that gets
-   * the same handle without being written, finds nothing.
+   * response for the same command object finds nothing.
    */
-  nr_predis_command_start_save(1, 1000);
-  tlib_pass_if_size_t_equal("saved", 1,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
-  tlib_pass_if_bool_equal("saved handle", true,
-                          nr_predis_command_start_take(1, 0, &start));
+  nr_predis_command_start_save(a, 1000);
+  tlib_pass_if_size_t_equal(
+      "saved", 1, nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
+  tlib_pass_if_bool_equal("saved object", true,
+                          nr_predis_command_start_take(a, 0, &start));
   tlib_pass_if_time_equal("start time", 1000, start);
-  tlib_pass_if_size_t_equal("removed", 0,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
+  tlib_pass_if_size_t_equal(
+      "removed", 0, nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
 
   start = 99;
   tlib_pass_if_bool_equal("second take", false,
-                          nr_predis_command_start_take(1, 0, &start));
+                          nr_predis_command_start_take(a, 0, &start));
   tlib_pass_if_time_equal("output unchanged after second take", 99, start);
 
   /*
-   * Test : Saving again for the same handle replaces the start time.
+   * Test : Saving again for the same object replaces the start time.
    */
-  nr_predis_command_start_save(2, 10);
-  nr_predis_command_start_save(2, 20);
-  tlib_pass_if_size_t_equal("replaced", 1,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
-  tlib_pass_if_bool_equal("replaced handle", true,
-                          nr_predis_command_start_take(2, 0, &start));
+  nr_predis_command_start_save(a, 10);
+  nr_predis_command_start_save(a, 20);
+  tlib_pass_if_size_t_equal(
+      "replaced", 1, nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
+  tlib_pass_if_bool_equal("replaced object", true,
+                          nr_predis_command_start_take(a, 0, &start));
   tlib_pass_if_time_equal("replaced start time", 20, start);
-  tlib_pass_if_size_t_equal("replaced then removed", 0,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
 
   /*
-   * Test : Handles are independent, and handle 0 is an ordinary key.
+   * Test : Objects are independent.
    */
-  nr_predis_command_start_save(0, 5);
-  nr_predis_command_start_save(3, 30);
-  nr_predis_command_start_save(4, 40);
-  tlib_pass_if_size_t_equal("three saved", 3,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
-  tlib_pass_if_bool_equal("take 4", true,
-                          nr_predis_command_start_take(4, 0, &start));
-  tlib_pass_if_time_equal("start time 4", 40, start);
-  tlib_pass_if_size_t_equal("two left", 2,
-                            nr_hashmap_count(NRPRG_CTX(predis_commands)));
-  tlib_pass_if_bool_equal("take 0", true,
-                          nr_predis_command_start_take(0, 0, &start));
-  tlib_pass_if_time_equal("start time 0", 5, start);
-  tlib_pass_if_bool_equal("take 3", true,
-                          nr_predis_command_start_take(3, 0, &start));
-  tlib_pass_if_time_equal("start time 3", 30, start);
+  nr_predis_command_start_save(a, 30);
+  nr_predis_command_start_save(b, 40);
+  tlib_pass_if_size_t_equal(
+      "two saved", 2, nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
+  tlib_pass_if_bool_equal("take b", true,
+                          nr_predis_command_start_take(b, 0, &start));
+  tlib_pass_if_time_equal("start time b", 40, start);
+  tlib_pass_if_bool_equal("take a", true,
+                          nr_predis_command_start_take(a, 0, &start));
+  tlib_pass_if_time_equal("start time a", 30, start);
 
   /*
    * Test : The saved time is absolute and the result is relative to the start
    * of the transaction that reads it.
    */
-  nr_predis_command_start_save(5, 1500);
+  nr_predis_command_start_save(a, 1500);
   start = 99;
   tlib_pass_if_bool_equal("later than the transaction start", true,
-                          nr_predis_command_start_take(5, 1000, &start));
+                          nr_predis_command_start_take(a, 1000, &start));
   tlib_pass_if_time_equal("offset from the transaction start", 500, start);
 
-  nr_predis_command_start_save(5, 1000);
+  nr_predis_command_start_save(a, 1000);
   start = 99;
   tlib_pass_if_bool_equal("at the transaction start", true,
-                          nr_predis_command_start_take(5, 1000, &start));
+                          nr_predis_command_start_take(a, 1000, &start));
   tlib_pass_if_time_equal("offset zero", 0, start);
 
   /*
    * Test : A request written before the transaction began is not used, and
    * its entry is removed.
    */
-  nr_predis_command_start_save(6, 999);
+  nr_predis_command_start_save(a, 999);
   start = 99;
   tlib_pass_if_bool_equal("before the transaction start", false,
-                          nr_predis_command_start_take(6, 1000, &start));
+                          nr_predis_command_start_take(a, 1000, &start));
   tlib_pass_if_time_equal("output unchanged", 99, start);
   tlib_pass_if_bool_equal("entry removed", false,
-                          nr_predis_command_start_take(6, 0, &start));
+                          nr_predis_command_start_take(a, 0, &start));
 
   /*
-   * Test : An entry that is never taken is freed with the map.
+   * Test : An entry that is never taken is freed with the table.
    */
-  nr_predis_command_start_save(7, 70);
+  nr_predis_command_start_save(a, 70);
 
   /*
-   * Test : No map (not in a request): nothing is saved and nothing crashes.
+   * Test : No table (not in a request): nothing is saved and nothing crashes.
    */
-  saved_map = NRPRG_CTX(predis_commands);
-  NRPRG_CTX(predis_commands) = NULL;
-  nr_predis_command_start_save(8, 80);
+  saved_table = NRPRG_CTX(predis_command_starts);
+  NRPRG_CTX(predis_command_starts) = NULL;
+  nr_predis_command_start_save(b, 80);
   start = 99;
-  tlib_pass_if_bool_equal("no map", false,
-                          nr_predis_command_start_take(8, 0, &start));
-  tlib_pass_if_time_equal("output unchanged with no map", 99, start);
-  NRPRG_CTX(predis_commands) = saved_map;
+  tlib_pass_if_bool_equal("no table", false,
+                          nr_predis_command_start_take(b, 0, &start));
+  tlib_pass_if_time_equal("output unchanged with no table", 99, start);
+  NRPRG_CTX(predis_command_starts) = saved_table;
+
+  nr_php_zval_free(&a);
+  nr_php_zval_free(&b);
+  nr_php_zval_free(&not_object);
 
   tlib_php_request_end();
 }
+
+#ifdef NR_PHP_OBJTABLE_WEAK
+/*
+ * Test : On PHP 8.0 and later the start time goes with the command object. A
+ * command object that is written and freed without its response being read
+ * leaves nothing for a later object that takes its handle.
+ */
+static void test_command_start_freed_object() {
+  nrtime_t start = 99;
+  zval* a = NULL;
+  zval* b = NULL;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval("$a = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
+  nr_predis_command_start_save(a, 1000);
+  nr_php_zval_free(&a);
+  tlib_pass_if_size_t_equal(
+      "saved while alive", 1,
+      nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
+
+  tlib_php_request_eval("unset($a);");
+  tlib_pass_if_size_t_equal(
+      "removed when the object is freed", 0,
+      nr_php_objtable_count(NRPRG_CTX(predis_command_starts)));
+
+  /* The next object takes the freed object's handle. */
+  tlib_php_request_eval("$b = new stdClass;");
+  b = tlib_php_request_eval_expr("$b");
+  tlib_pass_if_bool_equal("object that reuses the handle", false,
+                          nr_predis_command_start_take(b, 0, &start));
+  tlib_pass_if_time_equal("output unchanged", 99, start);
+  nr_php_zval_free(&b);
+
+  tlib_php_request_end();
+}
+#endif
 
 void test_main(void* p NRUNUSED) {
   default_database = nr_formatf("%ld", (long)nr_predis_default_database);
@@ -1138,6 +1188,9 @@ void test_main(void* p NRUNUSED) {
   test_node_instance_refreshed();
 #endif
   test_command_start();
+#ifdef NR_PHP_OBJTABLE_WEAK
+  test_command_start_freed_object();
+#endif
 
   tlib_php_engine_destroy(TSRMLS_C);
 
