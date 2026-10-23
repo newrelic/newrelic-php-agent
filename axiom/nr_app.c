@@ -100,15 +100,6 @@ void nr_app_info_destroy_fields(nr_app_info_t* info) {
   nr_free(info->docker_id);
 }
 
-void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid) {
-  if (NULL == app) {
-    return;
-  }
-  nr_hashmap_index_delete(app->harvest_map, tid);
-  nr_hashmap_index_delete(app->rnd_map, tid);
-  nr_hashmap_index_delete(app->composer_map, tid);
-}
-
 void nr_app_tid_maps_destroy(nrapp_t* app) {
   if (NULL == app) {
     return;
@@ -116,6 +107,7 @@ void nr_app_tid_maps_destroy(nrapp_t* app) {
   nr_hashmap_destroy(&app->harvest_map);
   nr_hashmap_destroy(&app->rnd_map);
   nr_hashmap_destroy(&app->composer_map);
+  nr_hashmap_destroy(&app->tid_owner_map);
 }
 
 /*
@@ -309,6 +301,7 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
   app->composer_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+  app->tid_owner_map = nr_hashmap_create(NULL);
 
   nrt_mutex_init(&app->app_lock, 0);
   nrt_mutex_lock(&app->app_lock);
