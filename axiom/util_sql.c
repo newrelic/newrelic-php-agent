@@ -71,28 +71,6 @@ char* nr_sql_obfuscate(const char* raw) {
             break;
 
           case '$': /* checking for dollar quoted strings */
-            /*
-             * In PostgreSQL, a dollar sign attached to an identifier belongs
-             * to it rather than opening a quote.
-             */
-            if (p > raw) {
-              const char* start = p;
-
-              while ((start > raw)
-                     && (nr_isalnum(start[-1]) || ('_' == start[-1])
-                         || ('$' == start[-1]) || ('?' == start[-1])
-                         || (((unsigned char)start[-1]) >= 0x80))) {
-                start--;
-              }
-
-              if ((start < p)
-                  && (nr_isalpha(*start) || ('_' == *start)
-                      || (((unsigned char)*start) >= 0x80))) {
-                *q++ = *p++;
-                break;
-              }
-            }
-
             for (taglen = 1; (0 != p[taglen]) && ('$' != p[taglen]); taglen++) {
               char c = p[taglen];
 

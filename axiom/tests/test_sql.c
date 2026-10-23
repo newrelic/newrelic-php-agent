@@ -326,9 +326,6 @@ static void test_sql_obfuscate(void) {
                          "SELECT * FROM test WHERE password = $tag$PASSWORD",
                          "SELECT * FROM test WHERE password = ?");
 
-  /*
-   * A dollar sign that does not open a string constant must be left alone.
-   */
   sql_obfuscate_testcase("positional parameters",
                          "SELECT * FROM test WHERE a = $1 AND b = $2",
                          "SELECT * FROM test WHERE a = $? AND b = $?");
@@ -337,30 +334,24 @@ static void test_sql_obfuscate(void) {
                          "SELECT a$b FROM test WHERE c$d = 1",
                          "SELECT a$b FROM test WHERE c$d = ?");
 
-  sql_obfuscate_testcase("identifier that looks like a delimiter",
-                         "SELECT * FROM a$b$c WHERE id = 5",
-                         "SELECT * FROM a$b$c WHERE id = ?");
-
-  sql_obfuscate_testcase("dollar quote attached to an identifier",
-                         "SELECT a$$b FROM test WHERE id = 5",
-                         "SELECT a$$b FROM test WHERE id = ?");
-
-  /* The second identifier below starts with $e$ with an acute accent. */
-  sql_obfuscate_testcase("dollar sign after an underscore or non-ASCII byte",
-                         "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = 5",
-                         "SELECT _$a$, \xc3\xa9$b$ FROM test WHERE id = ?");
-
-  sql_obfuscate_testcase("identifier containing a digit",
-                         "SELECT * FROM a1$b$c WHERE id = 5",
-                         "SELECT * FROM a?$b$c WHERE id = ?");
-
   sql_obfuscate_testcase("dollar quote after a number",
                          "SELECT * FROM test WHERE y IN (5$$PASSWORD$$)",
                          "SELECT * FROM test WHERE y IN (?\?)");
 
-  sql_obfuscate_testcase("dollar quote after a masked literal",
-                         "SELECT * FROM test WHERE y = 5 AND z = ?$$PASSWORD$$",
-                         "SELECT * FROM test WHERE y = ? AND z = ?\?");
+  sql_obfuscate_testcase("dollar quote after the jsonb exists operator",
+                         "SELECT * FROM test WHERE data?$$PASSWORD$$",
+                         "SELECT * FROM test WHERE data?\?");
+
+  sql_obfuscate_testcase("tagged delimiter inside an identifier",
+                         "SELECT * FROM a$b$c WHERE id = 5",
+                         "SELECT * FROM a?");
+
+  sql_obfuscate_testcase("untagged delimiter inside an identifier",
+                         "SELECT a$$b FROM test WHERE id = 5", "SELECT a?");
+
+  sql_obfuscate_testcase("delimiter inside an identifier after a digit",
+                         "SELECT * FROM a1$b$c WHERE id = 5",
+                         "SELECT * FROM a?\?");
 
   /*
    * Monstrous integers don't cause us to topple over.
