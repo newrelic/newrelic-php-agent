@@ -326,8 +326,8 @@ func (to *TraceObserver) doStreaming() spanBatchSenderStatus {
 	for {
 		select {
 		case msg := <-to.messages:
-			log.Debugf("trace observer sending span batch of size %d, %d of %d remaining in queue",
-				msg.count, to.messagesRemainingCapacity, to.QueueSize)
+			log.Debugf("trace observer sending span batch of size %d (queue size %d)",
+				msg.count, to.QueueSize)
 			if err, status := to.sender.send(encodedSpanBatch(msg.batch)); err != nil {
 				to.messagesSent <- msg.count
 				// Add 0 to dataUsage channel so that we successfully count the send attempt
