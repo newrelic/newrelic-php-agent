@@ -634,6 +634,152 @@ static void test_refresh_keeps_an_open_log_file(void) {
                     "the marker is gone");
   tlib_php_engine_destroy();
 }
+/*
+ * The tests above call the refresh directly. These start real threads, so the
+ * whole path PHP takes when a thread starts runs, and anything on it that
+ * changes the log file or the log level under running threads shows. One
+ * thread is started at a time, until REAL_THREAD_STARTS or one second, because
+ * under valgrind a thread start is far slower.
+ */
+#define REAL_THREAD_STARTS 400
+
+static void* real_start_thread(void* arg NRUNUSED) {
+  (void)ts_resource(0);
+  end_tsrm_thread();
+  return NULL;
+}
+
+static void start_real_threads(void) {
+  struct timespec start;
+  struct timespec now;
+  int i;
+
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  for (i = 0; i < REAL_THREAD_STARTS; i++) {
+    pthread_t thread;
+
+    pthread_create(&thread, NULL, real_start_thread, NULL);
+    pthread_join(thread, NULL);
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    if (now.tv_sec - start.tv_sec >= 1) {
+      break;
+    }
+  }
+}
+
+static void test_real_thread_starts_are_invisible_to_running_threads(void) {
+  static torn_reader_t reader;
+  pthread_t thread;
+
+  memset(&reader, 0, sizeof(reader));
+  tlib_php_engine_create(
+      "newrelic.daemon.collector_host=collector.example.com\n"
+      "newrelic.special=no_sql_parsing\n");
+
+  pthread_create(&thread, NULL, torn_reader_thread, &reader);
+  while (!reader.started) {
+    sched_yield();
+  }
+  start_real_threads();
+  reader.stop = 1;
+  pthread_join(thread, NULL);
+
+  printf(
+      "REAL closed_fd=%ld empty_level=%ld empty_collector=%ld flag_off=%ld\n",
+      reader.closed_log_fd, reader.empty_level, reader.empty_collector,
+      reader.flag_off);
+  tlib_pass_if_long_equal(
+      "a thread start never closes the log fd under a reader", 0,
+      reader.closed_log_fd);
+  tlib_pass_if_long_equal(
+      "a thread start never leaves the log level mask empty for a reader", 0,
+      reader.empty_level);
+  tlib_pass_if_long_equal("a thread start never empties collector for a reader",
+                          0, reader.empty_collector);
+  tlib_pass_if_long_equal(
+      "a thread start never turns a configured special flag off for a reader",
+      0, reader.flag_off);
+  tlib_php_engine_destroy();
+}
+
+/*
+ * What a lost log line looks like from the outside: a thread writes numbered
+ * lines at the most verbose level while other threads start, and every one of
+ * them must be in the log file afterwards. A line is lost when the level mask
+ * is empty at that moment, or when the log fd is closed.
+ */
+#define LOG_LINE_MARKER "thread-start-marker"
+#define LOG_WRITER_MAX_LINES 300000
+
+typedef struct {
+  volatile int stop;
+  volatile int started;
+  volatile long attempted;
+} log_writer_t;
+
+static void* log_writer_thread(void* arg) {
+  log_writer_t* writer = (log_writer_t*)arg;
+
+  writer->started = 1;
+  while (!writer->stop && writer->attempted < LOG_WRITER_MAX_LINES) {
+    writer->attempted++;
+    nrl_verbosedebug(NRL_AGENT, LOG_LINE_MARKER " %ld", writer->attempted);
+  }
+  return NULL;
+}
+
+static long count_log_lines(const char* path, const char* marker) {
+  char line[1024];
+  long count = 0;
+  FILE* file = fopen(path, "r");
+
+  if (NULL == file) {
+    return -1;
+  }
+  while (NULL != fgets(line, sizeof(line), file)) {
+    if (NULL != strstr(line, marker)) {
+      count++;
+    }
+  }
+  fclose(file);
+  return count;
+}
+
+static void test_log_lines_survive_real_thread_starts(void) {
+  static log_writer_t writer;
+  pthread_t thread;
+  const char* path;
+  long written;
+
+  memset(&writer, 0, sizeof(writer));
+  tlib_php_engine_create("");
+
+  path = zend_ini_string("newrelic.logfile", sizeof("newrelic.logfile") - 1, 0);
+  tlib_pass_if_true("the log file path is known",
+                    NULL != path && '\0' != path[0], "path=%s",
+                    NRBLANKSTR(path));
+  if (NULL == path || '\0' == path[0]) {
+    tlib_php_engine_destroy();
+    return;
+  }
+
+  pthread_create(&thread, NULL, log_writer_thread, &writer);
+  while (!writer.started) {
+    sched_yield();
+  }
+  start_real_threads();
+  writer.stop = 1;
+  pthread_join(thread, NULL);
+
+  written = count_log_lines(path, LOG_LINE_MARKER);
+  printf("LINES attempted=%ld written=%ld\n", writer.attempted, written);
+  tlib_pass_if_true("the writer logged lines while threads started",
+                    writer.attempted > 0, "attempted=%ld", writer.attempted);
+  tlib_pass_if_long_equal(
+      "every line logged while threads start reaches the log file",
+      writer.attempted, written);
+  tlib_php_engine_destroy();
+}
 #endif /* ZTS */
 
 tlib_parallel_info_t parallel_info
@@ -652,5 +798,7 @@ void test_main(void* p NRUNUSED) {
   test_refresh_is_invisible_to_running_threads();
   test_refreshes_of_new_threads_do_not_overlap();
   test_refresh_keeps_an_open_log_file();
+  test_real_thread_starts_are_invisible_to_running_threads();
+  test_log_lines_survive_real_thread_starts();
 #endif
 }
