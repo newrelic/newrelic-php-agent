@@ -355,6 +355,110 @@ static void test_new_thread_does_not_reenable_a_disabled_agent(void) {
 }
 
 /*
+ * Starts a thread and checks that it leaves a disabled agent disabled: the
+ * process stays disabled, the log file stays closed and a request starts no
+ * transaction.
+ */
+static void check_new_thread_keeps_agent_disabled(const char* when) {
+  pthread_t thread;
+
+  pthread_create(&thread, NULL, disabled_agent_thread, NULL);
+  pthread_join(thread, NULL);
+
+  tlib_pass_if_int_equal(when, 0, NR_PHP_PROCESS_GLOBALS(enabled));
+  tlib_pass_if_int_equal(when, -1, nrl_get_log_fd());
+
+  tlib_php_request_start();
+  tlib_pass_if_null(when, NRPRG(txn));
+  tlib_php_request_end();
+}
+
+/*
+ * MINIT also disables the agent when it has to start the daemon and cannot. The
+ * socket below does not exist, so the connection attempt fails, and the agent
+ * would start the daemon itself. The daemon below does not exist either, so
+ * nr_spawn_daemon fails before it forks and MINIT takes "goto disbad".
+ */
+static void test_new_thread_does_not_reenable_after_daemon_spawn_failure(void) {
+  if (0 == nr_access("/etc/newrelic/newrelic.cfg", F_OK)) {
+    /* With a manual configuration file the agent never starts the daemon. */
+    return;
+  }
+
+  /* The engine's fake daemon connection would make the connection succeed. */
+  tlib_php_use_fake_daemon_fd = 0;
+  tlib_php_engine_create(
+      "newrelic.daemon.address=/nonexistent/newrelic-test.sock\n"
+      "newrelic.daemon.location=/nonexistent/newrelic-daemon\n"
+      "newrelic.daemon.dont_launch=0\n");
+  tlib_php_use_fake_daemon_fd = 1;
+
+  tlib_pass_if_int_equal("the agent would start the daemon itself",
+                         NR_DAEMON_STARTUP_AGENT,
+                         nr_php_get_daemon_startup_mode());
+  tlib_pass_if_int_equal("a daemon that cannot be started disables the agent",
+                         0, NR_PHP_PROCESS_GLOBALS(enabled));
+
+  check_new_thread_keeps_agent_disabled(
+      "a new thread must not undo a disable after a daemon spawn failure");
+
+  tlib_php_engine_destroy();
+}
+
+/*
+ * MINIT finds out whether it runs in a threaded Apache MPM by looking up
+ * ap_mpm_query and ap_get_server_revision in the main program (dlsym). The test
+ * executable exports these two, which are called only when a lookup finds
+ * them, and they answer "not Apache" unless a test says otherwise.
+ */
+typedef struct {
+  int major;
+  int minor;
+  int patch;
+  const char* add_string;
+} mock_ap_version_t;
+
+static int mock_apache_major;
+static int mock_apache_threaded;
+
+void ap_mpm_query(int query, int* result);
+void ap_get_server_revision(mock_ap_version_t* version);
+
+void ap_mpm_query(int query NRUNUSED, int* result) {
+  *result = mock_apache_threaded;
+}
+
+void ap_get_server_revision(mock_ap_version_t* version) {
+  version->major = mock_apache_major;
+  version->minor = 4;
+  version->patch = 0;
+  version->add_string = "";
+}
+
+/*
+ * A threaded Apache MPM is not supported, so MINIT disables the agent, and
+ * does it before the INI entries are registered. Whatever the order, a thread
+ * started afterwards must leave the agent disabled.
+ */
+static void test_new_thread_does_not_reenable_in_threaded_mpm(void) {
+  mock_apache_major = 2;
+  mock_apache_threaded = 1;
+  tlib_php_engine_create("");
+  mock_apache_major = 0;
+  mock_apache_threaded = 0;
+
+  tlib_pass_if_int_equal("MINIT found a threaded MPM", 1,
+                         NR_PHP_PROCESS_GLOBALS(mpm_bad));
+  tlib_pass_if_int_equal("a threaded MPM disables the agent in MINIT", 0,
+                         NR_PHP_PROCESS_GLOBALS(enabled));
+
+  check_new_thread_keeps_agent_disabled(
+      "a new thread must not undo a disable in a threaded MPM");
+
+  tlib_php_engine_destroy();
+}
+
+/*
  * Torn reads. While a thread starts, its refresh used to clear and rebuild
  * shared state that threads already running read without a lock. Here one
  * thread polls that state while another runs many refreshes. With the guards
@@ -543,6 +647,8 @@ void test_main(void* p NRUNUSED) {
   test_new_thread_gets_its_own_ini_values();
   test_minit_applies_settings_refresh_keeps_them();
   test_new_thread_does_not_reenable_a_disabled_agent();
+  test_new_thread_does_not_reenable_after_daemon_spawn_failure();
+  test_new_thread_does_not_reenable_in_threaded_mpm();
   test_refresh_is_invisible_to_running_threads();
   test_refreshes_of_new_threads_do_not_overlap();
   test_refresh_keeps_an_open_log_file();
