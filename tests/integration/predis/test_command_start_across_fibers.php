@@ -61,6 +61,40 @@ Datastore/operation/Redis/get, 1
       "peer.address": "??",
       "db.instance": "0"
     }
+  ],
+  [
+    {
+      "category": "generic",
+      "type": "Span",
+      "guid": "ENV[GUID_A]",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Custom\/writing_fiber",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??"
+    },
+    {},
+    {}
+  ],
+  [
+    {
+      "category": "generic",
+      "type": "Span",
+      "guid": "ENV[GUID_B]",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Custom\/reading_fiber",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??"
+    },
+    {},
+    {}
   ]
 ]
 */
