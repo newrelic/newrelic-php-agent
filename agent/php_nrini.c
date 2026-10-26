@@ -1713,8 +1713,14 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
 
   if (NEW_VALUE_LEN > 0) {
 #ifdef ZTS
-    /* ZTS: INI modifications outside of startup are currently ignored. */
-    if (ZEND_INI_STAGE_STARTUP == stage) {
+    /*
+     * ZTS: only the MINIT call stages wraprecs. Values applied after startup
+     * (per-directory, .htaccess) are ignored, and the STARTUP-stage refresh
+     * on each new thread is skipped so it doesn't write the process-global
+     * hashmaps while other threads are reading them.
+     */
+    if (ZEND_INI_STAGE_STARTUP == stage
+        && !NR_PHP_PROCESS_GLOBALS(ini_wraprecs_staged)) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn);
     }
 #else
@@ -1734,8 +1740,14 @@ static PHP_INI_MH(nr_ttcustom_mh) {
 
   if (0 != NEW_VALUE_LEN) {
 #ifdef ZTS
-    /* ZTS: INI modifications outside of startup are currently ignored. */
-    if (ZEND_INI_STAGE_STARTUP == stage) {
+    /*
+     * ZTS: only the MINIT call stages wraprecs. Values applied after startup
+     * (per-directory, .htaccess) are ignored, and the STARTUP-stage refresh
+     * on each new thread is skipped so it doesn't write the process-global
+     * hashmaps while other threads are reading them.
+     */
+    if (ZEND_INI_STAGE_STARTUP == stage
+        && !NR_PHP_PROCESS_GLOBALS(ini_wraprecs_staged)) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer);
     }
 #else
