@@ -488,6 +488,14 @@ typedef struct _shared_globals_t {
    */
   nr_php_objtable_t* predis_instances;
 
+  /*
+   * The scalar constructor options of each PDO connection, kept for as long as
+   * the PDO object lives (before PHP 8.0 until the next connection that has
+   * the same handle). The explain connection needs them in a later
+   * transaction.
+   */
+  nr_php_objtable_t* pdo_options;
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
@@ -591,7 +599,6 @@ typedef struct _txn_globals_t {
                                 // are currently in progress are stored here
   nr_mysqli_metadata_t* mysqli_links;  // MySQLi link metadata storage
   nr_hashmap_t* mysqli_queries;        // MySQLi query metadata storage
-  nr_hashmap_t* pdo_link_options;      // PDO link option storage
   int curl_ignore_setopt;  // Non-zero to disable curl_setopt instrumentation
   nr_hashmap_t* curl_metadata;        // curl metadata storage
   nr_hashmap_t* curl_multi_metadata;  // curl multi metadata storage
