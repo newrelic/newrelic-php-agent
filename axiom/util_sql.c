@@ -121,7 +121,9 @@ char* nr_sql_obfuscate(const char* raw) {
         switch (*p) {
           case '\\':
             p++;
-            p++;
+            if (0 != *p) { /* do not step past the NUL */
+              p++;
+            }
             break;
 
           case '"':
@@ -144,7 +146,9 @@ char* nr_sql_obfuscate(const char* raw) {
         switch (*p) {
           case '\\':
             p++;
-            p++;
+            if (0 != *p) { /* do not step past the NUL */
+              p++;
+            }
             break;
 
           case '\'':
