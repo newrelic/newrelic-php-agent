@@ -18,6 +18,8 @@ char* nr_sql_obfuscate(const char* raw) {
   char* obf;
   const char* p;
   char* q;
+  const char* tag = NULL;
+  int taglen = 0;
   int state = 0;
 
   if (nrunlikely(0 == raw)) {
@@ -66,6 +68,32 @@ char* nr_sql_obfuscate(const char* raw) {
             } else {
               *q++ = *p++;
             }
+            break;
+
+          case '$': /* checking for dollar quoted strings */
+            for (taglen = 1; (0 != p[taglen]) && ('$' != p[taglen]); taglen++) {
+              char c = p[taglen];
+
+              /* PostgreSQL allows non-Latin letters; accept high bytes too. */
+              if (nr_isalpha(c) || ('_' == c) || (((unsigned char)c) >= 0x80)) {
+                continue;
+              }
+              if ((taglen > 1) && nr_isdigit(c)) {
+                continue;
+              }
+              break;
+            }
+
+            if ('$' != p[taglen]) {
+              *q++ = *p++;
+              break;
+            }
+
+            taglen++; /* count the closing dollar sign of the delimiter */
+            tag = p;
+            p += taglen;
+            *q++ = '?';
+            state = 4;
             break;
 
           case '0':
@@ -153,6 +181,15 @@ char* nr_sql_obfuscate(const char* raw) {
           default:
             state = 0;
             break;
+        }
+        break;
+
+      case 4: /* inside $tag$...$tag$ */
+        if (('$' == *p) && (0 == nr_strncmp(p, tag, taglen))) {
+          p += taglen;
+          state = 0;
+        } else {
+          p++;
         }
         break;
     }
