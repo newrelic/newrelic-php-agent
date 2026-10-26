@@ -6,6 +6,14 @@
 /*
  * Structures and functions related to estimating application harvests for
  * sampling purposes.
+ *
+ * The adaptive sampling target (target_transactions_per_cycle) applies per
+ * thread. Each thread has its own nr_app_harvest_stats_t in app->harvest_map,
+ * keyed by thread id, and samples up to the full target each harvest cycle,
+ * so a process with N request threads can sample up to about N times the
+ * target. This is intentional: it matches NTS, where each worker process
+ * (e.g. a PHP-FPM child) has its own nrapp_t and samples up to the full
+ * target independently.
  */
 #ifndef NR_APP_HARVEST_HDR
 #define NR_APP_HARVEST_HDR
