@@ -18,9 +18,11 @@
 #include "nr_banner.h"
 #include "php_agent.h"
 #include "php_globals.h"
+#include "php_internal_instrument.h"
 #include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
+#include "nr_commands.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_syscalls.h"
@@ -785,6 +787,188 @@ static void test_log_lines_survive_real_thread_starts(void) {
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+#ifdef ZTS
+/*
+ * A handler that only writes process-global state must do nothing on a
+ * refresh. For each one, MINIT applies the INI value; the test puts a
+ * sentinel in the global and refreshes. A handler that is not guarded writes
+ * the INI value back over the sentinel. (Comparing a string pointer would not
+ * do: malloc often hands the same address back.)
+ */
+#define SENTINEL_STRING "refresh-sentinel"
+
+typedef struct {
+  const char* ini_name;
+  const char* ini_value;
+  char** field;
+} string_setting_t;
+
+typedef struct {
+  const char* ini_name;
+  const char* ini_value;
+  int* field;
+} int_setting_t;
+
+static void test_refresh_leaves_every_process_global_setting_alone(void) {
+  size_t i;
+  nrinternalfn_t* curl_exec = NULL;
+  nrinternalfn_t* w;
+  uint64_t original_appinfo_timeout = nr_cmd_appinfo_timeout_us;
+  int original_curl_exec_disabled = 0;
+  nrtime_t connect_timeout;
+  nrtime_t expensive_min;
+  string_setting_t strings[] = {
+      {"newrelic.daemon.auditlog", "/tmp/nr-audit.log",
+       &NR_PHP_PROCESS_GLOBALS(daemon_auditlog)},
+      {"newrelic.daemon.logfile", "/tmp/nr-daemon.log",
+       &NR_PHP_PROCESS_GLOBALS(daemon_logfile)},
+      {"newrelic.daemon.loglevel", "debug",
+       &NR_PHP_PROCESS_GLOBALS(daemon_loglevel)},
+      {"newrelic.daemon.port", "/tmp/nr-port.sock",
+       &NR_PHP_PROCESS_GLOBALS(udspath)},
+      {"newrelic.daemon.address", "/tmp/nr-address.sock",
+       &NR_PHP_PROCESS_GLOBALS(address_path)},
+      {"newrelic.daemon.ssl_ca_bundle", "/tmp/nr-ca.pem",
+       &NR_PHP_PROCESS_GLOBALS(ssl_cafile)},
+      {"newrelic.daemon.ssl_ca_path", "/tmp/nr-ca-dir",
+       &NR_PHP_PROCESS_GLOBALS(ssl_capath)},
+      {"newrelic.daemon.proxy", "proxy.example.com:3128",
+       &NR_PHP_PROCESS_GLOBALS(proxy)},
+      {"newrelic.daemon.location", "/tmp/nr-daemon",
+       &NR_PHP_PROCESS_GLOBALS(daemon)},
+      {"newrelic.daemon.pidfile", "/tmp/nr-daemon.pid",
+       &NR_PHP_PROCESS_GLOBALS(pidfile)},
+      {"newrelic.daemon.app_timeout", "10m",
+       &NR_PHP_PROCESS_GLOBALS(daemon_app_timeout)},
+      {"newrelic.daemon.start_timeout", "5s",
+       &NR_PHP_PROCESS_GLOBALS(daemon_start_timeout)},
+  };
+  /* Settings whose INI value may be the default are given a value that
+   * differs from it, so a rewrite is visible. */
+  int_setting_t ints[] = {
+      {"newrelic.high_security", "0", &NR_PHP_PROCESS_GLOBALS(high_security)},
+      {"newrelic.preload_framework_library_detection", "1",
+       &NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)},
+      {"newrelic.vulnerability_management.composer_api.per_process_detection",
+       "1", &NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)},
+      {"newrelic.daemon.dont_launch", "3",
+       &NR_PHP_PROCESS_GLOBALS(no_daemon_launch)},
+      {"newrelic.daemon.special.curl_verbose", "1",
+       &NR_PHP_PROCESS_GLOBALS(daemon_special_curl_verbose)},
+      {"newrelic.daemon.special.integration", "1",
+       &NR_PHP_PROCESS_GLOBALS(daemon_special_integration)},
+      {"newrelic.special.enable_extension_instrumentation", "1",
+       &NR_PHP_PROCESS_GLOBALS(instrument_extensions)},
+      {"newrelic.transaction_tracer.internal_functions_enabled", "1",
+       &NR_PHP_PROCESS_GLOBALS(instrument_internal)},
+  };
+
+  tlib_php_engine_create(
+      "newrelic.daemon.auditlog=/tmp/nr-audit.log\n"
+      "newrelic.daemon.logfile=/tmp/nr-daemon.log\n"
+      "newrelic.daemon.loglevel=debug\n"
+      "newrelic.daemon.port=/tmp/nr-port.sock\n"
+      "newrelic.daemon.address=/tmp/nr-address.sock\n"
+      "newrelic.daemon.ssl_ca_bundle=/tmp/nr-ca.pem\n"
+      "newrelic.daemon.ssl_ca_path=/tmp/nr-ca-dir\n"
+      "newrelic.daemon.proxy=proxy.example.com:3128\n"
+      "newrelic.daemon.location=/tmp/nr-daemon\n"
+      "newrelic.daemon.pidfile=/tmp/nr-daemon.pid\n"
+      "newrelic.daemon.app_timeout=10m\n"
+      "newrelic.daemon.start_timeout=5s\n"
+      "newrelic.daemon.app_connect_timeout=7s\n"
+      "newrelic.daemon.dont_launch=3\n"
+      "newrelic.daemon.special.curl_verbose=1\n"
+      "newrelic.daemon.special.integration=1\n"
+      "newrelic.special.enable_extension_instrumentation=1\n"
+      "newrelic.special.expensive_node_min=9ms\n"
+      "newrelic.special.appinfo_timeout=3s\n"
+      "newrelic.special.disable_instrumentation=curl_exec\n"
+      "newrelic.transaction_tracer.internal_functions_enabled=1\n");
+
+  /* MINIT applied each INI value, so a rewrite on refresh is detectable. */
+  for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+    tlib_pass_if_str_equal(strings[i].ini_name, strings[i].ini_value,
+                           *strings[i].field);
+  }
+  for (i = 0; i < sizeof(ints) / sizeof(ints[0]); i++) {
+    tlib_pass_if_int_equal(ints[i].ini_name, atoi(ints[i].ini_value),
+                           *ints[i].field);
+  }
+  tlib_pass_if_uint64_t_equal("newrelic.daemon.app_connect_timeout",
+                              7 * NR_TIME_DIVISOR,
+                              NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout));
+  tlib_pass_if_uint64_t_equal("newrelic.special.expensive_node_min",
+                              9 * NR_TIME_DIVISOR_MS,
+                              NR_PHP_PROCESS_GLOBALS(expensive_min));
+  tlib_pass_if_uint64_t_equal("newrelic.special.appinfo_timeout",
+                              3 * NR_TIME_DIVISOR, nr_cmd_appinfo_timeout_us);
+  for (w = nr_wrapped_internal_functions; NULL != w; w = w->next) {
+    if (0 == nr_strcmp(w->full_name, "curl_exec")) {
+      curl_exec = w;
+    }
+  }
+  tlib_pass_if_not_null("curl_exec has a wrap record", curl_exec);
+  if (NULL == curl_exec) {
+    tlib_php_engine_destroy();
+    return;
+  }
+  tlib_pass_if_int_equal("newrelic.special.disable_instrumentation", 1,
+                         curl_exec->is_disabled);
+
+  /* Put a sentinel in every global. */
+  for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+    nr_free(*strings[i].field);
+    *strings[i].field = nr_strdup(SENTINEL_STRING);
+  }
+  for (i = 0; i < sizeof(ints) / sizeof(ints[0]); i++) {
+    *ints[i].field += 100;
+  }
+  connect_timeout = NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout);
+  expensive_min = NR_PHP_PROCESS_GLOBALS(expensive_min);
+  NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout) = connect_timeout + 100;
+  NR_PHP_PROCESS_GLOBALS(expensive_min) = expensive_min + 100;
+  nr_cmd_appinfo_timeout_us += 100;
+  original_curl_exec_disabled = curl_exec->is_disabled;
+  curl_exec->is_disabled = 0;
+
+  zend_ini_refresh_caches(ZEND_INI_STAGE_STARTUP);
+
+  for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+    tlib_pass_if_str_equal(strings[i].ini_name, SENTINEL_STRING,
+                           *strings[i].field);
+  }
+  for (i = 0; i < sizeof(ints) / sizeof(ints[0]); i++) {
+    tlib_pass_if_int_equal(ints[i].ini_name, atoi(ints[i].ini_value) + 100,
+                           *ints[i].field);
+  }
+  tlib_pass_if_uint64_t_equal(
+      "newrelic.daemon.app_connect_timeout", connect_timeout + 100,
+      NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout));
+  tlib_pass_if_uint64_t_equal("newrelic.special.expensive_node_min",
+                              expensive_min + 100,
+                              NR_PHP_PROCESS_GLOBALS(expensive_min));
+  tlib_pass_if_uint64_t_equal("newrelic.special.appinfo_timeout",
+                              3 * NR_TIME_DIVISOR + 100,
+                              nr_cmd_appinfo_timeout_us);
+  tlib_pass_if_int_equal("newrelic.special.disable_instrumentation", 0,
+                         curl_exec->is_disabled);
+
+  /* Put back what the shutdown expects. */
+  for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+    nr_free(*strings[i].field);
+  }
+  for (i = 0; i < sizeof(ints) / sizeof(ints[0]); i++) {
+    *ints[i].field -= 100;
+  }
+  NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout) = connect_timeout;
+  NR_PHP_PROCESS_GLOBALS(expensive_min) = expensive_min;
+  nr_cmd_appinfo_timeout_us = original_appinfo_timeout;
+  curl_exec->is_disabled = original_curl_exec_disabled;
+  tlib_php_engine_destroy();
+}
+#endif /* ZTS */
+
 void test_main(void* p NRUNUSED) {
   test_nr_php_get_daemon_startup_mode();
 #ifdef ZTS
@@ -800,5 +984,6 @@ void test_main(void* p NRUNUSED) {
   test_refresh_keeps_an_open_log_file();
   test_real_thread_starts_are_invisible_to_running_threads();
   test_log_lines_survive_real_thread_starts();
+  test_refresh_leaves_every_process_global_setting_alone();
 #endif
 }

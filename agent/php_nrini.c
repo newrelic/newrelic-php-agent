@@ -447,25 +447,15 @@ static PHP_INI_DISP(nr_framework_dh) {
 #ifdef ZTS
 /*
  * ZTS: PHP re-runs every INI handler with ZEND_INI_STAGE_STARTUP on each new
- * thread (zend_ini_refresh_caches), long after MINIT. The refill is how the
- * new thread gets its own INI values, so a handler must still run; only its
- * process-global work is skipped.
- *
- * When does a handler need NR_INI_SKIP_STARTUP_REFRESH? When what it does on
- * a refresh can be seen by a thread that is already running, that is when it
- *   - frees or replaces something those threads read without a lock (the
- *     collector string, read on every transaction begin),
- *   - closes, reopens, clears or rebuilds state they use (the log file, the
- *     log level mask, special_flags), or
- *   - sets a value MINIT changed after registering the entries (enabled).
- * It does not when it stores the value already there: these settings are
- * system scope, so every thread gets the same value, and a reader on a
- * running thread sees no change. Such a store can still happen while another
- * thread reads the field (high_security and daemon_app_connect_timeout are
- * read per transaction); that is a data race by the memory model, accepted
- * because the bytes written equal the bytes already there. Refreshes of
- * different new threads never overlap (TSRM holds tsmm_mutex), so only
- * readers on running threads matter.
+ * thread (zend_ini_refresh_caches), long after MINIT. That is how the new
+ * thread gets its own INI values, so per-thread work (what a handler stores
+ * through mh_arg1/mh_arg2) must always run. Process-global work was done once,
+ * when MINIT registered the entries, and must be skipped: repeating it frees
+ * or rewrites state that threads already running read without a lock. A
+ * handler that only writes process-global state starts with
+ * NR_INI_SKIP_STARTUP_REFRESH. The exceptions fill a per-thread value too
+ * and skip only their process-wide part: nr_enabled_mh, nr_wtfuncs_mh and
+ * nr_ttcustom_mh.
  */
 #define NR_INI_STARTUP_REFRESH(stage) \
   (ZEND_INI_STAGE_STARTUP == (stage)  \
@@ -505,6 +495,7 @@ static PHP_INI_MH(nr_daemon_auditlog_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon_auditlog));
@@ -524,6 +515,7 @@ static PHP_INI_MH(nr_high_security_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   val = nr_bool_from_str(NEW_VALUE);
@@ -550,6 +542,7 @@ static PHP_INI_MH(nr_preload_framework_library_detection_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   val = nr_bool_from_str(NEW_VALUE);
@@ -572,6 +565,7 @@ static PHP_INI_MH(nr_composer_per_process_detection_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   val = nr_bool_from_str(NEW_VALUE);
@@ -628,6 +622,7 @@ static PHP_INI_MH(nr_daemon_logfile_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon_logfile));
@@ -644,6 +639,7 @@ static PHP_INI_MH(nr_daemon_loglevel_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon_loglevel));
@@ -661,6 +657,7 @@ static PHP_INI_MH(nr_daemon_port_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(udspath));
@@ -680,6 +677,7 @@ static PHP_INI_MH(nr_daemon_address_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(address_path));
@@ -698,6 +696,7 @@ static PHP_INI_MH(nr_daemon_ssl_cafile_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(ssl_cafile));
@@ -715,6 +714,7 @@ static PHP_INI_MH(nr_daemon_ssl_capath_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(ssl_capath));
@@ -755,6 +755,7 @@ static PHP_INI_MH(nr_daemon_proxy_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(proxy));
@@ -772,6 +773,7 @@ static PHP_INI_MH(nr_daemon_location_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon));
@@ -790,6 +792,7 @@ static PHP_INI_MH(nr_daemon_pidfile_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(pidfile));
@@ -807,6 +810,7 @@ static PHP_INI_MH(nr_daemon_app_timeout_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon_app_timeout));
@@ -825,6 +829,7 @@ static PHP_INI_MH(nr_daemon_app_connect_timeout_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (0 != NEW_VALUE_LEN) {
@@ -844,6 +849,7 @@ static PHP_INI_MH(nr_daemon_start_timeout_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   nr_free(NR_PHP_PROCESS_GLOBALS(daemon_start_timeout));
@@ -865,6 +871,7 @@ static PHP_INI_MH(nr_daemon_dont_launch_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (NEW_VALUE_LEN > 0) {
@@ -919,6 +926,7 @@ static PHP_INI_MH(nr_daemon_special_curl_verbose_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (NEW_VALUE_LEN > 0) {
@@ -937,6 +945,7 @@ static PHP_INI_MH(nr_daemon_special_integration_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (NEW_VALUE_LEN > 0) {
@@ -1084,6 +1093,7 @@ static PHP_INI_MH(nr_feature_flag_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
 
   /*
    * Set default feature flag values. For example, for a feature flag called
@@ -1105,6 +1115,7 @@ static PHP_INI_MH(nr_special_appinfo_timeout_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (0 != NEW_VALUE_LEN) {
@@ -1140,6 +1151,7 @@ static PHP_INI_MH(nr_special_disable_instrumentation_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
 
   if (0 != NEW_VALUE_LEN) {
     foreach_list(NEW_VALUE, foreach_disable_instrumentation TSRMLS_CC);
@@ -1154,6 +1166,7 @@ static PHP_INI_MH(nr_special_expensive_node_min_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   if (0 != NEW_VALUE_LEN) {
@@ -1174,6 +1187,7 @@ static PHP_INI_MH(nr_special_enable_extension_instrumentation_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   val = nr_bool_from_str(NEW_VALUE);
@@ -1673,6 +1687,7 @@ static PHP_INI_MH(nr_tt_internal_mh) {
   (void)mh_arg2;
   (void)mh_arg3;
   (void)stage;
+  NR_INI_SKIP_STARTUP_REFRESH(stage);
   NR_UNUSED_TSRMLS;
 
   val = nr_bool_from_str(NEW_VALUE);
