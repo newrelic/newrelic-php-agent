@@ -2192,16 +2192,18 @@ NR_INNER_WRAPPER(pg_query) {
     }
   }
 
-  /*
-   * If pgsql_link is not provided, pgsql uses the last connection made by
-   * pg_connect or pg_pconnect. The retrieve method handles this case.
-   */
-  instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
-
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The instance is looked up after the call: an error handler that runs
+   * during the call can close the connection and free what was found before.
+   * If pgsql_link is not provided, pgsql uses the last connection made by
+   * pg_connect or pg_pconnect. The retrieve method handles this case.
+   */
+  instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
