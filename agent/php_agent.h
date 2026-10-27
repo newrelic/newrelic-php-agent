@@ -271,8 +271,7 @@ extern nr_status_t nr_php_txn_end(int ignoretxn,
  *           the response headers. For a caller that ends the transaction after
  *           the SAPI has destroyed them.
  *
- * Params  : 1. The Content-Type to record, or NULL to read both values from
- *              the response headers.
+ * Params  : 1. The Content-Type to record, or NULL to record none.
  *           2. The Content-Length to record, or -1 to record none.
  *
  * Returns : As nr_php_txn_end.

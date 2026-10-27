@@ -1255,9 +1255,16 @@ void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC) {
   }
 }
 
-static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
-                                                      const char* content_type,
-                                                      int content_length) {
+/*
+ * With read_response_headers, the Content-Type and Content-Length are read
+ * from the response headers, and the given values are ignored. Without it,
+ * the given values are recorded: NULL and -1 record none.
+ */
+static void nr_php_txn_set_response_header_attributes(
+    nrtxn_t* txn,
+    bool read_response_headers,
+    const char* content_type,
+    int content_length) {
   char* response_content_type = NULL;
 
   if (NULL == txn) {
@@ -1268,7 +1275,7 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
     return;
   }
 
-  if (NULL == content_type) {
+  if (read_response_headers) {
     response_content_type = nr_php_get_response_content_type();
     content_type = response_content_type;
     content_length = nr_php_get_response_content_length();
@@ -1287,6 +1294,7 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn,
 
 static nr_status_t nr_php_txn_end_internal(int ignoretxn,
                                            int in_post_deactivate,
+                                           bool read_response_headers,
                                            const char* content_type,
                                            int content_length) {
   nr_status_t ret;
@@ -1360,8 +1368,8 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
 
     nr_framework_create_metric(TSRMLS_C);
 
-    nr_php_txn_set_response_header_attributes(txn, content_type,
-                                              content_length);
+    nr_php_txn_set_response_header_attributes(txn, read_response_headers,
+                                              content_type, content_length);
 
     nr_php_txn_handle_fpm_error(txn TSRMLS_CC);
 
@@ -1431,10 +1439,10 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
 }
 
 nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
-  return nr_php_txn_end_internal(ignoretxn, in_post_deactivate, NULL, -1);
+  return nr_php_txn_end_internal(ignoretxn, in_post_deactivate, true, NULL, -1);
 }
 
 nr_status_t nr_php_txn_end_with_response_headers(const char* content_type,
                                                  int content_length) {
-  return nr_php_txn_end_internal(0, 0, content_type, content_length);
+  return nr_php_txn_end_internal(0, 0, false, content_type, content_length);
 }

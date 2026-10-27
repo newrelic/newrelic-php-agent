@@ -446,14 +446,16 @@ static void test_nr_php_txn_end_with_response_headers() {
                          captured.content_type);
   tlib_pass_if_int64_t_equal("no Content-Length", -1, captured.content_length);
 
-  /* Test : a NULL Content-Type reads both from the response headers. */
+  /*
+   * Test : a NULL Content-Type records none, and the given Content-Length is
+   * still recorded, not the response headers' one.
+   */
   captured_reset();
   request_start_with_response_headers();
   nr_php_txn_end_with_response_headers(NULL, 42);
   tlib_php_request_end();
-  tlib_pass_if_str_equal("NULL: response Content-Type", "application/xml",
-                         captured.content_type);
-  tlib_pass_if_int64_t_equal("NULL: response Content-Length", 7,
+  tlib_pass_if_null("no Content-Type", captured.content_type);
+  tlib_pass_if_int64_t_equal("no Content-Type: Content-Length", 42,
                              captured.content_length);
 
   /* Test : nr_php_txn_end still reads both from the response headers. */
