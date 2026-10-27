@@ -235,17 +235,19 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 /*
- * The statements of a connection are in a map by statement name. The key has
- * a prefix so that the empty name, which PostgreSQL uses for the unnamed
- * statement, is a valid key.
- */
-/*
- * Purpose : Build the key of a statement in a buffer: the statement names are
- *           at most 63 bytes on the server, so the buffer is nearly always
- *           enough and no allocation is made. A longer name gets a heap key,
- *           which the caller frees.
+ * The size of the buffer that holds the key of a statement. The statement names
+ * are at most 63 bytes on the server, so the buffer is nearly always enough and
+ * no allocation is made.
  */
 #define NR_PHP_PGSQL_STATEMENT_KEY_BUFFER 128
+
+/*
+ * Purpose : Build the key of a statement in a buffer. The statements of a
+ *           connection are in a map by statement name, and the key has a
+ *           prefix so that the empty name, which PostgreSQL uses for the
+ *           unnamed statement, is a valid key. A name that does not fit the
+ *           buffer gets a heap key, which the caller frees.
+ */
 
 static const char* nr_php_pgsql_statement_key(const char* name,
                                               nr_string_len_t name_len,
