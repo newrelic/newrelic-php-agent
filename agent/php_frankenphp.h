@@ -19,8 +19,9 @@ extern void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS);
 extern void nr_php_frankenphp_handle_request_end(void);
 
 /*
- * Purpose : Free the response headers saved for a worker request transaction
- *           that a bailout left unended.
+ * Purpose : Reset the worker request state that a bailout left behind: the
+ *           flag that a transaction was begun, and the saved response
+ *           headers.
  */
 extern void nr_php_frankenphp_rshutdown(void);
 

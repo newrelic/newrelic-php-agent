@@ -23,8 +23,10 @@
  */
 typedef struct _nr_php_frankenphp_worker_request_t {
   /*
-   * Set by the request handler's begin handler, and reset on entry to
-   * frankenphp_handle_request.
+   * Set by the request handler's begin handler. Reset by
+   * nr_php_frankenphp_handle_request_end, on entry to
+   * frankenphp_handle_request and at RSHUTDOWN, so a value that a bailout
+   * leaves behind ends with its worker lifetime.
    */
   bool txn_begun;
 
@@ -158,9 +160,9 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   zend_function* zf = NULL;
   nruserfn_t* wr = NULL;
 
-  // A call whose request handler bailed out (exit() or a fatal error) skipped
-  // nr_php_frankenphp_handle_request_end, and the agent's shutdown path ended
-  // its transaction instead.
+  // nr_php_frankenphp_rshutdown resets this state after a request handler
+  // bails out. Reset it here too, so that this call never acts on what an
+  // earlier one left behind.
   nr_php_frankenphp_worker_request.txn_begun = false;
   nr_php_frankenphp_clear_response_headers();
 
@@ -244,6 +246,10 @@ void nr_php_frankenphp_handle_request_end(void) {
 }
 
 void nr_php_frankenphp_rshutdown(void) {
+  // A request handler that bailed out (exit() or a fatal error) ended the
+  // worker script without reaching nr_php_frankenphp_handle_request_end, and
+  // the agent's shutdown path ends its transaction.
+  nr_php_frankenphp_worker_request.txn_begun = false;
   nr_php_frankenphp_clear_response_headers();
 }
 #endif /* ZTS */
