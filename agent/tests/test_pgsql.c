@@ -445,6 +445,18 @@ static void test_statements() {
   tlib_pass_if_str_equal("a named statement is untouched", "SELECT 1",
                          nr_php_pgsql_statement_find(first, "s1", 2));
 
+  /* The unnamed statement belongs to the transaction that prepared it. */
+  NRPRG(txn)->abs_start_time += 1;
+  tlib_pass_if_null("the unnamed statement in another transaction",
+                    nr_php_pgsql_statement_find(first, "", 0));
+  tlib_pass_if_str_equal("a named statement in another transaction", "SELECT 1",
+                         nr_php_pgsql_statement_find(first, "s1", 2));
+  nr_php_pgsql_statement_save(first, "", 0, "SELECT 5", 8);
+  tlib_pass_if_str_equal("an unnamed statement prepared in this transaction",
+                         "SELECT 5", nr_php_pgsql_statement_find(first, "", 0));
+  tlib_pass_if_str_equal("a NULL name is the unnamed statement", "SELECT 5",
+                         nr_php_pgsql_statement_find(first, NULL, 0));
+
   /* The same name on two connections keeps two statements. */
   nr_php_pgsql_statement_save(second, "s1", 2, "SELECT 5", 8);
   tlib_pass_if_str_equal("same name, second connection", "SELECT 5",

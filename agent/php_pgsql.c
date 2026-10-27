@@ -45,6 +45,14 @@ void nr_php_pgsql_instance_destroy(void* instance) {
 typedef struct {
   char* sql;
   uint64_t used;
+
+  /*
+   * For the unnamed statement only: the start time of the transaction that
+   * prepared it. The server destroys the unnamed statement with the next
+   * query of almost any kind, so one that outlives its transaction is nearly
+   * never the one the next pg_execute() runs. 0 for a named statement.
+   */
+  nrtime_t txn_start;
 } nr_php_pgsql_statement_t;
 
 typedef struct {
@@ -338,6 +346,7 @@ void nr_php_pgsql_statement_save(const zval* pgsql_conn,
   statement = nr_malloc(sizeof(nr_php_pgsql_statement_t));
   statement->sql = nr_strndup(sql, sql_len);
   statement->used = ++statements->clock;
+  statement->txn_start = (name_len > 0) ? 0 : nr_txn_start_time(NRPRG(txn));
   nr_hashmap_update(statements->names, key, nr_strlen(key), statement);
   nr_free(key);
 }
@@ -359,6 +368,18 @@ const char* nr_php_pgsql_statement_find(const zval* pgsql_conn,
   nr_free(key);
 
   if (NULL == statement) {
+    return NULL;
+  }
+
+  /*
+   * The unnamed statement is only the one that was prepared in this
+   * transaction. Within the transaction it can still be stale:
+   * pg_query_params() replaces it on the server and pg_query() destroys it, and
+   * the agent does not follow either, so the next pg_execute() of the unnamed
+   * statement can run SQL other than the one that is saved.
+   */
+  if ((name_len <= 0)
+      && (statement->txn_start != nr_txn_start_time(NRPRG(txn)))) {
     return NULL;
   }
 

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-An unnamed statement prepared a second time SHALL be reported with the SQL of the second prepare when it is executed in the next transaction.
+An unnamed statement prepared in one transaction SHALL be reported with the operation other when pg_execute() runs it in the next transaction.
 */
 
 /*SKIPIF
@@ -28,12 +28,12 @@ executed
 */
 
 /*EXPECT_METRICS_EXIST
-Datastore/statement/Postgres/pg_roles/select, 1
+Datastore/operation/Postgres/other, 1
 */
 
 /*EXPECT_METRICS_DONT_EXIST
+Datastore/statement/Postgres/pg_roles/select
 Datastore/statement/Postgres/pg_user/select
-Datastore/operation/Postgres/other
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -48,6 +48,7 @@ function split_transaction() {
 }
 
 $users = "SELECT usename FROM pg_user WHERE usename = $1";
+
 $roles = "SELECT rolname FROM pg_roles WHERE rolname = $1";
 
 $conn = pg_connect($PG_CONNECTION);
@@ -60,4 +61,3 @@ split_transaction();
 
 pg_execute($conn, '', array('postgres'));
 echo "executed\n";
-
