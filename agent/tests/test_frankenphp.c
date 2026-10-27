@@ -1176,6 +1176,48 @@ static void test_direct_call_begins_no_transaction(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/*
+ * A transaction started in the worker loop between requests is ended at the
+ * next frankenphp_handle_request as the worker bootstrap: renamed and made a
+ * background job, also when the application named it. Pinned: current
+ * behaviour, not necessarily the desired one. Captured: [0] bootstrap, [1]
+ * request 1, [2] the loop-body transaction, [3] request 2.
+ */
+static void test_loop_body_txn_ended_as_bootstrap(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("loop body unnamed: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_str_equal("loop body unnamed: name", BOOTSTRAP_TXN_NAME,
+                         captured[2].name);
+  tlib_pass_if_true("loop body unnamed: background", captured[2].background,
+                    "background=%d", captured[2].background);
+  tlib_php_request_end();
+  engine_destroy();
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "newrelic_name_transaction('loop_body');"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("loop body named: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_str_equal("loop body named: name", BOOTSTRAP_TXN_NAME,
+                         captured[2].name);
+  tlib_pass_if_true("loop body named: background", captured[2].background,
+                    "background=%d", captured[2].background);
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -1204,5 +1246,6 @@ void test_main(void* p NRUNUSED) {
   test_uncaught_exception_recorded_with_status_500();
   test_buffered_html_gets_browser_agent();
   test_direct_call_begins_no_transaction();
+  test_loop_body_txn_ended_as_bootstrap();
 #endif
 }
