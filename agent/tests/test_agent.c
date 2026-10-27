@@ -641,6 +641,67 @@ static void test_silence_user_error_handler(TSRMLS_D) {
                          (int)Z_LVAL_P(calls));
   nr_php_zval_free(&calls);
 
+  /*
+   * A handler registered for some error types gets the same types back.
+   */
+  tlib_php_request_eval(
+      "restore_error_handler();"
+      "$calls = 0;"
+      "set_error_handler(function () use (&$calls) { $calls++; return true; },"
+      " E_USER_WARNING);" TSRMLS_CC);
+  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  tlib_pass_if_int_equal("the handler was registered for E_USER_WARNING",
+                         E_USER_WARNING, error_types);
+  tlib_php_request_eval("trigger_error('fifth', E_USER_WARNING);" TSRMLS_CC);
+  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  tlib_php_request_eval("trigger_error('sixth', E_USER_WARNING);" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("only the error after the restore is handled", 1,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
+   * A handler that throws is not called while silenced, and throws again
+   * after the restore.
+   */
+  tlib_php_request_eval(
+      "restore_error_handler();"
+      "$thrown = 0;"
+      "set_error_handler(function () { throw new Exception('handler'); });"
+      TSRMLS_CC);
+  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  tlib_php_request_eval(
+      "try { trigger_error('seventh', E_USER_WARNING); }"
+      " catch (Exception $e) { $thrown++; }" TSRMLS_CC);
+  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$thrown" TSRMLS_CC);
+  tlib_pass_if_int_equal("the silenced handler does not throw", 0,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+  tlib_php_request_eval(
+      "try { trigger_error('eighth', E_USER_WARNING); }"
+      " catch (Exception $e) { $thrown++; }" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$thrown" TSRMLS_CC);
+  tlib_pass_if_int_equal("the restored handler throws", 1,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
+   * Without a handler there is nothing to silence or restore, and a handler
+   * registered afterwards is called.
+   */
+  tlib_php_request_eval("restore_error_handler();" TSRMLS_CC);
+  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  tlib_php_request_eval(
+      "$calls = 0;"
+      "set_error_handler(function () use (&$calls) { $calls++; return true; });"
+      "trigger_error('ninth', E_USER_WARNING);" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("a handler set after the restore is called", 1,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
   tlib_php_request_end();
 }
 

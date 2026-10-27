@@ -34,6 +34,7 @@ newrelic.transaction_tracer.record_sql = obfuscated
 /*EXPECT
 ok - query succeeded
 ok - the handler was not called
+ok - a later warning reaches the handler
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -66,7 +67,15 @@ if ($ok) {
 tap_assert($ok, 'query succeeded');
 tap_equal(0, $calls, 'the handler was not called');
 
-restore_error_handler();
 if (0 == $calls) {
+  $handled = array();
+  set_error_handler(function ($no, $str) use (&$handled) {
+    $handled[] = $str;
+    return true;
+  });
+  trigger_error('after explain', E_USER_WARNING);
+  tap_equal(array('after explain'), $handled,
+            'a later warning reaches the handler');
   mysqli_close($link);
 }
+restore_error_handler();
