@@ -1628,6 +1628,31 @@ NR_INNER_WRAPPER(pdo_prepare) {
                                   "pdo");
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Whether the constructor of a mysqli_stmt prepared its statement. When mysqli
+ * throws on errors the constructor throws, and otherwise it returns an object
+ * that is not prepared and has the error number of the failed prepare.
+ *
+ * The property is read here and not with nr_php_get_zval_object_property():
+ * mysqli computes its properties and returns them in storage that belongs to
+ * the caller.
+ */
+static int nr_php_mysqli_stmt_construct_prepared(zval* stmt) {
+  zval rv;
+  zval* error_number;
+
+  if (NULL != EG(exception)) {
+    return 0;
+  }
+
+  error_number = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
+                                    "errno", sizeof("errno") - 1, 1, &rv);
+
+  return (IS_LONG == Z_TYPE_P(error_number)) && (0 == Z_LVAL_P(error_number));
+}
+#endif
+
 /*
  * Handle
  *   mysqli_stmt::__construct(mysqli $link [, string $query ])
@@ -1660,7 +1685,15 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
   }
 
   if (sqlstr) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    /* A prepare that failed in the constructor leaves no SQL. */
+    nr_php_mysqli_statement_save(
+        this_obj,
+        nr_php_mysqli_stmt_construct_prepared(this_obj) ? sqlstr : NULL,
+        sqlstrlen TSRMLS_CC);
+#else
     nr_php_mysqli_statement_save(this_obj, sqlstr, sqlstrlen TSRMLS_CC);
+#endif
   }
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
