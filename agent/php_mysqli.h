@@ -24,6 +24,36 @@
  */
 extern zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : Create the table that holds the SQL of each mysqli statement
+ *           object. Call it once per request, before any statement exists;
+ *           destroy it with nr_php_objtable_destroy() in post-deactivate.
+ */
+extern void nr_php_mysqli_statement_sql_create_table(void);
+
+/*
+ * Purpose : Save the SQL of a mysqli statement object, replacing the SQL
+ *           saved for it earlier. The entry is dropped when the object is
+ *           freed.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. The SQL. NULL or empty removes the entry.
+ *           3. The length of the SQL.
+ */
+extern void nr_php_mysqli_statement_sql_set(const zval* stmt,
+                                            const char* sql,
+                                            nr_string_len_t sql_len);
+
+/*
+ * Purpose : Get the SQL saved for a mysqli statement object.
+ *
+ * Returns : The SQL, which stays owned by the table, or NULL if none was
+ *           saved.
+ */
+extern const char* nr_php_mysqli_statement_sql_get(const zval* stmt);
+#endif
+
 /*
  * Purpose : Get the MySQLi link that was used to prepare a statement.
  *

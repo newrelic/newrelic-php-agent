@@ -14,6 +14,7 @@
 #include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "php_datastore.h"
+#include "php_mysqli.h"
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "nr_txn.h"
@@ -151,6 +152,9 @@ PHP_RINIT_FUNCTION(newrelic) {
       = nr_php_objtable_create(nr_php_datastore_instance_dtor);
 #endif
   nr_php_pdo_options_create_table();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_sql_create_table();
+#endif
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
   NRPRG_CTX(predis_command_starts)

@@ -496,6 +496,16 @@ typedef struct _shared_globals_t {
    */
   nr_php_objtable_t* pdo_options;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * The SQL of each mysqli statement object (PHP 8.0+), kept for as long as
+   * the object lives. A statement prepared in one transaction can be executed
+   * in a later one, for example when it is prepared at FrankenPHP worker
+   * start.
+   */
+  nr_php_objtable_t* mysqli_statement_sql;
+#endif
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
