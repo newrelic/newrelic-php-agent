@@ -2037,6 +2037,18 @@ NR_INNER_WRAPPER(pg_execute) {
       break;
   }
 
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The statement and the instance are looked up after the call, and used
+   * before any PHP code can run again. pg_execute() converts its parameters
+   * to strings, which can run an object's __toString(), and that code can
+   * prepare the statement again or connect again: the table frees what it held
+   * before.
+   */
   if (SUCCESS == rv) {
 #if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
     char* key;
@@ -2064,10 +2076,6 @@ NR_INNER_WRAPPER(pg_execute) {
     query = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
   }
 
-  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
 
