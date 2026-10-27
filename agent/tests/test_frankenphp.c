@@ -437,6 +437,37 @@ static void test_bootstrap_not_recording_txn_ignored(void) {
   engine_destroy();
 }
 
+/*
+ * A bootstrap transaction that the worker script ended early with
+ * newrelic_end_of_transaction() is sent before the real function runs, as
+ * classic mode sends an ended transaction at the end of the request. Ending
+ * it froze its name, so it keeps the name it had then.
+ */
+static void test_bootstrap_ended_early_is_sent(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "newrelic_name_transaction('ended_early');"
+      "newrelic_end_of_transaction();"
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("ended bootstrap: bootstrap plus the request", 2,
+                            captured_count);
+  tlib_pass_if_size_t_equal("ended bootstrap: sent before the real function", 1,
+                            fake.on_entry[0].captured);
+  tlib_pass_if_true(
+      "ended bootstrap: no transaction when the real function is entered",
+      fake.on_entry[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_str_equal("ended bootstrap: keeps the name it ended with",
+                         "OtherTransaction/Custom/ended_early",
+                         captured[0].name);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
 /* The real function's return value reaches PHP unchanged. */
 static void test_return_value_passes_through(void) {
   zval* rv = NULL;
@@ -1218,6 +1249,55 @@ static void test_loop_body_txn_ended_as_bootstrap(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/*
+ * A transaction started in the worker loop between requests and no longer
+ * recording at the next frankenphp_handle_request is ended there too, before
+ * the real function runs: sent with its own name if the worker script ended
+ * it early with newrelic_end_of_transaction(), discarded if it ignored it.
+ */
+static void test_loop_body_txn_not_recording(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "newrelic_name_transaction('loop_body');"
+      "newrelic_end_of_transaction();"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("loop body ended early: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_size_t_equal(
+      "loop body ended early: sent before the real function", 3,
+      fake.on_entry[1].captured);
+  tlib_pass_if_true(
+      "loop body ended early: no transaction when the real function is "
+      "entered",
+      fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_str_equal("loop body ended early: keeps its name",
+                         "OtherTransaction/Custom/loop_body", captured[2].name);
+  tlib_php_request_end();
+  engine_destroy();
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "newrelic_ignore_transaction();"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("loop body ignored: 3 transactions", 3,
+                            captured_count);
+  tlib_pass_if_size_t_equal("loop body ignored: nothing sent for it", 2,
+                            fake.on_entry[1].captured);
+  tlib_pass_if_true(
+      "loop body ignored: no transaction when the real function is entered",
+      fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -1226,6 +1306,7 @@ void test_main(void* p NRUNUSED) {
   test_bootstrap_txn_ended_before_real_function();
   test_bootstrap_not_recording_app_unknown();
   test_bootstrap_not_recording_txn_ignored();
+  test_bootstrap_ended_early_is_sent();
   test_return_value_passes_through();
   test_same_callable_reuses_wraprec();
   test_agent_disabled_for_request();
@@ -1247,5 +1328,6 @@ void test_main(void* p NRUNUSED) {
   test_buffered_html_gets_browser_agent();
   test_direct_call_begins_no_transaction();
   test_loop_body_txn_ended_as_bootstrap();
+  test_loop_body_txn_not_recording();
 #endif
 }

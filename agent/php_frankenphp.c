@@ -170,16 +170,20 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // - No transaction was started because either the agent is not connected to
   //   the daemon yet, or the daemon has not verified appinfo yet.
   // - The transaction was ended by nr_php_frankenphp_handle_request_end
-  // - The worker script ignored the bootstrap transaction. End it as ignored,
-  //   or the request handler's begin handler would replace it without ending
-  //   it, and it would leak.
+  // - The worker script ignored the bootstrap transaction, or ended it early
+  //   with newrelic_end_of_transaction(). End it, or the request handler's
+  //   begin handler would replace it without ending it, and it would leak.
+  //   As in classic mode, an ignored transaction is discarded and an ended
+  //   one is sent, with the name it had when it ended.
+  // On later calls, a transaction that is still open was started by the worker
+  // script between requests, and it is ended the same way.
   if (nr_php_recording()) {
     nr_txn_set_path("FrankenPHP worker", NRPRG(txn), "frankenphp/worker",
                     NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
     nr_txn_set_as_background_job(NRPRG(txn), "frankenphp worker");
     nr_php_txn_end(0, 0);
   } else if (NULL != NRPRG(txn)) {
-    nr_php_txn_end(1, 0);
+    nr_php_txn_end(0, 0);
   }
 
   // Wrap frankenphp_handle_request's callback, which handles web request,
