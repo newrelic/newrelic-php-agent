@@ -239,9 +239,38 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
  * a prefix so that the empty name, which PostgreSQL uses for the unnamed
  * statement, is a valid key.
  */
-static char* nr_php_pgsql_statement_key(const char* name,
-                                        nr_string_len_t name_len) {
-  return nr_formatf("n:%.*s", NRSAFELEN(name_len), name ? name : "");
+/*
+ * Purpose : Build the key of a statement in a buffer: the statement names are
+ *           at most 63 bytes on the server, so the buffer is nearly always
+ *           enough and no allocation is made. A longer name gets a heap key,
+ *           which the caller frees.
+ */
+#define NR_PHP_PGSQL_STATEMENT_KEY_BUFFER 128
+
+static const char* nr_php_pgsql_statement_key(const char* name,
+                                              nr_string_len_t name_len,
+                                              char* buffer,
+                                              size_t buffer_len,
+                                              char** heap_key,
+                                              size_t* key_len) {
+  size_t name_size = ((NULL != name) && (name_len > 0)) ? (size_t)name_len : 0;
+  char* key = buffer;
+
+  *heap_key = NULL;
+  if (name_size + 3 > buffer_len) {
+    key = (char*)nr_malloc(name_size + 3);
+    *heap_key = key;
+  }
+
+  key[0] = 'n';
+  key[1] = ':';
+  if (name_size) {
+    nr_memcpy(key + 2, name, name_size);
+  }
+  key[2 + name_size] = '\0';
+  *key_len = 2 + name_size;
+
+  return key;
 }
 
 static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
@@ -323,7 +352,10 @@ void nr_php_pgsql_statement_save(const zval* pgsql_conn,
                                  nr_string_len_t name_len,
                                  const char* sql,
                                  nr_string_len_t sql_len) {
-  char* key;
+  char buffer[NR_PHP_PGSQL_STATEMENT_KEY_BUFFER];
+  char* heap_key;
+  const char* key;
+  size_t key_len;
   nr_php_pgsql_statement_t* statement;
   nr_php_pgsql_statements_t* statements;
 
@@ -336,10 +368,11 @@ void nr_php_pgsql_statement_save(const zval* pgsql_conn,
     return;
   }
 
-  key = nr_php_pgsql_statement_key(name, name_len);
+  key = nr_php_pgsql_statement_key(name, name_len, buffer, sizeof(buffer),
+                                   &heap_key, &key_len);
 
   /* A name that is prepared again replaces its statement: no room is needed. */
-  if (NULL == nr_hashmap_get(statements->names, key, nr_strlen(key))) {
+  if (NULL == nr_hashmap_get(statements->names, key, key_len)) {
     nr_php_pgsql_statements_make_room(statements);
   }
 
@@ -347,14 +380,17 @@ void nr_php_pgsql_statement_save(const zval* pgsql_conn,
   statement->sql = nr_strndup(sql, sql_len);
   statement->used = ++statements->clock;
   statement->txn_start = (name_len > 0) ? 0 : nr_txn_start_time(NRPRG(txn));
-  nr_hashmap_update(statements->names, key, nr_strlen(key), statement);
-  nr_free(key);
+  nr_hashmap_update(statements->names, key, key_len, statement);
+  nr_free(heap_key);
 }
 
 const char* nr_php_pgsql_statement_find(const zval* pgsql_conn,
                                         const char* name,
                                         nr_string_len_t name_len) {
-  char* key;
+  char buffer[NR_PHP_PGSQL_STATEMENT_KEY_BUFFER];
+  char* heap_key;
+  const char* key;
+  size_t key_len;
   nr_php_pgsql_statement_t* statement;
   nr_php_pgsql_statements_t* statements;
 
@@ -363,9 +399,10 @@ const char* nr_php_pgsql_statement_find(const zval* pgsql_conn,
     return NULL;
   }
 
-  key = nr_php_pgsql_statement_key(name, name_len);
-  statement = nr_hashmap_get(statements->names, key, nr_strlen(key));
-  nr_free(key);
+  key = nr_php_pgsql_statement_key(name, name_len, buffer, sizeof(buffer),
+                                   &heap_key, &key_len);
+  statement = nr_hashmap_get(statements->names, key, key_len);
+  nr_free(heap_key);
 
   if (NULL == statement) {
     return NULL;

@@ -457,6 +457,28 @@ static void test_statements() {
   tlib_pass_if_str_equal("a NULL name is the unnamed statement", "SELECT 5",
                          nr_php_pgsql_statement_find(first, NULL, 0));
 
+  /* Names that do not fit the key buffer, and names with a NUL byte. */
+  {
+    char long_name[301];
+
+    memset(long_name, 'n', sizeof(long_name) - 1);
+    long_name[sizeof(long_name) - 1] = '\0';
+    nr_php_pgsql_statement_save(first, long_name, 300, "SELECT long", 11);
+    tlib_pass_if_str_equal("a long name", "SELECT long",
+                           nr_php_pgsql_statement_find(first, long_name, 300));
+    long_name[299] = 'x';
+    tlib_pass_if_null("a long name that differs at the end",
+                      nr_php_pgsql_statement_find(first, long_name, 300));
+  }
+  nr_php_pgsql_statement_save(first, "a\0b", 3, "SELECT nul b", 12);
+  nr_php_pgsql_statement_save(first, "a\0c", 3, "SELECT nul c", 12);
+  tlib_pass_if_str_equal("a name with a NUL byte", "SELECT nul b",
+                         nr_php_pgsql_statement_find(first, "a\0b", 3));
+  tlib_pass_if_str_equal("another name with a NUL byte", "SELECT nul c",
+                         nr_php_pgsql_statement_find(first, "a\0c", 3));
+  tlib_pass_if_null("the part before the NUL byte is another name",
+                    nr_php_pgsql_statement_find(first, "a", 1));
+
   /* The same name on two connections keeps two statements. */
   nr_php_pgsql_statement_save(second, "s1", 2, "SELECT 5", 8);
   tlib_pass_if_str_equal("same name, second connection", "SELECT 5",
