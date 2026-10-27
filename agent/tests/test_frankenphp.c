@@ -1146,6 +1146,55 @@ static void test_uncaught_exception_recorded_with_status_500(void) {
 }
 
 /*
+ * An error group callback that throws while the agent records the request
+ * handler's uncaught exception. The agent discards the callback's exception
+ * and frees it (valgrind checks the leak), the transaction records the
+ * handler's exception, and the exception that FrankenPHP reports is still the
+ * handler's.
+ */
+static void test_throwing_error_group_callback(void) {
+  zval* callback_ran = NULL;
+  zval* reported = NULL;
+
+  engine_create("");
+  request_start(FAKE_CALL_AND_FINISH);
+
+  tlib_php_request_eval(
+      "$callback_ran = false;"
+      "newrelic_set_error_group_callback(function ($txn, $error) {"
+      "  $GLOBALS['callback_ran'] = true;"
+      "  throw new LogicException('callback failed');"
+      "});"
+      "$cb = function () { throw new RuntimeException('handler failed'); };"
+      "frankenphp_handle_request($cb);");
+
+  callback_ran = tlib_php_request_eval_expr("$callback_ran");
+  tlib_pass_if_zval_is_bool_true("throwing callback: the callback ran",
+                                 callback_ran);
+  tlib_pass_if_size_t_equal("throwing callback: bootstrap plus the request", 2,
+                            captured_count);
+  tlib_pass_if_true("throwing callback: error recorded", captured[1].has_error,
+                    "no error on the request's transaction");
+  tlib_pass_if_not_null(
+      "throwing callback: the handler's exception is recorded",
+      nr_strstr(NRSAFESTR(captured[1].error_message), "handler failed"));
+
+  reported = tlib_php_request_eval_expr("error_get_last()['message'] ?? ''");
+  tlib_pass_if_not_null(
+      "throwing callback: FrankenPHP reports the handler's exception",
+      nr_strstr(Z_STRVAL_P(reported), "handler failed"));
+  tlib_pass_if_null(
+      "throwing callback: FrankenPHP doesn't report the callback's",
+      nr_strstr(Z_STRVAL_P(reported), "callback failed"));
+  tlib_pass_if_null("throwing callback: no exception left", EG(exception));
+
+  nr_php_zval_free(&callback_ran);
+  nr_php_zval_free(&reported);
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
  * FrankenPHP flushes the output that is still buffered when the request
  * handler returns, and the agent's auto-RUM output handler injects the
  * browser agent into it then. The worker script's own output buffer, started
@@ -1325,6 +1374,7 @@ void test_main(void* p NRUNUSED) {
   test_callback_throws();
   test_nested_call_site();
   test_uncaught_exception_recorded_with_status_500();
+  test_throwing_error_group_callback();
   test_buffered_html_gets_browser_agent();
   test_direct_call_begins_no_transaction();
   test_loop_body_txn_ended_as_bootstrap();
