@@ -407,8 +407,17 @@ void nr_php_restore_errors(int error_reporting TSRMLS_DC) {
   EG(error_reporting) = error_reporting;
 }
 
-int nr_php_silence_user_error_handler(TSRMLS_D) {
-  int error_types = EG(user_error_handler_error_reporting);
+nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(
+    TSRMLS_D) {
+  nr_php_user_error_handler_state_t state = {0, 0, 0};
+
+  if (Z_TYPE(EG(user_error_handler)) == IS_UNDEF) {
+    return state;
+  }
+
+  state.active = 1;
+  state.error_types = EG(user_error_handler_error_reporting);
+  state.depth = zend_stack_count(&EG(user_error_handlers_error_reporting));
 
   /*
    * PHP calls the handler only for the error types it was registered for, and
@@ -417,16 +426,31 @@ int nr_php_silence_user_error_handler(TSRMLS_D) {
    */
   EG(user_error_handler_error_reporting) = 0;
 
-  return error_types;
+  return state;
 }
 
-void nr_php_restore_user_error_handler(int error_types TSRMLS_DC) {
-  /*
-   * Silencing sets the types to 0, so any other value means PHP code replaced
-   * the handler in the meantime. The types it was registered for are its own.
-   */
-  if (0 == EG(user_error_handler_error_reporting)) {
-    EG(user_error_handler_error_reporting) = error_types;
+void nr_php_restore_user_error_handler(
+    nr_php_user_error_handler_state_t state TSRMLS_DC) {
+  size_t depth;
+
+  if (!state.active) {
+    return;
+  }
+
+  depth = zend_stack_count(&EG(user_error_handlers_error_reporting));
+
+  if (depth > state.depth) {
+    /*
+     * PHP code registered another handler. PHP saved the types of the
+     * silenced handler, which are 0, on its stack for when that handler comes
+     * back, and the types of the new handler are its own.
+     */
+    int* saved = zend_stack_base(&EG(user_error_handlers_error_reporting));
+
+    saved[state.depth] = state.error_types;
+  } else if ((depth == state.depth)
+             && (0 == EG(user_error_handler_error_reporting))) {
+    EG(user_error_handler_error_reporting) = state.error_types;
   }
 }
 

@@ -324,7 +324,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     const char* sql,
     zval* params TSRMLS_DC) {
   int error_reporting;
-  int user_error_handler;
+  nr_php_user_error_handler_state_t user_error_handler;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
   zval* stmt = NULL;
