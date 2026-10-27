@@ -587,6 +587,63 @@ static void test_nr_php_zend_function_lineno() {
                               nr_php_zend_function_lineno(&func));
 }
 
+/*
+ * Silencing errors does not stop PHP from calling the application's error
+ * handler: only the set of error types the handler was registered for does.
+ */
+static void test_silence_user_error_handler(TSRMLS_D) {
+  int error_reporting;
+  int error_types;
+  zval* calls;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval(
+      "$calls = 0;"
+      "set_error_handler(function () use (&$calls) { $calls++; return true; });"
+      "trigger_error('first', E_USER_WARNING);" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("the handler is called", 1, (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
+   * With errors silenced the handler is still called.
+   */
+  error_reporting = nr_php_silence_errors(TSRMLS_C);
+  tlib_php_request_eval("trigger_error('second', E_USER_WARNING);" TSRMLS_CC);
+  nr_php_restore_errors(error_reporting TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("silenced errors still call the handler", 2,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
+   * With the handler silenced it is not called.
+   */
+  error_reporting = nr_php_silence_errors(TSRMLS_C);
+  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  tlib_pass_if_int_equal("the handler was registered for all errors", E_ALL,
+                         error_types);
+  tlib_php_request_eval("trigger_error('third', E_USER_WARNING);" TSRMLS_CC);
+  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_errors(error_reporting TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("the silenced handler is not called", 2,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
+   * After the restore it is called again.
+   */
+  tlib_php_request_eval("trigger_error('fourth', E_USER_WARNING);" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("the restored handler is called", 3,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
@@ -610,6 +667,7 @@ void test_main(void* p NRUNUSED) {
   test_nr_php_zend_function_lineno();
   test_function_debug_name(TSRMLS_C);
   test_get_zval_object_property(TSRMLS_C);
+  test_silence_user_error_handler(TSRMLS_C);
   test_get_zval_object_property_with_class(TSRMLS_C);
   test_class_entry_instanceof_class(TSRMLS_C);
   test_object_instanceof_class(TSRMLS_C);

@@ -496,6 +496,30 @@ extern int nr_php_silence_errors(TSRMLS_D);
 extern void nr_php_restore_errors(int error_reporting TSRMLS_DC);
 
 /*
+ * Purpose : Stop PHP from calling the application's error handler (the
+ *           callback of set_error_handler()), but save the previous state.
+ *
+ * Notes   : Silencing errors does not do this: PHP decides whether to call the
+ *           handler from the set of error types the handler was registered for,
+ *           not from the error reporting setting. Code that runs PHP on the
+ *           application's behalf, such as the explain connection, uses this so
+ *           that the application's handler does not see warnings that its own
+ *           calls did not cause, and cannot change the application's state
+ *           (close a connection, for instance) while the agent is working on
+ * it.
+ *
+ * Returns : The error types the handler was registered for.
+ */
+extern int nr_php_silence_user_error_handler(TSRMLS_D);
+
+/*
+ * Purpose : Restore the state returned by nr_php_silence_user_error_handler.
+ *
+ * Params  : 1. The error types the handler was registered for.
+ */
+extern void nr_php_restore_user_error_handler(int error_types TSRMLS_DC);
+
+/*
  * Purpose : Acquire a named constant from PHP.
  *
  * Returns : A zval containing the constant value or NULL if the constant is

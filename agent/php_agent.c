@@ -407,6 +407,23 @@ void nr_php_restore_errors(int error_reporting TSRMLS_DC) {
   EG(error_reporting) = error_reporting;
 }
 
+int nr_php_silence_user_error_handler(TSRMLS_D) {
+  int error_types = EG(user_error_handler_error_reporting);
+
+  /*
+   * PHP calls the handler only for the error types it was registered for, and
+   * does the same itself, while it runs the handler, to keep a handler from
+   * being called by its own errors.
+   */
+  EG(user_error_handler_error_reporting) = 0;
+
+  return error_types;
+}
+
+void nr_php_restore_user_error_handler(int error_types TSRMLS_DC) {
+  EG(user_error_handler_error_reporting) = error_types;
+}
+
 zval* nr_php_get_constant(const char* name TSRMLS_DC) {
   zval* constant;
   zval* copy = NULL;
