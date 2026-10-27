@@ -2125,11 +2125,12 @@ NR_INNER_WRAPPER(pg_prepare) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
   /*
-   * The SQL is kept for the life of the connection object. A prepare that
-   * fails leaves the statement name as it was, so it saves nothing.
+   * The SQL is kept for the life of the connection object. A successful
+   * prepare returns a result object. A prepare that fails returns false or
+   * throws, and leaves the statement name as it was, so it saves nothing.
    */
   if ((SUCCESS == rv) && (query_len > 0)
-      && (IS_FALSE != Z_TYPE_P(return_value))) {
+      && (IS_OBJECT == Z_TYPE_P(return_value))) {
     nr_php_pgsql_statement_save(conn, stmtname, stmtname_len, query, query_len);
   }
 #else
