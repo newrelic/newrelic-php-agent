@@ -516,6 +516,9 @@ extern int nr_php_silence_user_error_handler(TSRMLS_D);
  * Purpose : Restore the state returned by nr_php_silence_user_error_handler.
  *
  * Params  : 1. The error types the handler was registered for.
+ *
+ * Notes   : If PHP code registered another handler while the error handler was
+ *           silenced, that handler keeps the types it was registered for.
  */
 extern void nr_php_restore_user_error_handler(int error_types TSRMLS_DC);
 

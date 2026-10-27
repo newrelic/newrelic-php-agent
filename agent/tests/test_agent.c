@@ -687,6 +687,27 @@ static void test_silence_user_error_handler(TSRMLS_D) {
   nr_php_zval_free(&calls);
 
   /*
+   * A handler registered while the handler is silenced keeps its own types.
+   */
+  tlib_php_request_eval(
+      "restore_error_handler();"
+      "$calls = 0;"
+      "set_error_handler(function () use (&$calls) { $calls++; return true; });"
+      TSRMLS_CC);
+  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  tlib_php_request_eval(
+      "set_error_handler(function () use (&$calls) { $calls += 10; return true; },"
+      " E_USER_NOTICE);" TSRMLS_CC);
+  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  tlib_php_request_eval(
+      "trigger_error('tenth', E_USER_WARNING);"
+      "trigger_error('eleventh', E_USER_NOTICE);" TSRMLS_CC);
+  calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
+  tlib_pass_if_int_equal("a handler set while silenced keeps its types", 10,
+                         (int)Z_LVAL_P(calls));
+  nr_php_zval_free(&calls);
+
+  /*
    * Without a handler there is nothing to silence or restore, and a handler
    * registered afterwards is called.
    */

@@ -421,7 +421,13 @@ int nr_php_silence_user_error_handler(TSRMLS_D) {
 }
 
 void nr_php_restore_user_error_handler(int error_types TSRMLS_DC) {
-  EG(user_error_handler_error_reporting) = error_types;
+  /*
+   * Silencing sets the types to 0, so any other value means PHP code replaced
+   * the handler in the meantime. The types it was registered for are its own.
+   */
+  if (0 == EG(user_error_handler_error_reporting)) {
+    EG(user_error_handler_error_reporting) = error_types;
+  }
 }
 
 zval* nr_php_get_constant(const char* name TSRMLS_DC) {
