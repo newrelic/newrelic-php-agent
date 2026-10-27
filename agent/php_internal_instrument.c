@@ -1513,9 +1513,6 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
       nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
     }
   }
-  sqlstr = nr_php_mysqli_statement_find(stmt_obj TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
-
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1526,6 +1523,11 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
 
     segment->stop_time = nr_txn_now_rel(NRPRG(txn));
 
+    /*
+     * The explain plan uses the link and the query that were kept for the
+     * statement in the transaction that prepared it, so a statement prepared
+     * in an earlier transaction gets none.
+     */
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
@@ -1533,6 +1535,16 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
                                         params, segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }
+
+    /*
+     * The SQL is looked up here, after the call and the explain, and used at
+     * once. execute() converts its parameters to strings, which can run an
+     * object's __toString(), and the explain runs PHP code too: code that
+     * prepares the statement again replaces the SQL in the table and frees the
+     * string that was there before.
+     */
+    sqlstr = nr_php_mysqli_statement_find(stmt_obj TSRMLS_CC);
+    sqlstrlen = nr_strlen(sqlstr);
 
     nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
                                NR_DATASTORE_MYSQL, NULL TSRMLS_CC);
