@@ -168,6 +168,9 @@ PHP_RINIT_FUNCTION(newrelic) {
 #endif
   nr_php_pdo_options_create_table();
   nr_php_mysqli_links_create();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_sql_create_table();
+#endif
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
   NRPRG_CTX(predis_command_starts)
