@@ -1606,16 +1606,14 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   zval* val = NULL;
 
   /*
-   * Only the preloaded scripts are needed here. A request never executes the
-   * file of a preloaded class, so its library can't be detected from the file
-   * running. Every other script is detected when a request executes it.
+   * Only the preloaded scripts are needed here. A preloaded class's file
+   * normally runs during preloading, not in a request, so its library can't
+   * be detected from the file running. Every other script is detected when a
+   * request executes it.
    *
    * Passing false skips building the list of every cached script, whose cost
    * grows with the size of opcache, and which also holds scripts this request
-   * never runs. On PHP 8.4 and older that list is also missing on the first
-   * request a process or thread handles, because opcache's RINIT, which
-   * enables it for the request, runs after the agent's. 'preload_statistics'
-   * doesn't depend on either.
+   * never runs.
    */
   include_scripts = nr_php_zval_alloc();
   nr_php_zval_bool(include_scripts, 0);
@@ -1630,9 +1628,9 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   }
   if (IS_ARRAY != Z_TYPE_P(status)) {
     /*
-     * `opcache_get_status` returns either an array or false.  If it's not an
-     * array, it must have returned false indicating we are unable to get the
-     * status yet.
+     * `opcache_get_status` returns either an array or false.  It returns
+     * false when opcache.restrict_api doesn't allow the calling script, or
+     * when opcache failed to start.
      */
     nrl_debug(NRL_INSTRUMENT,
               "User instrumentation from opcache: opcache status "
@@ -1646,7 +1644,9 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   if (NULL == preload_statistics) {
     /*
      * Opcache adds 'preload_statistics' once preloading is done, so it is
-     * missing in the request that runs the preload script.
+     * missing in the request that runs the preload script. It is also missing
+     * when opcache.file_cache_only is set, because preloading doesn't run in
+     * that mode.
      */
     nrl_debug(NRL_INSTRUMENT,
               "User instrumentation from opcache: missing "
