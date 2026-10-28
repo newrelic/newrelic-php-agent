@@ -105,6 +105,7 @@ TEST_BINARIES = \
 	tests/test_mysql \
 	tests/test_mysqli \
 	tests/test_objtable \
+	tests/test_oci \
 	tests/test_output \
 	tests/test_pdo \
 	tests/test_pdo_mysql \
