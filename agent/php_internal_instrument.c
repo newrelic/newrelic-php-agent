@@ -179,7 +179,10 @@ int nr_zend_call_old_handler_segment(nr_segment_t** segment,
    * __toString() method, and that code can end the transaction. The segment
    * is freed with the transaction, and a transaction started afterwards is
    * not the one the segment belongs to. The start time tells them apart, as it
-   * does for user function wrappers.
+   * does for user function wrappers. The address of the transaction is not
+   * compared: a new transaction can get the address of the one that was freed,
+   * so an equal address proves nothing, and the start time already tells the
+   * transactions apart.
    */
   if (segment && *segment
       && nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
