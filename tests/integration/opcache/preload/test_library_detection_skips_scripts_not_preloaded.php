@@ -16,6 +16,11 @@ doesn't use. A script that a request does execute is detected when it runs.
 The test compiles MongoDB's signature file into opcache without preloading or
 executing it, then starts a new transaction, which looks at opcache's scripts
 again. The library must not be detected.
+
+The output is matched with a regex rather than compared in full. Run as root,
+opcache preloads in a child process that switches to opcache.preload_user.
+In a coverage build, that child can't write its gcov data files on exit and
+reports each one on stderr, which ends up in the test's output.
 */
 
 /*SKIPIF
@@ -35,9 +40,8 @@ opcache.preload=config/preload_no_library.php
 opcache.preload_user=www-data
 */
 
-/*EXPECT
-ok - signature file compiled
-ok - signature file cached
+/*EXPECT_REGEX
+(?m)^ok - signature file compiled$\n^ok - signature file cached$
 */
 
 /*EXPECT_METRICS_DONT_EXIST
