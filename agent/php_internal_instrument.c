@@ -623,9 +623,7 @@ NR_INNER_WRAPPER(mysqli_close) {
     }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
     if (nr_php_mysqli_zval_is_link(mysqli_obj)) {
-      nr_mysqli_metadata_remove(
-          NRTXNGLOBAL(mysqli_links),
-          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+      nr_php_mysqli_metadata_remove(mysqli_obj);
     }
   }
 
@@ -661,6 +659,8 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zend_long port = 0;
   zval* mysqli_obj = NULL;
   int zcaught = 0;
+  zend_object* previous_exception = EG(exception);
+  int keep_saved = 0;
 
   /*
    * From PHP 7.4 a null host, user or password is replaced by the
@@ -717,10 +717,22 @@ NR_INNER_WRAPPER(mysqli_construct) {
     }
   }
 
-  nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
-                                        database TSRMLS_CC);
+  /*
+   * From PHP 8.5 a constructor called on a link that is still open throws
+   * and leaves the connection as it was. What the call was given is then not
+   * what the link uses, so the saved data and the datastore instance of a link
+   * the agent already knows are kept.
+   */
+  keep_saved = (NULL != EG(exception)) && (EG(exception) != previous_exception)
+               && mysqli_obj && nr_php_mysqli_metadata_known(mysqli_obj);
 
-  if (mysqli_obj && (0 == NRTXNGLOBAL(generating_explain_plan))) {
+  if (!keep_saved) {
+    nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
+                                          database TSRMLS_CC);
+  }
+
+  if (!keep_saved && mysqli_obj
+      && (0 == NRTXNGLOBAL(generating_explain_plan))) {
     char* host_term = host ? nr_strndup(host, host_len) : NULL;
     char* username_term = username ? nr_strndup(username, username_len) : NULL;
     char* password_term = password ? nr_strndup(password, password_len) : NULL;
@@ -730,22 +742,24 @@ NR_INNER_WRAPPER(mysqli_construct) {
     /*
      * PHP reuses the handle of a freed object, so a new link must not inherit
      * what was saved for an earlier one (its password, TLS settings and
-     * options). mysqli::connect() is called on a link that exists already and
-     * may have had options and TLS settings set, so it keeps them.
+     * options). A link the agent has already seen keeps them: mysqli::connect()
+     * runs on an existing link, and a subclass can set options before it
+     * connects through the parent constructor. A new link that took a freed
+     * link's handle is not known. Before PHP 8.0 no link is known, so a
+     * constructor called again on the same object drops what was saved.
      */
-    if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
-      nr_mysqli_metadata_remove(
-          NRTXNGLOBAL(mysqli_links),
-          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+    if ((0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect"))
+        && !nr_php_mysqli_metadata_known(mysqli_obj)) {
+      nr_php_mysqli_metadata_remove(mysqli_obj);
     }
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, 0);
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, 0);
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -795,9 +809,7 @@ NR_INNER_WRAPPER(mysqli_options) {
     char* value_term = nr_php_mysqli_option_to_string(value_zv);
 
     if (value_term) {
-      nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
-                                    Z_OBJ_HANDLE_P(mysqli_obj), option,
-                                    value_term);
+      nr_php_mysqli_metadata_set_option(mysqli_obj, option, value_term);
     }
 
     nr_free(value_term);
@@ -864,9 +876,8 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
     char* capath_term = capath ? nr_strndup(capath, capath_len) : NULL;
     char* cipher_term = cipher ? nr_strndup(cipher, cipher_len) : NULL;
 
-    nr_mysqli_metadata_set_ssl(NRTXNGLOBAL(mysqli_links),
-                               Z_OBJ_HANDLE_P(mysqli_obj), key_term, cert_term,
-                               ca_term, capath_term, cipher_term);
+    nr_php_mysqli_metadata_set_ssl(mysqli_obj, key_term, cert_term, ca_term,
+                                   capath_term, cipher_term);
 
     nr_free(key_term);
     nr_free(cert_term);
@@ -1059,13 +1070,13 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, flags);
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, flags);
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -1123,11 +1134,11 @@ NR_INNER_WRAPPER(mysqli_change_user) {
     char* password_term = nr_strndup(password, password_len);
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
 
-    nr_mysqli_metadata_set_user(NRTXNGLOBAL(mysqli_links),
-                                Z_OBJ_HANDLE_P(mysqli_obj), user_term,
-                                password_term, database_term);
+    nr_php_mysqli_metadata_set_user(mysqli_obj, user_term, password_term,
+                                    database_term);
 
     nr_free(user_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
     nr_free(password_term);
     nr_free(database_term);
   }
@@ -1176,8 +1187,7 @@ NR_INNER_WRAPPER(mysqli_select_db) {
       && nr_php_is_zval_true(return_value)) {
     char* database_term = nr_strndup(database, database_len);
 
-    nr_mysqli_metadata_set_database(NRTXNGLOBAL(mysqli_links),
-                                    Z_OBJ_HANDLE_P(mysqli_obj), database_term);
+    nr_php_mysqli_metadata_set_database(mysqli_obj, database_term);
 
     nr_free(database_term);
   }
@@ -1328,6 +1338,24 @@ static void nr_php_prepared_statement_save(const zval* obj,
   }
 }
 
+/*
+ * The SQL of a PDO statement is its read-only property queryString, which
+ * lasts as long as the statement. Nothing is saved: a saved copy keyed by the
+ * statement would be lost when the transaction restarts and could be found by
+ * a later statement that takes the same handle.
+ */
+static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
+  zval* query = nr_php_get_zval_object_property(stmt_obj, "queryString");
+
+  if (nr_php_is_zval_non_empty_string(query)) {
+    *sqlstrlen = Z_STRLEN_P(query);
+    return Z_STRVAL_P(query);
+  }
+
+  *sqlstrlen = nr_strlen(NR_PHP_PREPARED_STATEMENT_UNKNOWN);
+  return NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+}
+
 NR_INNER_WRAPPER(pdostatement_execute) {
   zval* stmt_obj = NULL;
   zval* parameters = NULL;
@@ -1346,8 +1374,7 @@ NR_INNER_WRAPPER(pdostatement_execute) {
 
   stmt_obj = NR_PHP_INTERNAL_FN_THIS();
 
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "pdo" TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
+  sqlstr = nr_php_pdo_statement_sql(stmt_obj, &sqlstrlen);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
@@ -1579,15 +1606,6 @@ NR_INNER_WRAPPER(mysqli_prepare) {
 
 /*
  * Handle
- *   PDOStatement PDO::prepare( string $query [, array $options ])
- */
-NR_INNER_WRAPPER(pdo_prepare) {
-  nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper,
-                                  "pdo");
-}
-
-/*
- * Handle
  *   mysqli_stmt::__construct(mysqli $link [, string $query ])
  */
 NR_INNER_WRAPPER(mysqli_stmt_construct) {
@@ -1646,7 +1664,8 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
  * The method mysqli::init() is not wrapped: it re-initializes an object that
  * may already carry options and TLS settings, which real_connect() must keep.
  * A subclass that never calls the parent constructor and reuses the handle of
- * a freed link is a known gap.
+ * a freed link is a known gap before PHP 8.0; from 8.0 the saved data is
+ * dropped when the link is freed.
  */
 NR_INNER_WRAPPER(mysqli_init) {
   int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1655,9 +1674,7 @@ NR_INNER_WRAPPER(mysqli_init) {
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(return_value)) {
     /* A new link must not inherit what was saved for an earlier one. */
-    nr_mysqli_metadata_remove(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(return_value));
+    nr_php_mysqli_metadata_remove(return_value);
   }
 
   if (zcaught) {
@@ -3800,7 +3817,6 @@ NR_OUTER_WRAPPER(pdo_connect)
 #endif
 NR_OUTER_WRAPPER(pdo_query)
 NR_OUTER_WRAPPER(pdo_exec)
-NR_OUTER_WRAPPER(pdo_prepare)
 
 NR_OUTER_WRAPPER(pdostmt_execute)
 
@@ -4647,14 +4663,6 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("pdo\\odbc::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\pgsql::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::exec", pdo_exec, pdo_exec, 0, 0)
-#endif
-  NR_INTERNAL_WRAPREC("pdo::prepare", pdo_prepare, pdo_prepare, 0, 0)
-#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
-  NR_INTERNAL_WRAPREC("pdo\\firebird::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\mysql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\odbc::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\pgsql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\sqlite::prepare", pdo_prepare, pdo_prepare, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdostatement::execute", pdostmt_execute,
                       pdostatement_execute, 0, 0)

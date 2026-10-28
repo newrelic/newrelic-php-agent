@@ -14,6 +14,9 @@ positional. If the agent only passed the arguments the application gave, the
 password would take the place of the user and the login would be refused. The
 agent fills in the missing leading arguments from the mysqli.default_* settings.
 
+mysqli.default_pw differs from the password the application gives, so an
+explain connection that took the password from the settings would be refused.
+
 The TLS test server is used for the users.
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
@@ -35,7 +38,7 @@ newrelic.transaction_tracer.record_sql = obfuscated
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 mysqli.default_user = tls_optional
-mysqli.default_pw = tls_optional
+mysqli.default_pw = nr_not_the_password
 */
 
 /*EXPECT

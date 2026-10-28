@@ -11,10 +11,9 @@ the CA given to mysqli_ssl_set() SHALL get an explain plan.
 The application gives a CA to mysqli_ssl_set() and turns on
 MYSQLI_OPT_SSL_VERIFY_SERVER_CERT. The agent opens its own connection to run
 EXPLAIN and replays the arguments of mysqli_ssl_set(), the options and the
-flags on it. This test guards that the replay of the CA together with the
-verification option does not break that connection: if it passed the arguments
-in the wrong order or lost the option, the connection would fail and the
-explain plan would be missing. The TLS setup is in tests/tls.
+flags on it. The test checks that this connection is opened with the CA and the
+verification option, and that the explain plan is produced. The TLS setup is in
+tests/tls.
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
 */
