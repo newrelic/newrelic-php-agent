@@ -19,6 +19,7 @@
 #include "php_memcached.h"
 #include "php_mysql.h"
 #include "php_mysqli.h"
+#include "php_oci.h"
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "php_redis.h"
@@ -2993,8 +2994,13 @@ NR_INNER_WRAPPER(oci_parse) {
     return;
   }
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(return_value, "oci", sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+
+  /*
+   * The statement is a resource. The SQL is kept for the life of the
+   * statement, and not for the transaction, as a statement that was parsed in
+   * one transaction can be executed in a later one.
+   */
+  nr_php_oci_statement_sql_set(return_value, sqlstr, sqlstrlen);
 
   return;
 }
@@ -3019,7 +3025,10 @@ NR_INNER_WRAPPER(oci_execute) {
     return;
   }
 
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "oci" TSRMLS_CC);
+  sqlstr = nr_php_oci_statement_sql_get(stmt_obj);
+  if (NULL == sqlstr) {
+    sqlstr = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+  }
   sqlstrlen = nr_strlen(sqlstr);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
