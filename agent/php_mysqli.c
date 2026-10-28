@@ -301,18 +301,11 @@ nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
  * handler), and a handler that closes or frees the original link would free
  * them. That is a known limit; it is not guarded.
  */
-zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
+static zval* nr_php_mysqli_link_duplicate_metadata(
+    const nr_mysqli_metadata_link_t* metadata_ptr TSRMLS_DC) {
   zval* dup = NULL;
   int i;
-  nr_mysqli_metadata_link_t metadata;
-
-  if (!nr_php_mysqli_zval_is_link(orig TSRMLS_CC)) {
-    return NULL;
-  }
-
-  if (NR_FAILURE == nr_php_mysqli_metadata_get(orig, &metadata)) {
-    return NULL;
-  }
+  nr_mysqli_metadata_link_t metadata = *metadata_ptr;
 
   /*
    * We have to use mysqli_init, mysqli::options and mysqli::real_connect, as
@@ -359,6 +352,33 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
   return dup;
 }
 
+zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
+  nr_mysqli_metadata_link_t metadata;
+
+  if (!nr_php_mysqli_zval_is_link(orig TSRMLS_CC)) {
+    return NULL;
+  }
+
+  if (NR_FAILURE == nr_php_mysqli_metadata_get(orig, &metadata)) {
+    return NULL;
+  }
+
+  return nr_php_mysqli_link_duplicate_metadata(&metadata TSRMLS_CC);
+}
+
+zval* nr_php_mysqli_link_duplicate_handle(
+    nr_mysqli_metadata_link_handle_t handle TSRMLS_DC) {
+  nr_mysqli_metadata_link_t metadata;
+
+  if (NR_FAILURE
+          == nr_mysqli_metadata_get(nr_php_mysqli_links(), handle, &metadata)
+      || !metadata.complete) {
+    return NULL;
+  }
+
+  return nr_php_mysqli_link_duplicate_metadata(&metadata TSRMLS_CC);
+}
+
 zval* nr_php_mysqli_query_get_link(nr_php_object_handle_t handle TSRMLS_DC) {
   zval* link;
   zval* metadata;
@@ -391,6 +411,24 @@ char* nr_php_mysqli_query_get_query(nr_php_object_handle_t handle TSRMLS_DC) {
   }
 
   return nr_strndup(Z_STRVAL_P(query), Z_STRLEN_P(query));
+}
+
+int nr_php_mysqli_query_exists(nr_php_object_handle_t handle TSRMLS_DC) {
+  return NULL != nr_php_mysqli_query_find(handle TSRMLS_CC);
+}
+
+int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle TSRMLS_DC) {
+  const zval* metadata = nr_php_mysqli_query_find(handle TSRMLS_CC);
+
+  return metadata
+         && (NULL
+             != nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "bind_format"));
+}
+
+nr_status_t nr_php_mysqli_query_ensure(
+    nr_php_object_handle_t handle TSRMLS_DC) {
+  return nr_php_mysqli_query_find_or_create(handle TSRMLS_CC) ? NR_SUCCESS
+                                                              : NR_FAILURE;
 }
 
 nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,
@@ -1076,32 +1114,157 @@ void nr_php_mysqli_rshutdown() {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-static void nr_php_mysqli_statement_sql_destroy(void* sql) {
-  nr_free(sql);
+/*
+ * What is kept for a statement object: its SQL, and the link it was prepared
+ * on, as the handle of the link and the epoch of the link's connection (see
+ * nr_mysqli_metadata_link_t). The handle alone could belong to another link
+ * once the first is freed; the epoch changes when the connection does.
+ */
+typedef struct {
+  char* sql;
+  nr_mysqli_metadata_link_handle_t link_handle;
+  uint64_t link_epoch;
+} nr_php_mysqli_statement_t;
+
+static void nr_php_mysqli_statement_destroy(void* value) {
+  nr_php_mysqli_statement_t* statement = value;
+
+  if (NULL == statement) {
+    return;
+  }
+
+  nr_free(statement->sql);
+  nr_free(statement);
+}
+
+static nr_php_mysqli_statement_t* nr_php_mysqli_statement_find(
+    const zval* stmt) {
+  return nr_php_objtable_get(NRPRG_SHARED(mysqli_statement_sql), stmt);
+}
+
+static nr_php_mysqli_statement_t* nr_php_mysqli_statement_find_or_create(
+    const zval* stmt) {
+  nr_php_mysqli_statement_t* statement = nr_php_mysqli_statement_find(stmt);
+
+  if (NULL == statement) {
+    /*
+     * The table takes the value, and frees it at once if the zval is not an
+     * object it can track: look the entry up again.
+     */
+    nr_php_objtable_set(NRPRG_SHARED(mysqli_statement_sql), stmt,
+                        nr_zalloc(sizeof(nr_php_mysqli_statement_t)));
+    statement = nr_php_mysqli_statement_find(stmt);
+  }
+
+  return statement;
+}
+
+/* Drop the entry of a statement that has neither SQL nor link. */
+static void nr_php_mysqli_statement_prune(
+    const zval* stmt,
+    const nr_php_mysqli_statement_t* statement) {
+  if (statement && (NULL == statement->sql) && (0 == statement->link_epoch)) {
+    nr_php_objtable_del(NRPRG_SHARED(mysqli_statement_sql), stmt);
+  }
 }
 
 void nr_php_mysqli_statement_sql_create_table(void) {
   NRPRG_SHARED(mysqli_statement_sql)
-      = nr_php_objtable_create(nr_php_mysqli_statement_sql_destroy);
+      = nr_php_objtable_create(nr_php_mysqli_statement_destroy);
 }
 
 void nr_php_mysqli_statement_sql_set(const zval* stmt,
                                      const char* sql,
                                      nr_string_len_t sql_len) {
+  nr_php_mysqli_statement_t* statement;
+
   if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
     return;
   }
 
   if ((NULL == sql) || (0 == sql_len)) {
-    nr_php_objtable_del(NRPRG_SHARED(mysqli_statement_sql), stmt);
+    statement = nr_php_mysqli_statement_find(stmt);
+    if (statement) {
+      nr_free(statement->sql);
+      nr_php_mysqli_statement_prune(stmt, statement);
+    }
     return;
   }
 
-  nr_php_objtable_set(NRPRG_SHARED(mysqli_statement_sql), stmt,
-                      nr_strndup(sql, sql_len));
+  statement = nr_php_mysqli_statement_find_or_create(stmt);
+  if (statement) {
+    nr_free(statement->sql);
+    statement->sql = nr_strndup(sql, sql_len);
+  }
 }
 
 const char* nr_php_mysqli_statement_sql_get(const zval* stmt) {
-  return nr_php_objtable_get(NRPRG_SHARED(mysqli_statement_sql), stmt);
+  const nr_php_mysqli_statement_t* statement;
+
+  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+    return NULL;
+  }
+
+  statement = nr_php_mysqli_statement_find(stmt);
+  return statement ? statement->sql : NULL;
+}
+
+void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
+  nr_mysqli_metadata_link_t metadata;
+  nr_php_mysqli_statement_t* statement;
+
+  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+    return;
+  }
+
+  if (nr_php_mysqli_zval_is_link(link)
+      && (NR_SUCCESS == nr_php_mysqli_metadata_get(link, &metadata))
+      && (metadata.epoch > 0)) {
+    statement = nr_php_mysqli_statement_find_or_create(stmt);
+    if (statement) {
+      statement->link_handle
+          = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
+      statement->link_epoch = metadata.epoch;
+    }
+    return;
+  }
+
+  /* No connection the agent can duplicate: forget an earlier link. */
+  statement = nr_php_mysqli_statement_find(stmt);
+  if (statement) {
+    statement->link_handle = 0;
+    statement->link_epoch = 0;
+    nr_php_mysqli_statement_prune(stmt, statement);
+  }
+}
+
+nr_status_t nr_php_mysqli_statement_link_get(
+    const zval* stmt,
+    nr_mysqli_metadata_link_handle_t* handle) {
+  nr_mysqli_metadata_link_t metadata;
+  const nr_php_mysqli_statement_t* statement;
+
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == handle)) {
+    return NR_FAILURE;
+  }
+
+  statement = nr_php_mysqli_statement_find(stmt);
+  if ((NULL == statement) || (0 == statement->link_epoch)) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * The link must still have the entry and the connection that the statement
+   * was prepared on.
+   */
+  if ((NR_FAILURE
+       == nr_mysqli_metadata_get(nr_php_mysqli_links(), statement->link_handle,
+                                 &metadata))
+      || !metadata.complete || (metadata.epoch != statement->link_epoch)) {
+    return NR_FAILURE;
+  }
+
+  *handle = statement->link_handle;
+  return NR_SUCCESS;
 }
 #endif

@@ -1412,6 +1412,20 @@ static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
 #endif
 }
 
+/*
+ * Save the link a mysqli statement was prepared on, so that its explain plan
+ * can be made in a later transaction. From PHP 8.0 only.
+ */
+static void nr_php_mysqli_statement_link_save(const zval* stmt,
+                                              zval* link TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_link_set(stmt, link);
+#else
+  (void)stmt;
+  (void)link;
+#endif
+}
+
 NR_INNER_WRAPPER(pdostatement_execute) {
   zval* stmt_obj = NULL;
   zval* parameters = NULL;
@@ -1532,6 +1546,25 @@ NR_INNER_WRAPPER(mysqli_stmt_bind_param) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * A statement that was prepared in an earlier transaction has no entry in
+   * this one. The parameters bound now are used to explain it in this
+   * transaction, so the entry is made when the statement has a link and SQL
+   * saved.
+   */
+  if (!nr_php_mysqli_query_exists(Z_OBJ_HANDLE_P(mysqli_stmt_obj) TSRMLS_CC)) {
+    nr_mysqli_metadata_link_handle_t link_handle;
+
+    if ((NULL != nr_php_mysqli_statement_sql_get(mysqli_stmt_obj))
+        && (NR_SUCCESS
+            == nr_php_mysqli_statement_link_get(mysqli_stmt_obj,
+                                                &link_handle))) {
+      nr_php_mysqli_query_ensure(Z_OBJ_HANDLE_P(mysqli_stmt_obj) TSRMLS_CC);
+    }
+  }
+#endif
+
   nr_php_mysqli_query_set_bind_params(
       Z_OBJ_HANDLE_P(mysqli_stmt_obj), Z_STRVAL_P(types), Z_STRLEN_P(types),
       argc - args_to_skip, &argv[args_to_skip] TSRMLS_CC);
@@ -1588,9 +1621,9 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
-      plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
-                                        params, segment->start_time,
-                                        segment->stop_time TSRMLS_CC);
+      plan = nr_php_explain_mysqli_stmt(
+          NRPRG(txn), stmt_obj, Z_OBJ_HANDLE_P(stmt_obj), params,
+          segment->start_time, segment->stop_time TSRMLS_CC);
     }
 
     /*
@@ -1656,6 +1689,7 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
       && nr_php_mysqli_zval_is_stmt(return_value)
       && nr_php_mysqli_zval_is_link(conn_obj)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value), conn_obj);
+    nr_php_mysqli_statement_link_save(return_value, conn_obj TSRMLS_CC);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
@@ -1750,6 +1784,7 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
                                  mysqli_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(this_obj, mysqli_obj TSRMLS_CC);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
@@ -1815,6 +1850,7 @@ NR_INNER_WRAPPER(mysqli_stmt_init) {
   if (nr_php_mysqli_zval_is_stmt(return_value TSRMLS_CC)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
                                  mysqli_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(return_value, mysqli_obj TSRMLS_CC);
   }
 
   if (zcaught) {
