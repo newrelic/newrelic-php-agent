@@ -130,12 +130,47 @@ static void test_validate(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * The callback of newrelic_record_datastore_segment() ends the transaction and
+ * starts another one. The segment belongs to the transaction that ended, and
+ * is not used: the use of freed memory is detected when the test runs under
+ * valgrind.
+ */
+static void test_record_datastore_segment_txn_ends(TSRMLS_D) {
+  zval* retval;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval(
+      "$result = newrelic_record_datastore_segment("
+      "function () {"
+      "  newrelic_end_transaction();"
+      "  newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "  return 'callback result';"
+      "},"
+      "array('product' => 'MySQL', 'collection' => 'users',"
+      "      'operation' => 'select'));" TSRMLS_CC);
+
+  retval = tlib_php_request_eval_expr("$result" TSRMLS_CC);
+  tlib_pass_if_zval_type_is("the callback result is returned", IS_STRING,
+                            retval);
+  nr_php_zval_free(&retval);
+
+  tlib_pass_if_not_null("the new transaction exists", NRPRG(txn));
+  tlib_pass_if_null("the datastore call is not recorded in it",
+                    nrm_find(NRPRG(txn)->unscoped_metrics,
+                             "Datastore/operation/MySQL/select"));
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_create_instance_from_params(TSRMLS_C);
   test_validate(TSRMLS_C);
+  test_record_datastore_segment_txn_ends(TSRMLS_C);
 
   tlib_php_engine_destroy(TSRMLS_C);
 }

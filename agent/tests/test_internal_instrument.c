@@ -105,11 +105,120 @@ static void test_cufa_indirect(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * Old handlers for nr_zend_call_old_handler_segment: one that does nothing,
+ * ones that run PHP code that ends the transaction, or ends it and starts
+ * another one, and ones that bail out.
+ */
+static void old_handler_noop(INTERNAL_FUNCTION_PARAMETERS) {
+  (void)execute_data;
+  (void)return_value;
+}
+
+static void old_handler_ends_txn(INTERNAL_FUNCTION_PARAMETERS) {
+  (void)execute_data;
+  (void)return_value;
+  tlib_php_request_eval("newrelic_end_transaction();" TSRMLS_CC);
+}
+
+static void old_handler_restarts_txn(INTERNAL_FUNCTION_PARAMETERS) {
+  (void)execute_data;
+  (void)return_value;
+  tlib_php_request_eval(
+      "newrelic_end_transaction();"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));" TSRMLS_CC);
+}
+
+static void old_handler_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
+  (void)execute_data;
+  (void)return_value;
+  zend_bailout();
+}
+
+static void old_handler_ends_txn_and_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
+  (void)execute_data;
+  (void)return_value;
+  tlib_php_request_eval("newrelic_end_transaction();" TSRMLS_CC);
+  zend_bailout();
+}
+
+static void test_call_old_handler_segment(TSRMLS_D) {
+  nr_segment_t* segment;
+  int zcaught;
+
+  tlib_php_request_start();
+
+  /*
+   * The transaction is the same after the call: the segment is kept.
+   */
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  tlib_pass_if_not_null("segment started", segment);
+  zcaught = nr_zend_call_old_handler_segment(&segment, old_handler_noop, NULL,
+                                             NULL);
+  tlib_pass_if_int_equal("no bailout", 0, zcaught);
+  tlib_pass_if_not_null("same transaction: segment kept", segment);
+
+  /*
+   * A bailout is returned and does not change the segment.
+   */
+  zcaught = nr_zend_call_old_handler_segment(&segment, old_handler_bails_out,
+                                             NULL, NULL);
+  tlib_pass_if_int_equal("bailout is returned", 1, zcaught);
+  tlib_pass_if_not_null("bailout, same transaction: segment kept", segment);
+
+  /*
+   * The transaction ended during the call: the segment is cleared.
+   */
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  nr_zend_call_old_handler_segment(&segment, old_handler_ends_txn, NULL, NULL);
+  tlib_pass_if_null("transaction ended: segment cleared", segment);
+  tlib_pass_if_null("transaction ended: no transaction", NRPRG(txn));
+
+  tlib_php_request_end();
+
+  /*
+   * The transaction ended and another one started during the call: the
+   * segment belongs to the transaction that ended and is cleared.
+   */
+  tlib_php_request_start();
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  nr_zend_call_old_handler_segment(&segment, old_handler_restarts_txn, NULL,
+                                   NULL);
+  tlib_pass_if_null("transaction restarted: segment cleared", segment);
+  tlib_pass_if_not_null("transaction restarted: a new transaction", NRPRG(txn));
+
+  /*
+   * The same when the old handler bails out after the transaction ended, and
+   * the bailout is still returned.
+   */
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  zcaught = nr_zend_call_old_handler_segment(
+      &segment, old_handler_ends_txn_and_bails_out, NULL, NULL);
+  tlib_pass_if_int_equal("transaction ended with a bailout: bailout returned",
+                         1, zcaught);
+  tlib_pass_if_null("transaction ended with a bailout: segment cleared",
+                    segment);
+
+  /*
+   * No segment: nothing to clear, and a NULL pointer is accepted.
+   */
+  segment = NULL;
+  nr_zend_call_old_handler_segment(&segment, old_handler_restarts_txn, NULL,
+                                   NULL);
+  tlib_pass_if_null("NULL segment stays NULL", segment);
+  zcaught
+      = nr_zend_call_old_handler_segment(NULL, old_handler_noop, NULL, NULL);
+  tlib_pass_if_int_equal("NULL pointer: no bailout", 0, zcaught);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_cufa_direct(TSRMLS_C);
   test_cufa_indirect(TSRMLS_C);
+  test_call_old_handler_segment(TSRMLS_C);
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
