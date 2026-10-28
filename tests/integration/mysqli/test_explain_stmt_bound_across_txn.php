@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-A mysqli statement whose parameters were bound in an earlier transaction SHALL be reported without an explain plan and without an error when it is executed in a later one.
+A mysqli statement whose parameters were bound in an earlier transaction SHALL be explained with the values of the bound variables when it is executed in a later one.
 */
 
 /*SKIPIF
@@ -47,6 +47,7 @@ ok - statement executed
       "?? min time",
       "?? max time",
       {
+        "explain_plan": "??",
         "backtrace": "??"
       }
     ]

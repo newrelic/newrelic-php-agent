@@ -18,6 +18,10 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#include "ext/mysqli/php_mysqli_structs.h"
+#endif
+
 /*
  * Purpose : Iterator function to add a field to the columns in an explain
  *           plan.
@@ -83,6 +87,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_fetch_plan(
  */
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     nr_mysqli_metadata_link_handle_t link_handle,
+    const zval* app_stmt,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC);
@@ -127,7 +132,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
 
   query = nr_strndup(sql, sql_len);
   plan = nr_php_explain_mysqli_issue(
-      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), 0, query,
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), NULL, 0, query,
       NULL TSRMLS_CC);
   nr_free(query);
 
@@ -158,6 +163,142 @@ static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
   return 0;
 #endif
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Whether the mysqli extension that is loaded was built on mysqlnd. The data
+ * read below is mysqlnd's: the agent is compiled against the headers of one
+ * PHP build and runs in the customer's, whose mysqli may use libmysqlclient
+ * instead, with a different structure behind the same pointers.
+ */
+int nr_php_explain_mysqli_uses_mysqlnd(void) {
+  const zend_module_entry* mysqli;
+  const zend_module_dep* dep;
+
+  mysqli = (const zend_module_entry*)zend_hash_str_find_ptr(
+      &module_registry, "mysqli", sizeof("mysqli") - 1);
+  if ((NULL == mysqli) || (NULL == mysqli->deps)) {
+    return 0;
+  }
+
+  for (dep = mysqli->deps; dep->name; dep++) {
+    if ((MODULE_DEP_REQUIRED == dep->type)
+        && (0 == nr_strcmp(dep->name, "mysqlnd"))) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+/*
+ * The mysqlnd data of a statement object, or NULL. mysqli binds the variables
+ * of bind_param() into it, and holds them for as long as the statement lives.
+ */
+static const MYSQLND_STMT_DATA* nr_php_explain_mysqli_stmt_data(
+    const zval* stmt) {
+  const mysqli_object* intern;
+  const MYSQLI_RESOURCE* resource;
+  const MY_STMT* my_stmt;
+
+  if (!nr_php_mysqli_zval_is_stmt(stmt)
+      || !nr_php_explain_mysqli_uses_mysqlnd()) {
+    return NULL;
+  }
+
+  intern = (const mysqli_object*)((const char*)Z_OBJ_P(stmt)
+                                  - XtOffsetOf(mysqli_object, zo));
+  resource = (const MYSQLI_RESOURCE*)intern->ptr;
+  my_stmt = resource ? (const MY_STMT*)resource->ptr : NULL;
+
+  return (my_stmt && my_stmt->stmt) ? my_stmt->stmt->data : NULL;
+}
+
+/* The number of variables that bind_param() bound. */
+long nr_php_explain_mysqli_bound_count(const zval* stmt) {
+  const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
+
+  return (data && data->param_bind) ? (long)data->param_count : 0;
+}
+
+/*
+ * Purpose : Bind the values that bind_param() bound on the application's
+ *           statement to the statement of the explain.
+ *
+ * Params  : 1. The statement of the explain.
+ *           2. The application's statement.
+ *
+ * Returns : NR_SUCCESS, or NR_FAILURE if nothing was bound or the bind failed.
+ *
+ * Notes   : The values are copies: the explain does not hold the application's
+ *           variables. The type letters come from the types that were bound.
+ */
+static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
+                                                   const zval* stmt) {
+  const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
+  zval** bind_args;
+  zval* retval;
+  char* format;
+  unsigned int count;
+  unsigned int i;
+  nr_status_t status = NR_FAILURE;
+
+  if ((NULL == data) || (NULL == data->param_bind)
+      || (0 == data->param_count)) {
+    return NR_FAILURE;
+  }
+
+  count = data->param_count;
+  bind_args = (zval**)nr_calloc(count + 1, sizeof(zval*));
+  format = (char*)nr_malloc(count + 1);
+
+  for (i = 0; i < count; i++) {
+    const zval* bound = &data->param_bind[i].zv;
+    zval copy;
+
+    if (Z_ISREF_P(bound)) {
+      bound = Z_REFVAL_P(bound);
+    }
+
+    switch (data->param_bind[i].type) {
+      case MYSQL_TYPE_DOUBLE:
+        format[i] = 'd';
+        break;
+      case MYSQL_TYPE_LONGLONG:
+      case MYSQL_TYPE_LONG:
+        format[i] = 'i';
+        break;
+      default:
+        format[i] = 's';
+        break;
+    }
+
+    /* bind_param() takes its arguments by reference. */
+    ZVAL_COPY(&copy, bound);
+    bind_args[i + 1] = nr_php_zval_alloc();
+    ZVAL_NEW_REF(bind_args[i + 1], &copy);
+  }
+  format[count] = '\0';
+
+  bind_args[0] = nr_php_zval_alloc();
+  ZVAL_STRINGL(bind_args[0], format, count);
+
+  retval = nr_php_call_user_func(dest, "bind_param", count + 1,
+                                 bind_args TSRMLS_CC);
+  if (nr_php_is_zval_true(retval)) {
+    status = NR_SUCCESS;
+  }
+
+  for (i = 0; i <= count; i++) {
+    nr_php_zval_free(&bind_args[i]);
+  }
+  nr_php_zval_free(&retval);
+  nr_free(bind_args);
+  nr_free(format);
+
+  return status;
+}
+#endif
 
 nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
                                               const zval* stmt,
@@ -203,12 +344,14 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
     query = nr_strdup(sql);
 
     /*
-     * Parameters that were bound in an earlier transaction are not kept: the
-     * statement would fail to execute on the explain connection, so it is not
-     * opened.
+     * Without the parameters the statement would fail to execute on the
+     * explain connection, so it is not opened. The parameters are the ones
+     * mysqli holds for the statement, if they can be read and there are as
+     * many as the statement has.
      */
     if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)
-        && (nr_php_explain_mysqli_stmt_param_count(stmt) > 0)) {
+        && (nr_php_explain_mysqli_stmt_param_count(stmt)
+            != nr_php_explain_mysqli_bound_count(stmt))) {
       nr_free(query);
       return NULL;
     }
@@ -227,8 +370,9 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
   }
 
   plan = nr_php_explain_mysqli_issue(
-      link_handle, nr_php_mysqli_query_exists(handle TSRMLS_CC) ? handle : 0,
-      query, params TSRMLS_CC);
+      link_handle, stmt,
+      nr_php_mysqli_query_exists(handle TSRMLS_CC) ? handle : 0, query,
+      params TSRMLS_CC);
   nr_free(query);
 
   return plan;
@@ -386,6 +530,7 @@ end:
 
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     nr_mysqli_metadata_link_handle_t link_handle,
+    const zval* app_stmt,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC) {
@@ -403,6 +548,10 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   if (NULL != EG(exception)) {
     return NULL;
   }
+
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+  (void)app_stmt;
+#endif
 
   error_reporting = nr_php_silence_errors(TSRMLS_C);
   NRTXNGLOBAL(generating_explain_plan) = 1;
@@ -422,6 +571,18 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
       goto end;
     }
   }
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  else if (app_stmt && (NULL == params)
+           && (nr_php_explain_mysqli_bound_count(app_stmt) > 0)) {
+    /*
+     * The parameters were bound in an earlier transaction: mysqli still holds
+     * the variables, and their values are what execute() used.
+     */
+    if (NR_FAILURE == nr_php_explain_mysqli_bind_live(stmt, app_stmt)) {
+      goto end;
+    }
+  }
+#endif
 
   if (NR_FAILURE == nr_php_explain_mysqli_execute(stmt, params TSRMLS_CC)) {
     goto end;

@@ -9,12 +9,17 @@
 #include "nr_datastore_instance.h"
 #include "php_agent.h"
 #include "php_datastore.h"
+#include "php_explain_mysqli.h"
 #include "php_mysqli.h"
 #include "php_mysqli_private.h"
 #include "php_objtable.h"
 #include "php_txn.h"
 #include "php_agent.h"
 #include "util_system.h"
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#include "ext/mysqli/php_mysqli_structs.h"
+#endif
 
 static char* system_host_name;
 
@@ -853,6 +858,133 @@ static void test_statement_link(TSRMLS_D) {
 }
 #endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void test_explain_bound_count(TSRMLS_D) {
+  zval* stmt;
+  zval* other;
+
+  /* The mysqli of the PHP the tests are built against is built on mysqlnd. */
+  tlib_pass_if_int_equal("mysqli is built on mysqlnd", 1,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+
+  tlib_php_request_start();
+
+  /* A statement object that was never initialized has no data to read. */
+  tlib_php_request_eval(
+      "$stmt = (new ReflectionClass('mysqli_stmt'))"
+      "->newInstanceWithoutConstructor();");
+  stmt = tlib_php_request_eval_expr("$stmt");
+  tlib_pass_if_long_equal("uninitialized statement", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  nr_php_zval_free(&stmt);
+
+  tlib_php_request_eval("$other = new stdClass;");
+  other = tlib_php_request_eval_expr("$other");
+  tlib_pass_if_long_equal("not a statement", 0,
+                          nr_php_explain_mysqli_bound_count(other));
+  nr_php_zval_free(&other);
+
+  tlib_php_request_end();
+}
+/*
+ * A statement object whose mysqli data is built by hand, laid out as mysqlnd
+ * lays it out, with param_count bound variables.
+ */
+static zval* new_fake_bound_statement(unsigned int param_count,
+                                      int with_bind) {
+  zval* stmt;
+  mysqli_object* intern;
+  MYSQLI_RESOURCE* resource = nr_zalloc(sizeof(MYSQLI_RESOURCE));
+  MY_STMT* my_stmt = nr_zalloc(sizeof(MY_STMT));
+  MYSQLND_STMT* nd_stmt = nr_zalloc(sizeof(MYSQLND_STMT));
+  MYSQLND_STMT_DATA* data = nr_zalloc(sizeof(MYSQLND_STMT_DATA));
+
+  data->param_count = param_count;
+  if (with_bind) {
+    data->param_bind = nr_calloc(param_count + 1, sizeof(MYSQLND_PARAM_BIND));
+  }
+  nd_stmt->data = data;
+  my_stmt->stmt = nd_stmt;
+  resource->ptr = my_stmt;
+
+  tlib_php_request_eval(
+      "$stmt = (new ReflectionClass('mysqli_stmt'))"
+      "->newInstanceWithoutConstructor();");
+  stmt = tlib_php_request_eval_expr("$stmt");
+  intern = (mysqli_object*)((char*)Z_OBJ_P(stmt) - XtOffsetOf(mysqli_object, zo));
+  intern->ptr = resource;
+
+  return stmt;
+}
+
+/* Detach and free what new_fake_bound_statement() attached. */
+static void free_fake_bound_statement(zval** stmt) {
+  mysqli_object* intern
+      = (mysqli_object*)((char*)Z_OBJ_P(*stmt) - XtOffsetOf(mysqli_object, zo));
+  MYSQLI_RESOURCE* resource = (MYSQLI_RESOURCE*)intern->ptr;
+  MY_STMT* my_stmt = (MY_STMT*)resource->ptr;
+
+  /* mysqli would close the fake statement when the object is destroyed. */
+  intern->ptr = NULL;
+
+  nr_free(my_stmt->stmt->data->param_bind);
+  nr_free(my_stmt->stmt->data);
+  nr_free(my_stmt->stmt);
+  nr_free(my_stmt);
+  nr_free(resource);
+  nr_php_zval_free(stmt);
+}
+
+static void test_explain_bound_count_mocked(TSRMLS_D) {
+  zval* stmt;
+  zend_module_entry* mysqli;
+  const zend_module_dep* original_deps;
+  static const zend_module_dep libmysqlclient_deps[]
+      = {{"spl", NULL, NULL, MODULE_DEP_REQUIRED}, {NULL, NULL, NULL, 0}};
+
+  tlib_php_request_start();
+
+  mysqli = zend_hash_str_find_ptr(&module_registry, "mysqli",
+                                  sizeof("mysqli") - 1);
+  tlib_fail_if_null("mysqli module", mysqli);
+  original_deps = mysqli->deps;
+
+  stmt = new_fake_bound_statement(3, 1);
+  tlib_pass_if_long_equal("mysqlnd: bound variables", 3,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  /* A mysqli without mysqlnd keeps its statements elsewhere: do not read. */
+  mysqli->deps = libmysqlclient_deps;
+  tlib_pass_if_int_equal("libmysqlclient: not mysqlnd", 0,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+  tlib_pass_if_long_equal("libmysqlclient: not read", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  mysqli->deps = NULL;
+  tlib_pass_if_int_equal("no dependencies: not mysqlnd", 0,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+  tlib_pass_if_long_equal("no dependencies: not read", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  mysqli->deps = original_deps;
+  tlib_pass_if_long_equal("restored", 3,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  stmt = new_fake_bound_statement(2, 0);
+  tlib_pass_if_long_equal("nothing bound", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  stmt = new_fake_bound_statement(0, 1);
+  tlib_pass_if_long_equal("no parameters", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  tlib_php_request_end();
+}
+#endif
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
@@ -875,6 +1007,8 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
+    test_explain_bound_count(TSRMLS_C);
+    test_explain_bound_count_mocked(TSRMLS_C);
 #endif
   }
 

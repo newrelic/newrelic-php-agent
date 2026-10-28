@@ -48,8 +48,10 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
  *           the statement when it has both. Otherwise (PHP 8.0 and later) they
  *           are the ones saved with the statement object, which survive the
  *           transaction that prepared it. Parameters bound in an earlier
- *           transaction are not kept: such a statement is not explained unless
- *           the parameters are given to execute() or bound again.
+ *           transaction are read from the statement object, when mysqli is
+ *           built on mysqlnd and the parameter count matches. Otherwise such
+ *           a statement is not explained unless the parameters are given to
+ *           execute() or bound again.
  */
 extern nr_explain_plan_t* nr_php_explain_mysqli_stmt(
     const nrtxn_t* txn,
@@ -58,5 +60,26 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_stmt(
     zval* params,
     nrtime_t start,
     nrtime_t stop TSRMLS_DC);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : Tell whether the loaded mysqli extension is built on mysqlnd,
+ *           from the module's dependencies at run time.
+ *
+ * Returns : 1 if it is, 0 if it is not or mysqli is not loaded.
+ */
+extern int nr_php_explain_mysqli_uses_mysqlnd(void);
+
+/*
+ * Purpose : The number of variables that bind_param() bound on a statement.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The count, or 0 if the zval is not a statement, nothing is bound,
+ *           or the data cannot be read (mysqli is not built on mysqlnd, or the
+ *           statement was not initialized).
+ */
+extern long nr_php_explain_mysqli_bound_count(const zval* stmt);
+#endif
 
 #endif /* PHP_EXPLAIN_MYSQLI_HDR */
