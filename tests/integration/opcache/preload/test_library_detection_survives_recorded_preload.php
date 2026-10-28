@@ -7,13 +7,13 @@
 /*DESCRIPTION
 GH #1280 regression test: https://github.com/newrelic/newrelic-php-agent/issues/1280
 
-Under opcache.preload, a library signature file executes exactly once, at
-server startup, before any transaction exists - and, because the class it
-declares is now preloaded, is never require()'d again for the life of the
-pool. Library detection can't rely on that one require() at file-execution
-time, so the agent re-derives it every transaction from opcache_get_status()
-information, matching each script's path against the known signature files
-without re-executing the file.
+Under opcache.preload, a library signature file executes once, at server
+startup, before any transaction exists. Because the class it declares is now
+preloaded, a request normally doesn't require() the file again. Library
+detection can't rely on that one require() at file-execution time, so the
+agent re-derives it every transaction, matching each preloaded script's path
+(from opcache_get_status()'s 'preload_statistics') against the known
+signature files without re-executing the file.
 
 This test uses a fake MongoDB\Operation\Aggregate class (matching the libraries[]
 path suffix mongodb/src/client.php) purely as a vehicle for that preloaded-path
@@ -24,6 +24,9 @@ test disables database name and instance reporting.
 Furthermore, a preload file used in this test executes when the agent is recording,
 therefore preload file execution is recorded as a separate analytic event and
 additional root span with the name OtherTransaction/php/<unknown>.
+That transaction detects MongoDB too, when the preload file's require() runs
+the signature file, so Supportability/library/MongoDB/detected counts 2: one
+from the preload transaction and one from this test's transaction.
 */
 
 /*SKIPIF
