@@ -1710,8 +1710,6 @@ NR_INNER_WRAPPER(mysqli_prepare) {
                                   "mysqli");
 }
 
-/*
- * Handle
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
  * Whether the constructor of a mysqli_stmt prepared its statement. When mysqli
