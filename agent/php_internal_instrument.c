@@ -1386,6 +1386,32 @@ static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
   return NR_PHP_PREPARED_STATEMENT_UNKNOWN;
 }
 
+/*
+ * Save and find the SQL of a mysqli statement. From PHP 8.0 the SQL is kept
+ * for the life of the statement object, so a statement prepared in one
+ * transaction can be executed in a later one. Before PHP 8.0 it is kept for the
+ * transaction, as the prepared statements of the other extensions are.
+ */
+static void nr_php_mysqli_statement_save(const zval* stmt,
+                                         const char* sql,
+                                         nr_string_len_t sql_len TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_sql_set(stmt, sql, sql_len);
+#else
+  nr_php_prepared_statement_save(stmt, "mysqli", sql, sql_len TSRMLS_CC);
+#endif
+}
+
+static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  const char* sql = nr_php_mysqli_statement_sql_get(stmt);
+
+  return sql ? sql : NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+#else
+  return nr_php_prepared_statement_find(stmt, "mysqli" TSRMLS_CC);
+#endif
+}
+
 NR_INNER_WRAPPER(pdostatement_execute) {
   zval* stmt_obj = NULL;
   zval* parameters = NULL;
@@ -1544,9 +1570,6 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
       nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
     }
   }
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
-
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1557,6 +1580,11 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
 
     segment->stop_time = nr_txn_now_rel(NRPRG(txn));
 
+    /*
+     * The explain plan uses the link and the query that were kept for the
+     * statement in the transaction that prepared it, so a statement prepared
+     * in an earlier transaction gets none.
+     */
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
@@ -1564,6 +1592,16 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
                                         params, segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }
+
+    /*
+     * The SQL is looked up here, after the call and the explain, and used at
+     * once. execute() converts its parameters to strings, which can run an
+     * object's __toString(), and the explain runs PHP code too: code that
+     * prepares the statement again replaces the SQL in the table and frees the
+     * string that was there before.
+     */
+    sqlstr = nr_php_mysqli_statement_find(stmt_obj TSRMLS_CC);
+    sqlstrlen = nr_strlen(sqlstr);
 
     nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
                                NR_DATASTORE_MYSQL, NULL TSRMLS_CC);
@@ -1600,8 +1638,12 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
     }
   }
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(return_value, extension, sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+  if (0 == nr_strcmp(extension, "mysqli")) {
+    nr_php_mysqli_statement_save(return_value, sqlstr, sqlstrlen TSRMLS_CC);
+  } else {
+    nr_php_prepared_statement_save(return_value, extension, sqlstr,
+                                   sqlstrlen TSRMLS_CC);
+  }
 
   /* Record the current query link and SQL string if the right conditions exist
    * Note if the SQL string is not explainable then the previous recorded query
@@ -1633,6 +1675,31 @@ NR_INNER_WRAPPER(mysqli_prepare) {
   nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper,
                                   "mysqli");
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Whether the constructor of a mysqli_stmt prepared its statement. When mysqli
+ * throws on errors the constructor throws, and otherwise it returns an object
+ * that is not prepared and has the error number of the failed prepare.
+ *
+ * The property is read here and not with nr_php_get_zval_object_property():
+ * mysqli computes its properties and returns them in storage that belongs to
+ * the caller.
+ */
+static int nr_php_mysqli_stmt_construct_prepared(zval* stmt) {
+  zval rv;
+  zval* error_number;
+
+  if (NULL != EG(exception)) {
+    return 0;
+  }
+
+  error_number = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
+                                    "errno", sizeof("errno") - 1, 1, &rv);
+
+  return (IS_LONG == Z_TYPE_P(error_number)) && (0 == Z_LVAL_P(error_number));
+}
+#endif
 
 /*
  * Handle
@@ -1666,8 +1733,15 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
   }
 
   if (sqlstr) {
-    nr_php_prepared_statement_save(this_obj, "mysqli", sqlstr,
-                                   sqlstrlen TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    /* A prepare that failed in the constructor leaves no SQL. */
+    nr_php_mysqli_statement_save(
+        this_obj,
+        nr_php_mysqli_stmt_construct_prepared(this_obj) ? sqlstr : NULL,
+        sqlstrlen TSRMLS_CC);
+#else
+    nr_php_mysqli_statement_save(this_obj, sqlstr, sqlstrlen TSRMLS_CC);
+#endif
   }
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
@@ -1775,8 +1849,17 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
   }
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(mysqli_stmt_obj, "mysqli", sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * A prepare that fails leaves the statement unusable: drop the SQL of the
+   * earlier prepare instead of keeping it.
+   */
+  nr_php_mysqli_statement_save(
+      mysqli_stmt_obj, (IS_TRUE == Z_TYPE_P(return_value)) ? sqlstr : NULL,
+      sqlstrlen TSRMLS_CC);
+#else
+  nr_php_mysqli_statement_save(mysqli_stmt_obj, sqlstr, sqlstrlen TSRMLS_CC);
+#endif
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_stmt(mysqli_stmt_obj TSRMLS_CC)
