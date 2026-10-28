@@ -1339,6 +1339,24 @@ static void nr_php_prepared_statement_save(const zval* obj,
 }
 
 /*
+ * The SQL of a PDO statement is its read-only property queryString, which
+ * lasts as long as the statement. Nothing is saved: a saved copy keyed by the
+ * statement would be lost when the transaction restarts and could be found by
+ * a later statement that takes the same handle.
+ */
+static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
+  zval* query = nr_php_get_zval_object_property(stmt_obj, "queryString");
+
+  if (nr_php_is_zval_non_empty_string(query)) {
+    *sqlstrlen = Z_STRLEN_P(query);
+    return Z_STRVAL_P(query);
+  }
+
+  *sqlstrlen = nr_strlen(NR_PHP_PREPARED_STATEMENT_UNKNOWN);
+  return NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+}
+
+/*
  * Save and find the SQL of a mysqli statement. From PHP 8.0 the SQL is kept
  * for the life of the statement object, so a statement prepared in one
  * transaction can be executed in a later one. Before PHP 8.0 it is kept for the
@@ -1382,8 +1400,7 @@ NR_INNER_WRAPPER(pdostatement_execute) {
 
   stmt_obj = NR_PHP_INTERNAL_FN_THIS();
 
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "pdo" TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
+  sqlstr = nr_php_pdo_statement_sql(stmt_obj, &sqlstrlen);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
@@ -1627,15 +1644,6 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
 NR_INNER_WRAPPER(mysqli_prepare) {
   nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper,
                                   "mysqli");
-}
-
-/*
- * Handle
- *   PDOStatement PDO::prepare( string $query [, array $options ])
- */
-NR_INNER_WRAPPER(pdo_prepare) {
-  nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper,
-                                  "pdo");
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
@@ -3864,7 +3872,6 @@ NR_OUTER_WRAPPER(pdo_connect)
 #endif
 NR_OUTER_WRAPPER(pdo_query)
 NR_OUTER_WRAPPER(pdo_exec)
-NR_OUTER_WRAPPER(pdo_prepare)
 
 NR_OUTER_WRAPPER(pdostmt_execute)
 
@@ -4711,14 +4718,6 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("pdo\\odbc::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\pgsql::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::exec", pdo_exec, pdo_exec, 0, 0)
-#endif
-  NR_INTERNAL_WRAPREC("pdo::prepare", pdo_prepare, pdo_prepare, 0, 0)
-#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
-  NR_INTERNAL_WRAPREC("pdo\\firebird::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\mysql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\odbc::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\pgsql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\sqlite::prepare", pdo_prepare, pdo_prepare, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdostatement::execute", pdostmt_execute,
                       pdostatement_execute, 0, 0)
