@@ -149,6 +149,7 @@ int nr_php_post_deactivate(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_objtable_destroy(&NRPRG_SHARED(mysqli_statement_sql));
 #endif
+  nr_php_mysqli_links_destroy();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*

@@ -504,6 +504,16 @@ typedef struct _shared_globals_t {
    * start.
    */
   nr_php_objtable_t* mysqli_statement_sql;
+
+  /*
+   * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
+   * request. The explain connection needs it in a later transaction. An entry
+   * is removed when its link is freed: mysqli_link_handles holds one value per
+   * link whose destructor removes the entry. Before 8.0 the metadata is kept
+   * per transaction (see txn_globals).
+   */
+  nr_mysqli_metadata_t* mysqli_links;
+  nr_php_objtable_t* mysqli_link_handles;
 #endif
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO

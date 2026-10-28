@@ -11,10 +11,9 @@ An integer option set with mysqli_options() under strict_types=1 SHALL NOT
 break the query or its explain plan.
 
 The agent wraps mysqli_options() to record the options for the connection it
-opens to run EXPLAIN. The wrapper reads the value as any scalar, because
-strict_types=1 rejects an integer that is read as a string. The test sets
-MYSQLI_OPT_INT_AND_FLOAT_NATIVE and checks that the wrapper accepts it and that
-the application's query and its explain plan are intact. The TLS test server is
+opens to run EXPLAIN. The test sets MYSQLI_OPT_INT_AND_FLOAT_NATIVE and checks
+that the wrapper accepts the integer and that the application's query and its
+explain plan are intact. The TLS test server is
 used only for its MySQL version, so that the plan is the same everywhere.
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
