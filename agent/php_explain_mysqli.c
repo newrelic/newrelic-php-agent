@@ -82,7 +82,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_fetch_plan(
  * Returns : A newly allocated explain plan, or NULL on error.
  */
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
-    zval* link,
+    nr_mysqli_metadata_link_handle_t link_handle,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC);
@@ -126,19 +126,48 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
   }
 
   query = nr_strndup(sql, sql_len);
-  plan = nr_php_explain_mysqli_issue(link, 0, query, NULL TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), 0, query,
+      NULL TSRMLS_CC);
   nr_free(query);
 
   return plan;
 }
 
+/*
+ * The number of parameters of a prepared statement, or 0 if it cannot be read.
+ * The property is read here and not with nr_php_get_zval_object_property():
+ * mysqli computes its properties and returns them in storage that belongs to
+ * the caller.
+ */
+static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  zval rv;
+  const zval* count;
+
+  if (NULL != EG(exception)) {
+    return 0;
+  }
+
+  count = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
+                             "param_count", sizeof("param_count") - 1, 1, &rv);
+
+  return (count && (IS_LONG == Z_TYPE_P(count))) ? Z_LVAL_P(count) : 0;
+#else
+  (void)stmt;
+  return 0;
+#endif
+}
+
 nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
+                                              const zval* stmt,
                                               nr_php_object_handle_t handle,
                                               zval* params,
                                               nrtime_t start,
                                               nrtime_t stop TSRMLS_DC) {
   nrtime_t duration;
   zval* link = NULL;
+  nr_mysqli_metadata_link_handle_t link_handle = 0;
   nr_explain_plan_t* plan = NULL;
   char* query = NULL;
 
@@ -152,17 +181,54 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
   }
 
   link = nr_php_mysqli_query_get_link(handle TSRMLS_CC);
-  if (NULL == link) {
+  if (link) {
+    link_handle = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
+    query = nr_php_mysqli_query_get_query(handle TSRMLS_CC);
+  }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  if (NULL == query) {
+    const char* sql = nr_php_mysqli_statement_sql_get(stmt);
+
+    /*
+     * The transaction has no link or no query for the statement, for example
+     * because it was prepared in an earlier transaction. The SQL and the link
+     * saved with the statement object are used instead.
+     */
+    if ((NULL == sql)
+        || (NR_FAILURE
+            == nr_php_mysqli_statement_link_get(stmt, &link_handle))) {
+      return NULL;
+    }
+    query = nr_strdup(sql);
+
+    /*
+     * Parameters that were bound in an earlier transaction are not kept: the
+     * statement would fail to execute on the explain connection, so it is not
+     * opened.
+     */
+    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)
+        && (nr_php_explain_mysqli_stmt_param_count(stmt) > 0)) {
+      nr_free(query);
+      return NULL;
+    }
+  }
+#else
+  (void)stmt;
+#endif
+
+  if (NULL == query) {
     return NULL;
   }
 
-  query = nr_php_mysqli_query_get_query(handle TSRMLS_CC);
   if (!nr_php_explain_mysql_query_is_explainable(query, nr_strlen(query))) {
     nr_free(query);
     return NULL;
   }
 
-  plan = nr_php_explain_mysqli_issue(link, handle, query, params TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(
+      link_handle, nr_php_mysqli_query_exists(handle TSRMLS_CC) ? handle : 0,
+      query, params TSRMLS_CC);
   nr_free(query);
 
   return plan;
@@ -319,7 +385,7 @@ end:
 }
 
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
-    zval* link,
+    nr_mysqli_metadata_link_handle_t link_handle,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC) {
@@ -341,7 +407,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   error_reporting = nr_php_silence_errors(TSRMLS_C);
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
-  link_dup = nr_php_mysqli_link_duplicate(link TSRMLS_CC);
+  link_dup = nr_php_mysqli_link_duplicate_handle(link_handle TSRMLS_CC);
   if (NULL == link_dup) {
     goto end;
   }

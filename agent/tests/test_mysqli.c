@@ -740,6 +740,119 @@ static void test_statement_sql(TSRMLS_D) {
 }
 #endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * A stdClass stands in for a mysqli_stmt, and a mysqli object that has not
+ * connected for the link: the link needs the metadata of a connect.
+ */
+static void test_statement_link(TSRMLS_D) {
+  zval* link;
+  zval* other;
+  zval* stmt;
+  nr_mysqli_metadata_link_handle_t handle = 0;
+
+  tlib_php_request_start();
+  set_explain_options(NRPRG(txn), 1, NR_SQL_OBFUSCATED, 1);
+
+  tlib_php_request_eval(
+      "$link = mysqli_init(); $other = mysqli_init(); $stmt = new stdClass;");
+  link = tlib_php_request_eval_expr("$link");
+  other = tlib_php_request_eval_expr("$other");
+  stmt = tlib_php_request_eval_expr("$stmt");
+
+  tlib_pass_if_status_failure("no link saved",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A link with no complete metadata cannot be duplicated: nothing is saved. */
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_failure("link without metadata",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "no entry for a link without metadata", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* The link and the SQL are kept independently. */
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("link saved",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_uint64_t_equal("link handle", Z_OBJ_HANDLE_P(link), handle);
+  tlib_pass_if_null("no SQL yet", nr_php_mysqli_statement_sql_get(stmt));
+  nr_php_mysqli_statement_sql_set(stmt, "SELECT 1", 8);
+  tlib_pass_if_str_equal("SQL saved", "SELECT 1",
+                         nr_php_mysqli_statement_sql_get(stmt));
+  nr_php_mysqli_statement_sql_set(stmt, NULL, 0);
+  tlib_pass_if_status_success("link kept when the SQL is dropped",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "one entry", 1,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* Settings that do not replace the connection keep the link valid. */
+  nr_php_mysqli_metadata_set_database(link, "other");
+  tlib_pass_if_status_success("select_db keeps the link",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A change of user and a connect replace the connection. */
+  nr_php_mysqli_metadata_set_user(link, "v", "pw", NULL);
+  tlib_pass_if_status_failure("change_user: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared again",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  tlib_pass_if_status_failure("connect again: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared on the new connection",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* The metadata of a removed link is gone. */
+  nr_php_mysqli_metadata_remove(link);
+  tlib_pass_if_status_failure("metadata removed",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A value that is not a link forgets the earlier one, and the entry goes. */
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  nr_php_mysqli_statement_link_set(stmt, link);
+  nr_php_mysqli_statement_link_set(stmt, stmt);
+  tlib_pass_if_status_failure("forgotten",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "no entry left", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* A NULL result pointer is rejected. */
+  tlib_pass_if_status_failure("NULL handle",
+                              nr_php_mysqli_statement_link_get(stmt, NULL));
+
+  /*
+   * A link that is freed takes its metadata with it. Another link, which may
+   * get the same handle, has a connection of its own.
+   */
+  nr_php_mysqli_metadata_set_connect(other, "h", "u", "pw", "db", 3306, NULL,
+                                     0);
+  nr_php_mysqli_statement_link_set(stmt, other);
+  tlib_pass_if_status_success("prepared on another link",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_zval_free(&other);
+  tlib_php_request_eval("unset($other);");
+  tlib_pass_if_status_failure("the link was freed",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_php_request_eval("$third = mysqli_init();");
+  other = tlib_php_request_eval_expr("$third");
+  nr_php_mysqli_metadata_set_connect(other, "h", "u", "pw", "db", 3306, NULL,
+                                     0);
+  tlib_pass_if_status_failure("a new link does not take over the statement",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  nr_php_zval_free(&link);
+  nr_php_zval_free(&other);
+  nr_php_zval_free(&stmt);
+  tlib_php_request_end();
+}
+#endif
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
@@ -761,6 +874,7 @@ void test_main(void* p NRUNUSED) {
     test_option_to_string();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_statement_sql(TSRMLS_C);
+    test_statement_link(TSRMLS_C);
 #endif
   }
 
