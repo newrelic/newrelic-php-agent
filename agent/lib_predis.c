@@ -9,6 +9,7 @@
 #include "php_datastore.h"
 #include "php_execute.h"
 #include "php_hash.h"
+#include "php_objtable.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
@@ -81,52 +82,51 @@ const zend_long nr_predis_default_port = 6379;
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_readResponse);
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_writeRequest);
 
-static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  return NRPRG_CTX(predis_commands);
-}
-
-// An entry for a command that is never read stays until its handle is written
-// again. The time is absolute, so that the transaction that reads the response
-// can tell whether the request was written before it started.
-void nr_predis_command_start_save(uint64_t handle, nrtime_t start) {
-  nr_hashmap_t* commands = nr_predis_get_commands();
+// The start time is kept with the command object. On PHP 8.0 and later an
+// entry is removed when its command object is freed, so a command object that
+// takes the freed object's handle cannot find it. Before PHP 8.0 the object
+// table keys entries by handle, and an entry for a command that is never read
+// stays until its handle is written again. The time is absolute, so that the
+// transaction that reads the response can tell whether the request was
+// written before it started.
+void nr_predis_command_start_save(const zval* command, nrtime_t start) {
+  nr_php_objtable_t* table = NRPRG_CTX(predis_command_starts);
   nrtime_t* saved = NULL;
 
-  if (NULL == commands) {
+  if ((NULL == table) || !nr_php_is_zval_valid_object(command)) {
     return;
   }
 
   saved = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
   *saved = start;
-  nr_hashmap_index_update(commands, handle, saved);
+  nr_php_objtable_set(table, command, saved);
 }
 
-bool nr_predis_command_start_take(uint64_t handle,
+bool nr_predis_command_start_take(const zval* command,
                                   nrtime_t txn_start,
                                   nrtime_t* start) {
-  nr_hashmap_t* commands = nr_predis_get_commands();
+  nr_php_objtable_t* table = NRPRG_CTX(predis_command_starts);
   nrtime_t* saved = NULL;
   nrtime_t saved_start;
 
-  if ((NULL == commands) || (NULL == start)) {
+  if ((NULL == table) || (NULL == start)
+      || !nr_php_is_zval_valid_object(command)) {
     return false;
   }
 
-  saved = (nrtime_t*)nr_hashmap_index_get(commands, handle);
+  saved = (nrtime_t*)nr_php_objtable_get(table, command);
   if (NULL == saved) {
     return false;
   }
 
   /*
    * The start time is only valid for the response that pairs with the
-   * writeRequest() that stored it. Copy it, then remove the entry: PHP reuses
-   * the handle of a freed command object, and a later command object with the
-   * same handle that never went through writeRequest() (such as the handshake
-   * commands of Predis v3) would otherwise be timed from this stale start.
-   * Deleting the entry frees the stored value, so the copy must come first.
+   * writeRequest() that stored it. Copy it, then remove the entry, so that a
+   * second response for the same object cannot use it. Deleting the entry
+   * frees the stored value, so the copy must come first.
    */
   saved_start = *saved;
-  nr_hashmap_index_delete(commands, handle);
+  nr_php_objtable_del(table, command);
 
   /*
    * A request written before this transaction began belongs to an earlier
@@ -410,6 +410,69 @@ nr_predis_create_datastore_instance_from_connection_params(
                                                          NULL);
 }
 
+/*
+ * Create a datastore instance from what a node connection holds, with no PHP
+ * calls in the usual case: the connection keeps its parameters in a property of
+ * AbstractConnection, and the Parameters object keeps them in an array. If
+ * either is not where we expect (another connection class or an older Predis),
+ * fall back to asking the connection.
+ */
+static nr_datastore_instance_t* nr_predis_create_datastore_instance_from_node(
+    const zval* conn) {
+  nr_datastore_instance_t* instance = NULL;
+  zend_class_entry* connection_ce = NULL;
+  zend_class_entry* parameters_ce = NULL;
+  zval* parameters = NULL;
+  zval* values = NULL;
+  zval* params = NULL;
+
+  if (!nr_predis_is_node_connection(conn)) {
+    return NULL;
+  }
+
+  connection_ce = nr_php_find_class("predis\\connection\\abstractconnection");
+  parameters_ce = nr_php_find_class("predis\\connection\\parameters");
+  if (connection_ce && parameters_ce) {
+    parameters = nr_php_get_zval_object_property_with_class(
+        (zval*)conn, connection_ce, "parameters");
+    if (nr_php_is_zval_valid_object(parameters)) {
+      values = nr_php_get_zval_object_property_with_class(
+          parameters, parameters_ce, "parameters");
+      if (nr_php_is_zval_valid_array(values)) {
+        return nr_predis_create_datastore_instance_from_array(values);
+      }
+    }
+  }
+
+  params = nr_php_call((zval*)conn, "getParameters");
+  instance = nr_predis_create_datastore_instance_from_connection_params(params);
+  nr_php_zval_free(&params);
+
+  return instance;
+}
+
+#ifndef NR_PHP_OBJTABLE_WEAK
+
+/*
+ * Before PHP 8.0 there is no way to find out when a node connection is freed,
+ * and PHP reuses its handle for a later one, so the saved instance can belong
+ * to an earlier node. Compare it with what the connection holds now.
+ */
+static int nr_predis_instance_matches(const nr_datastore_instance_t* a,
+                                      const nr_datastore_instance_t* b) {
+  return 0
+             == nr_strcmp(nr_datastore_instance_get_host(a),
+                          nr_datastore_instance_get_host(b))
+         && 0
+                == nr_strcmp(nr_datastore_instance_get_port_path_or_id(a),
+                             nr_datastore_instance_get_port_path_or_id(b))
+         && 0
+                == nr_strcmp(nr_datastore_instance_get_database_name(a),
+                             nr_datastore_instance_get_database_name(b));
+}
+
+#endif
+
 nr_datastore_instance_t* nr_predis_save_datastore_instance(const zval* conn,
                                                            zval* params
                                                                TSRMLS_DC) {
@@ -420,13 +483,25 @@ nr_datastore_instance_t* nr_predis_save_datastore_instance(const zval* conn,
     return NULL;
   }
 
-  key = nr_php_datastore_make_key(conn, "predis");
   instance = nr_predis_create_datastore_instance_from_connection_params(
       params TSRMLS_CC);
-  nr_php_datastore_instance_save(key, instance TSRMLS_CC);
 
+#ifdef NR_PHP_OBJTABLE_WEAK
+  if (NULL == NRPRG_SHARED(predis_instances) || NULL == instance
+      || !nr_php_is_zval_valid_object(conn)) {
+    nr_datastore_instance_destroy(&instance);
+    return NULL;
+  }
+
+  /* The table owns the instance; replacing an entry destroys the old one. */
+  nr_php_objtable_set(NRPRG_SHARED(predis_instances), conn, instance);
+  return instance;
+#else
+  key = nr_php_datastore_make_key(conn, "predis");
+  nr_php_datastore_instance_save(key, instance);
   nr_free(key);
   return instance;
+#endif
 }
 
 nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
@@ -438,11 +513,45 @@ nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
     return NULL;
   }
 
-  key = nr_php_datastore_make_key(conn, "predis");
-  instance = nr_php_datastore_instance_retrieve(key TSRMLS_CC);
-
-  nr_free(key);
+#ifdef NR_PHP_OBJTABLE_WEAK
+  /*
+   * The table drops an entry when its node connection is freed, so an entry is
+   * always the object's own. A node that was not seen being built (for
+   * example, one made by an aggregate connection) has none yet: make it now.
+   */
+  instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
+  if (NULL == instance && nr_php_is_zval_valid_object(conn)) {
+    instance = nr_predis_create_datastore_instance_from_node(conn);
+    if (instance && NRPRG_SHARED(predis_instances)) {
+      nr_php_objtable_set(NRPRG_SHARED(predis_instances), conn, instance);
+      instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
+    } else {
+      nr_datastore_instance_destroy(&instance);
+    }
+  }
   return instance;
+#else
+  {
+    nr_datastore_instance_t* current = NULL;
+
+    key = nr_php_datastore_make_key(conn, "predis");
+    instance = nr_php_datastore_instance_retrieve(key);
+
+    /* A node connection is checked on every response; see above. */
+    current = nr_predis_create_datastore_instance_from_node(conn);
+    if (current) {
+      if (NULL == instance || !nr_predis_instance_matches(instance, current)) {
+        nr_php_datastore_instance_save(key, current);
+        instance = current;
+      } else {
+        nr_datastore_instance_destroy(&current);
+      }
+    }
+
+    nr_free(key);
+    return instance;
+  }
+#endif
 }
 
 zval* nr_predis_get_parameter(zval* params, const char* name TSRMLS_DC) {
@@ -539,7 +648,6 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   char* async_context = NULL;
   zval* command = NULL;
   zval* conn = NULL;
-  uint64_t index;
   nr_segment_t* segment = NULL;
   nr_segment_datastore_params_t params = {
     .datastore = {
@@ -568,11 +676,9 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   operation = nr_predis_get_operation_name_from_object(command TSRMLS_CC);
 
   /*
-   * Get the original start time of the paired writeRequest() method from the
-   * hashmap.
+   * Get the original start time of the paired writeRequest() method.
    */
-  index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  if (!nr_predis_command_start_take(index, nr_txn_start_time(NRPRG(txn)),
+  if (!nr_predis_command_start_take(command, nr_txn_start_time(NRPRG(txn)),
                                     &start)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: NULL start time", __func__);
     goto end;
@@ -631,7 +737,8 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   zval* command = NULL;
-  uint64_t index;
+  nrtime_t start = nr_get_time();
+  zend_object* previous_exception = EG(exception);
 
   (void)wraprec;
 
@@ -644,15 +751,27 @@ NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   command = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_valid_object(command)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: command is not an object", __func__);
+    NR_PHP_WRAPPER_CALL;
     goto end;
   }
 
-  index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  nr_predis_command_start_save(index, nr_get_time());
+  NR_PHP_WRAPPER_CALL;
+
+  /*
+   * A write that threw (the connection could not be opened, or the bytes could
+   * not be sent) is never followed by a read of its response, so nothing is
+   * saved for it.
+   *
+   * If the same command object is written again and the second write
+   * throws, the entry from the first write stays. The response that is
+   * read pairs with the first write, so its start time is the right one.
+   */
+  if ((NULL == EG(exception)) || (EG(exception) == previous_exception)) {
+    nr_predis_command_start_save(command, start);
+  }
 
 end:
   nr_php_arg_release(&command);
-  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
@@ -672,23 +791,10 @@ NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
                      "NodeConnectionInterface",
                      __func__);
   } else {
-    char* key = nr_php_datastore_make_key(*retval_ptr, "predis");
-
-    /*
-     * Add the datastore instance metadata if it hasn't already happened.
-     */
-    if (!nr_php_datastore_has_conn(key TSRMLS_CC)) {
-      zval* params = nr_php_call(*retval_ptr, "getParameters");
-
-      (void)nr_predis_save_datastore_instance(*retval_ptr, params TSRMLS_CC);
-      nr_php_zval_free(&params);
-    }
-
     /*
      * Actually instrument the connection.
      */
     nr_predis_instrument_connection(*retval_ptr TSRMLS_CC);
-    nr_free(key);
   }
 }
 NR_PHP_WRAPPER_END

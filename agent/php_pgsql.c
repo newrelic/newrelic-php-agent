@@ -6,6 +6,7 @@
 #include "nr_postgres.h"
 #include "php_agent.h"
 #include "php_datastore.h"
+#include "php_objtable.h"
 #include "php_pgsql.h"
 #include "php_pgsql_private.h"
 #include "util_logging.h"
@@ -28,10 +29,47 @@ nr_datastore_instance_t* nr_php_pgsql_create_datastore_instance(
   return instance;
 }
 
+void nr_php_pgsql_instance_destroy(void* instance) {
+  nr_datastore_instance_t* i = instance;
+
+  nr_datastore_instance_destroy(&i);
+}
+
 void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
                                           const char* conn_info TSRMLS_DC) {
   nr_datastore_instance_t* instance = NULL;
-  char* key = nr_php_datastore_make_key(pgsql_conn, "pgsql");
+  char* key = NULL;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * From PHP 8.1 a connection is an object, and PHP reuses an object's handle
+   * once it is freed. The instance is kept in a table that drops it when the
+   * object is freed, and every connect replaces what is there, so a reused
+   * handle finds no entry.
+   */
+  if (nr_php_is_zval_valid_object(pgsql_conn)) {
+    instance = nr_php_pgsql_create_datastore_instance(conn_info);
+
+    if (NRPRG_SHARED(pgsql_instances)) {
+      nr_php_objtable_set(NRPRG_SHARED(pgsql_instances), pgsql_conn, instance);
+      nr_php_objtable_mark_last(NRPRG_SHARED(pgsql_instances), pgsql_conn);
+    } else {
+      nr_php_pgsql_instance_destroy(instance);
+    }
+    return;
+  }
+
+  /*
+   * Anything else that is not a resource is a failed connect (false). Only a
+   * call that names no connection has a default instance to save, and a
+   * failed connect must not create one.
+   */
+  if (NULL != pgsql_conn && !nr_php_is_zval_valid_resource(pgsql_conn)) {
+    return;
+  }
+#endif
+
+  key = nr_php_datastore_make_key(pgsql_conn, "pgsql");
 
   if (nr_php_datastore_has_conn(key TSRMLS_CC)) {
     nr_free(key);
@@ -49,6 +87,20 @@ nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
     const zval* pgsql_conn TSRMLS_DC) {
   nr_datastore_instance_t* instance = NULL;
   char* key = NULL;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  if (nr_php_is_zval_valid_object(pgsql_conn)) {
+    return nr_php_objtable_get(NRPRG_SHARED(pgsql_instances), pgsql_conn);
+  }
+
+  /* With no connection given, PHP uses the one connected last. */
+  if (NULL == pgsql_conn) {
+    instance = nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances));
+    if (instance) {
+      return instance;
+    }
+  }
+#endif
 
   if (NULL == pgsql_conn) {
     /*
@@ -75,6 +127,24 @@ nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
 
 void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
   char* key = NULL;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  if (nr_php_is_zval_valid_object(pgsql_conn)) {
+    nr_php_objtable_del(NRPRG_SHARED(pgsql_instances), pgsql_conn);
+    return;
+  }
+
+  /*
+   * With no connection given, PHP releases its default link and leaves the
+   * connection open, so only the last mark goes. The entry goes with the
+   * object.
+   */
+  if ((NULL == pgsql_conn)
+      && nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances))) {
+    nr_php_objtable_clear_last(NRPRG_SHARED(pgsql_instances));
+    return;
+  }
+#endif
 
   /*
    * If the connection is NULL but we have an existing connection, use that as
