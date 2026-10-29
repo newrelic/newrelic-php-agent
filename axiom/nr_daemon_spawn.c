@@ -25,6 +25,16 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+#if defined(__x86_64__)
+__asm__(".symver strtol,strtol@GLIBC_2.2.5");
+#elif defined(__aarch64__)
+__asm__(".symver strtol,strtol@GLIBC_2.17");
+#endif
+#endif
+#endif
+
 #define NR_DAEMON_ARGV_DEFAULT_CAPACITY 16
 #define NR_DAEMON_ARGV_GROWTH_FACTOR 2
 
