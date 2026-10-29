@@ -987,8 +987,11 @@ static void test_explain_bound_count_mocked(TSRMLS_D) {
 
 /*
  * The cases in which the explain for a query run with parameters, as
- * mysqli_execute_query() does, makes no explain connection. The plan itself
- * needs a database and is covered by the integration tests.
+ * mysqli_execute_query() does, makes no explain connection. All of them return
+ * before the parameters are used. That the parameters reach the statement of
+ * the explain, and the plan itself, need a database and are covered by the
+ * integration tests (test_execute_query_oo.php and
+ * test_execute_query_param_types.php).
  */
 static void test_explain_query_params(TSRMLS_D) {
   nrtxn_t* txn;
