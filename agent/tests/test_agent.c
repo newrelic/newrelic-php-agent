@@ -667,8 +667,8 @@ static void test_silence_user_error_handler(TSRMLS_D) {
   tlib_php_request_eval(
       "restore_error_handler();"
       "$thrown = 0;"
-      "set_error_handler(function () { throw new Exception('handler'); });"
-      TSRMLS_CC);
+      "set_error_handler(function () { throw new Exception('handler'); "
+      "});" TSRMLS_CC);
   state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
       "try { trigger_error('seventh', E_USER_WARNING); }"
@@ -692,11 +692,12 @@ static void test_silence_user_error_handler(TSRMLS_D) {
   tlib_php_request_eval(
       "restore_error_handler();"
       "$calls = 0;"
-      "set_error_handler(function () use (&$calls) { $calls++; return true; });"
-      TSRMLS_CC);
+      "set_error_handler(function () use (&$calls) { $calls++; return true; "
+      "});" TSRMLS_CC);
   state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
-      "set_error_handler(function () use (&$calls) { $calls += 10; return true; },"
+      "set_error_handler(function () use (&$calls) { $calls += 10; return "
+      "true; },"
       " E_USER_NOTICE);" TSRMLS_CC);
   nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
@@ -714,11 +715,12 @@ static void test_silence_user_error_handler(TSRMLS_D) {
   tlib_php_request_eval(
       "restore_error_handler();"
       "$calls = 0;"
-      "set_error_handler(function () use (&$calls) { $calls++; return true; });"
-      TSRMLS_CC);
+      "set_error_handler(function () use (&$calls) { $calls++; return true; "
+      "});" TSRMLS_CC);
   state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
-      "set_error_handler(function () use (&$calls) { $calls += 10; return true; },"
+      "set_error_handler(function () use (&$calls) { $calls += 10; return "
+      "true; },"
       " E_USER_NOTICE);" TSRMLS_CC);
   nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
