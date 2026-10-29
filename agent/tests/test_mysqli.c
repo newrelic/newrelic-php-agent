@@ -17,7 +17,7 @@
 #include "php_agent.h"
 #include "util_system.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 #include "ext/mysqli/php_mysqli_structs.h"
 #endif
 
@@ -807,6 +807,15 @@ static void test_statement_link(TSRMLS_D) {
   tlib_pass_if_status_success("the same database selected again",
                               nr_php_mysqli_statement_link_get(stmt, &handle));
 
+  /* A statement that is prepared after select_db() belongs to the new one. */
+  nr_php_mysqli_metadata_set_database(link, "third");
+  tlib_pass_if_status_failure("select_db again: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(stmt);
+  tlib_pass_if_status_success("refreshed after the prepare",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(NULL);
+
   /* A change of user and a connect replace the connection. */
   nr_php_mysqli_metadata_set_user(link, "v", "pw", NULL);
   tlib_pass_if_status_failure("change_user: the statement is stale",
@@ -867,7 +876,7 @@ static void test_statement_link(TSRMLS_D) {
 }
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 static void test_explain_bound_count(TSRMLS_D) {
   zval* stmt;
   zval* other;
@@ -1118,6 +1127,8 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
+#endif
+#ifdef NR_PHP_MYSQLI_MYSQLND
     test_explain_bound_count(TSRMLS_C);
     test_explain_bind_type_letter();
     test_explain_bound_count_mocked(TSRMLS_C);

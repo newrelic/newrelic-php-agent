@@ -1253,6 +1253,32 @@ void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
   }
 }
 
+void nr_php_mysqli_statement_link_refresh(const zval* stmt) {
+  nr_mysqli_metadata_link_t metadata;
+  nr_php_mysqli_statement_t* statement;
+
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
+    return;
+  }
+
+  statement = nr_php_mysqli_statement_find(stmt);
+  if ((NULL == statement) || (0 == statement->link_epoch)) {
+    return;
+  }
+
+  if ((NR_FAILURE
+       == nr_mysqli_metadata_get(nr_php_mysqli_links(), statement->link_handle,
+                                 &metadata))
+      || !metadata.complete || (0 == metadata.epoch)) {
+    return;
+  }
+
+  statement->link_epoch = metadata.epoch;
+  nr_free(statement->link_database);
+  statement->link_database
+      = metadata.database ? nr_strdup(metadata.database) : NULL;
+}
+
 nr_status_t nr_php_mysqli_statement_link_get(
     const zval* stmt,
     nr_mysqli_metadata_link_handle_t* handle) {

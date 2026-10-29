@@ -13,6 +13,20 @@
 #include "nr_explain.h"
 
 /*
+ * Defined when the agent can read the structures that mysqlnd keeps for a
+ * statement: mysqli is always built on mysqlnd from PHP 8.2, and before that
+ * only when MYSQLI_USE_MYSQLND is defined (a mysqli built on libmysqlclient
+ * has other structures and other headers). Without it the explain of a
+ * statement that was prepared in an earlier transaction runs only when the
+ * statement has no parameters.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO     \
+    && (ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO \
+        || defined(MYSQLI_USE_MYSQLND))
+#define NR_PHP_MYSQLI_MYSQLND 1
+#endif
+
+/*
  * Purpose : Generate an explain plan for a MySQLi query.
  *
  * Params  : 1. The transaction.
@@ -85,7 +99,7 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_stmt(
     nrtime_t start,
     nrtime_t stop TSRMLS_DC);
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 /*
  * Purpose : Tell whether the loaded mysqli extension is built on mysqlnd,
  *           from the module's dependencies at run time.

@@ -14,7 +14,7 @@ with the SQL of the freed statement.
 <?php
 require("skipif.inc");
 if (PHP_VERSION_ID < 80000) {
-  die("skip: the SQL of a statement is kept across transactions from PHP 8.0\n");
+  die("skip: executing a statement that was not prepared throws from PHP 8.0\n");
 }
 */
 
