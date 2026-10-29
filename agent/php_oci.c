@@ -50,9 +50,21 @@ static void nr_php_oci_statements_collect_freed(void* value,
   }
 }
 
+/*
+ * The entries of freed statements are dropped when a new statement is parsed,
+ * not when the statement is freed. The SQL of a statement that was freed stays
+ * in memory until then, or until the request ends; it is bounded by the number
+ * of statements that were parsed since the last parse.
+ */
 static void nr_php_oci_statements_sweep(void) {
   size_t i;
-  nr_vector_t* freed = nr_vector_create(8, NULL, NULL);
+  nr_vector_t* freed;
+
+  if (0 == nr_hashmap_count(NRPRG_SHARED(oci_statements))) {
+    return;
+  }
+
+  freed = nr_vector_create(8, NULL, NULL);
 
   nr_hashmap_apply(NRPRG_SHARED(oci_statements),
                    nr_php_oci_statements_collect_freed, freed);

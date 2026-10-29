@@ -5,6 +5,7 @@
 #ifndef PHP_OCI_HDR
 #define PHP_OCI_HDR
 
+#include "php_agent.h"
 #include "util_strings.h"
 
 /*
