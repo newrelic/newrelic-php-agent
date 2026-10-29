@@ -25,6 +25,8 @@ if (0 !== $status) {
 newrelic.logfile = "stderr"
 */
 
+/*EXPECT_HARVEST no */
+
 /*EXPECT_REGEX
 received signal +11[^\n]*\n(.*\n)*PHP execution trace follows\.\.\.
 #0 [a-z_]+\(\)
