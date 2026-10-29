@@ -54,6 +54,8 @@ extern void nr_php_pgsql_instance_destroy(void* instance);
  * Purpose : Destroy the statements stored for a pgsql connection object. This
  *           is the value destructor of the table in
  *           shared_globals_t.pgsql_statements.
+ *
+ * Params  : 1. The statements of one connection, as the table holds them.
  */
 extern void nr_php_pgsql_statements_destroy(void* statements);
 
@@ -76,6 +78,11 @@ extern void nr_php_pgsql_statement_save(const zval* pgsql_conn,
 
 /*
  * Purpose : Get the SQL saved for a prepared statement of a connection.
+ *
+ * Params  : 1. The connection object, or NULL for the connection a call with
+ *              no connection uses (the last one).
+ *           2. The statement name. It can be empty.
+ *           3. The length of the name.
  *
  * Returns : The SQL, which stays owned by the table, or NULL if none was
  *           saved.
