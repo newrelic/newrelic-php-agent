@@ -135,6 +135,14 @@ nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
 #else
   dbh = &pdo_stmt->database_object_handle;
 #endif
+  /*
+   * Unlike the mysqli explain, this one does not silence the application's
+   * error handler. nr_php_pdo_duplicate() copies the DSN, the user, the
+   * password and the options before it connects, and the connection of the
+   * statement that is being explained cannot be closed by the application
+   * while the statement runs, so a handler has nothing to free that the
+   * explain reads afterwards.
+   */
   dup = nr_php_pdo_duplicate(dbh TSRMLS_CC);
   if (NULL == dup) {
     goto end;

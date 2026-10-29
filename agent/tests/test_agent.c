@@ -593,7 +593,7 @@ static void test_nr_php_zend_function_lineno() {
  */
 static void test_silence_user_error_handler(TSRMLS_D) {
   int error_reporting;
-  nr_php_user_error_handler_state_t error_types;
+  nr_php_user_error_handler_state_t state;
   zval* calls;
 
   tlib_php_request_start();
@@ -621,11 +621,11 @@ static void test_silence_user_error_handler(TSRMLS_D) {
    * With the handler silenced it is not called.
    */
   error_reporting = nr_php_silence_errors(TSRMLS_C);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_pass_if_int_equal("the handler was registered for all errors", E_ALL,
-                         error_types.error_types);
+                         state.error_types);
   tlib_php_request_eval("trigger_error('third', E_USER_WARNING);" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   nr_php_restore_errors(error_reporting TSRMLS_CC);
   calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
   tlib_pass_if_int_equal("the silenced handler is not called", 2,
@@ -649,11 +649,11 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       "$calls = 0;"
       "set_error_handler(function () use (&$calls) { $calls++; return true; },"
       " E_USER_WARNING);" TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_pass_if_int_equal("the handler was registered for E_USER_WARNING",
-                         E_USER_WARNING, error_types.error_types);
+                         E_USER_WARNING, state.error_types);
   tlib_php_request_eval("trigger_error('fifth', E_USER_WARNING);" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval("trigger_error('sixth', E_USER_WARNING);" TSRMLS_CC);
   calls = tlib_php_request_eval_expr("$calls" TSRMLS_CC);
   tlib_pass_if_int_equal("only the error after the restore is handled", 1,
@@ -669,11 +669,11 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       "$thrown = 0;"
       "set_error_handler(function () { throw new Exception('handler'); });"
       TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
       "try { trigger_error('seventh', E_USER_WARNING); }"
       " catch (Exception $e) { $thrown++; }" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   calls = tlib_php_request_eval_expr("$thrown" TSRMLS_CC);
   tlib_pass_if_int_equal("the silenced handler does not throw", 0,
                          (int)Z_LVAL_P(calls));
@@ -694,11 +694,11 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       "$calls = 0;"
       "set_error_handler(function () use (&$calls) { $calls++; return true; });"
       TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
       "set_error_handler(function () use (&$calls) { $calls += 10; return true; },"
       " E_USER_NOTICE);" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
       "trigger_error('tenth', E_USER_WARNING);"
       "trigger_error('eleventh', E_USER_NOTICE);" TSRMLS_CC);
@@ -716,11 +716,11 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       "$calls = 0;"
       "set_error_handler(function () use (&$calls) { $calls++; return true; });"
       TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_php_request_eval(
       "set_error_handler(function () use (&$calls) { $calls += 10; return true; },"
       " E_USER_NOTICE);" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
       "restore_error_handler();"
       "trigger_error('twelfth', E_USER_WARNING);" TSRMLS_CC);
@@ -737,13 +737,13 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       " restore_error_handler(); }"
       "restore_error_handler();"
       "$calls = 0;" TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
   tlib_pass_if_int_equal("no handler is set, so nothing was silenced", 0,
-                         error_types.active);
+                         state.active);
   tlib_php_request_eval(
       "set_error_handler(function () use (&$calls) { $calls++; return true; },"
       " E_USER_NOTICE);" TSRMLS_CC);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
       "trigger_error('thirteenth', E_USER_WARNING);"
       "trigger_error('fourteenth', E_USER_NOTICE);" TSRMLS_CC);
@@ -760,8 +760,8 @@ static void test_silence_user_error_handler(TSRMLS_D) {
       "while (null !== set_error_handler(null)) { restore_error_handler();"
       " restore_error_handler(); }"
       "restore_error_handler();" TSRMLS_CC);
-  error_types = nr_php_silence_user_error_handler(TSRMLS_C);
-  nr_php_restore_user_error_handler(error_types TSRMLS_CC);
+  state = nr_php_silence_user_error_handler(TSRMLS_C);
+  nr_php_restore_user_error_handler(state TSRMLS_CC);
   tlib_php_request_eval(
       "$calls = 0;"
       "set_error_handler(function () use (&$calls) { $calls++; return true; });"
