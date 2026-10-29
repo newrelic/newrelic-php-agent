@@ -231,6 +231,47 @@
    fun:thread_signal_in_request
 }
 
+# Non-thread-safe builds: the child of the unreadable PHP stack test (child_unreadable_stack) ends
+# on a signal with the engine it started, and takes a null write on purpose.
+{
+   <test_fatal_signal_handler: the child of the unreadable stack test, and the engine it started>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:child_unreadable_stack
+}
+
+{
+   <test_fatal_signal_handler: the deliberate write through a null pointer, non-thread-safe>
+   Memcheck:Addr4
+   fun:child_unreadable_stack
+   ...
+}
+
+# The hardware fault the test takes on purpose: a write through a null pointer.
+{
+   <test_fatal_signal_handler: the deliberate write through a null pointer>
+   Memcheck:Addr4
+   fun:thread_hardware_fault
+   ...
+}
+
+{
+   <test_fatal_signal_handler: thread of a child whose PHP stack is unreadable when it raises a signal>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_signal_unreadable
+}
+
+{
+   <test_fatal_signal_handler: thread of a child that takes a hardware fault>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_hardware_fault
+}
+
 # PHP's own leak: ts_free_thread does not release the timer of the max execution time or the cwd
 # globals of a thread's storage. They come from the ts_resource() calls the tests make to give a
 # thread storage (prepare_thread, thread_guard_rounds), not from the code under test, which

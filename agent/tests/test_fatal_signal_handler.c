@@ -148,7 +148,6 @@ static void test_signal_in_thread(const char* what, void* (*fn)(void*)) {
  *  - a thread whose TSRM key points at memory that cannot be read (the storage
  * was damaged, or freed in a way the key does not show): reading faults, the
  * guard catches it, and the message says that reading failed;
- * guard catches it, and the message says that reading failed;
  *  - after ts_free_thread and a new ts_resource: the stack is read as for a
  * live thread. Each call has to come back, and the thread has to be able to
  * end.
@@ -207,6 +206,53 @@ static void prepare_thread(thread_kind_t kind) {
       ZEND_TSRMLS_CACHE_UPDATE();
       break;
   }
+}
+
+/*
+ * A thread whose current execute data is unreadable, as damaged storage would
+ * leave it, that then raises a signal: the handler's own read of the PHP stack
+ * faults for real (a SIGSEGV from the kernel inside the handler). The guard has
+ * to catch that, and the process has to end with the signal that was raised.
+ */
+static void* thread_signal_unreadable(void* arg NRUNUSED) {
+  (void)ts_resource(0);
+  ZEND_TSRMLS_CACHE_UPDATE();
+  (void)make_frame_unreadable();
+  raise(child_signal);
+  return NULL;
+}
+
+/* The kind of thread that takes a hardware fault, and the fault. */
+static thread_kind_t child_fault_thread = THREAD_LIVE;
+static int child_fault = SIGSEGV;
+
+/*
+ * The original signal is itself a fault of the hardware: a write through a null
+ * pointer (SIGSEGV), or an access beyond the end of a mapped file (SIGBUS).
+ */
+static void* thread_hardware_fault(void* arg NRUNUSED) {
+  prepare_thread(child_fault_thread);
+  if (SIGBUS == child_fault) {
+    char name[] = "/tmp/nr-fatal-signal-XXXXXX";
+    int file = mkstemp(name);
+    char* beyond_the_end;
+
+    if (file < 0) {
+      _exit(96);
+    }
+    unlink(name);
+    beyond_the_end
+        = (char*)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+    if (MAP_FAILED == (void*)beyond_the_end) {
+      _exit(95);
+    }
+    *(volatile char*)beyond_the_end = 1;
+  } else {
+    volatile int* null_pointer = NULL;
+
+    *null_pointer = 1;
+  }
+  return NULL;
 }
 
 static void* thread_guarded_backtrace(void* p) {
@@ -370,6 +416,34 @@ static void test_guard_in_this_process(void) {
   tlib_php_engine_destroy(TSRMLS_C);
 }
 
+/*
+ * Hardware faults, not raise(): the handler runs for a real SIGSEGV or SIGBUS,
+ * on each kind of thread, and the process has to end with that signal.
+ */
+static void test_hardware_fault_in_thread(void) {
+  static const struct {
+    const char* what;
+    thread_kind_t kind;
+  } kinds[] = {{"thread with PHP storage", THREAD_LIVE},
+               {"thread after ts_free_thread", THREAD_FREED},
+               {"thread PHP does not know", THREAD_UNKNOWN}};
+  static const int faults[] = {SIGSEGV, SIGBUS};
+  size_t i;
+  size_t j;
+  char name[128];
+
+  for (i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++) {
+    for (j = 0; j < sizeof(faults) / sizeof(faults[0]); j++) {
+      child_fault_thread = kinds[i].kind;
+      child_fault = faults[j];
+      snprintf(name, sizeof(name), "hardware fault %d, %s", faults[j],
+               kinds[i].what);
+      tlib_pass_if_int_equal(name, faults[j],
+                             run_child(name, faults[j], thread_hardware_fault));
+    }
+  }
+}
+
 #endif /* ZTS */
 
 /*
@@ -423,8 +497,73 @@ static void test_signal_is_fault(void) {
   check_fault("no details is taken for a fault", true, SIGSEGV, NULL);
 }
 
+#ifndef ZTS
+
+/*
+ * Non-thread-safe PHP: the globals are plain variables, so there is no thread
+ * without PHP state, but the guard is the same code, and damaged globals can
+ * still make the handler's read of the PHP stack fault. The child makes the
+ * current execute data point at a page that cannot be read, then takes a signal
+ * on its main thread: a raised signal, or a real null write (SIGSEGV). The
+ * handler's read faults for real inside the handler, the guard catches it, and
+ * the process has to end with the original signal, not with a second SIGSEGV.
+ */
+static void child_unreadable_stack(int sig, bool hardware_fault) {
+  void* page;
+
+  alarm(60);
+  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_request_start();
+  page = mmap(NULL, 4096, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  EG(current_execute_data) = (zend_execute_data*)page;
+  if (hardware_fault) {
+    volatile int* null_pointer = NULL;
+
+    *null_pointer = 1;
+  } else {
+    raise(sig);
+  }
+  _exit(99); /* not reached: a fatal signal ends the process */
+}
+
+static int run_child_unreadable_stack(int sig, bool hardware_fault) {
+  pid_t pid;
+  int status = 0;
+
+  fflush(NULL);
+  pid = fork();
+  if (0 == pid) {
+    child_unreadable_stack(sig, hardware_fault);
+    _exit(97);
+  }
+  tlib_pass_if_true("fork", pid > 0, "fork failed");
+  if (pid <= 0 || pid != waitpid(pid, &status, 0)) {
+    return 0;
+  }
+  return WIFSIGNALED(status) ? WTERMSIG(status) : 0;
+}
+
+static void test_unreadable_stack_in_main_thread(void) {
+  static const int signals[] = {SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT};
+  size_t i;
+  char name[128];
+
+  for (i = 0; i < sizeof(signals) / sizeof(signals[0]); i++) {
+    snprintf(name, sizeof(name), "signal %d, unreadable PHP stack", signals[i]);
+    tlib_pass_if_int_equal(name, signals[i],
+                           run_child_unreadable_stack(signals[i], false));
+  }
+  tlib_pass_if_int_equal("hardware fault, unreadable PHP stack", SIGSEGV,
+                         run_child_unreadable_stack(SIGSEGV, true));
+}
+
+#endif /* not ZTS */
+
 void test_main(void* p NRUNUSED) {
   test_signal_is_fault();
+#ifndef ZTS
+  test_unreadable_stack_in_main_thread();
+#endif
 #ifdef ZTS
   /* Control: a thread that still has its PHP storage. */
   test_signal_in_thread("thread with PHP storage", thread_signal_in_request);
@@ -433,6 +572,11 @@ void test_main(void* p NRUNUSED) {
                         thread_signal_after_free);
   /* A thread that PHP does not know. */
   test_signal_in_thread("thread PHP does not know", thread_signal_unknown);
+  /* The handler's own read faults, for real, and the signal is still reported.
+   */
+  test_signal_in_thread("thread with an unreadable PHP stack",
+                        thread_signal_unreadable);
+  test_hardware_fault_in_thread();
   test_guard_in_this_process();
 #endif
 }
