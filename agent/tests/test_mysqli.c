@@ -944,6 +944,33 @@ static void free_fake_bound_statement(zval** stmt) {
   nr_php_zval_free(stmt);
 }
 
+static void test_explain_bind_type_letter(void) {
+  tlib_pass_if_int_equal("double", 'd',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_DOUBLE));
+  tlib_pass_if_int_equal("long", 'i',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_LONG));
+  tlib_pass_if_int_equal("long long", 'i',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_LONGLONG));
+  tlib_pass_if_int_equal("string", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_STRING));
+  tlib_pass_if_int_equal("var string", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_VAR_STRING));
+  tlib_pass_if_int_equal("blob", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_BLOB));
+  tlib_pass_if_int_equal("null", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_NULL));
+  tlib_pass_if_int_equal("float", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_FLOAT));
+}
+
 static void test_explain_bound_count_mocked(TSRMLS_D) {
   zval* stmt;
   zend_module_entry* mysqli;
@@ -1017,6 +1044,7 @@ void test_main(void* p NRUNUSED) {
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
     test_explain_bound_count(TSRMLS_C);
+    test_explain_bind_type_letter();
     test_explain_bound_count_mocked(TSRMLS_C);
 #endif
   }

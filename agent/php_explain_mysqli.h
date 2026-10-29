@@ -80,6 +80,16 @@ extern int nr_php_explain_mysqli_uses_mysqlnd(void);
  *           statement was not initialized).
  */
 extern long nr_php_explain_mysqli_bound_count(const zval* stmt);
+
+/*
+ * Purpose : The type letter for bind_param() that stands for the type that
+ *           mysqlnd holds for a bound variable.
+ *
+ * Params  : 1. The mysqlnd type of the bound variable (MYSQL_TYPE_*).
+ *
+ * Returns : 'd' for a double, 'i' for an integer, 's' for every other type.
+ */
+extern char nr_php_explain_mysqli_bind_type_letter(unsigned char type);
 #endif
 
 #endif /* PHP_EXPLAIN_MYSQLI_HDR */

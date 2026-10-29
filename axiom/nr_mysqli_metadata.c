@@ -16,17 +16,18 @@
 #include "util_strings.h"
 #include "util_time.h"
 
+/* The connection epoch of the link, or 0 if it has none. */
+static int64_t nr_mysqli_metadata_get_epoch(const nrobj_t* link) {
+  nr_status_t err = NR_SUCCESS;
+  int64_t epoch = nro_get_hash_long(link, "epoch", &err);
+
+  return (NR_SUCCESS == err && epoch > 0) ? epoch : 0;
+}
+
 /*
  * Give the link a new connection epoch: the current time, or one more than the
  * last epoch if the clock did not move forward.
  */
-static int64_t nr_mysqli_metadata_get_epoch(const nrobj_t* link) {
-  int err = 0;
-  int64_t epoch = nro_get_hash_long(link, "epoch", &err);
-
-  return (0 == err && epoch > 0) ? epoch : 0;
-}
-
 static void nr_mysqli_metadata_new_epoch(nrobj_t* link) {
   int64_t previous = nr_mysqli_metadata_get_epoch(link);
   int64_t now = (int64_t)nr_get_time();
