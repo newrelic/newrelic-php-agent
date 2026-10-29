@@ -298,6 +298,13 @@ static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
     /* A connection the agent did not see connect. */
     statements = nr_php_pgsql_statements_create();
     nr_php_objtable_set(NRPRG_SHARED(pgsql_statements), pgsql_conn, statements);
+
+    /*
+     * The table owns the statements, and drops them at once if it cannot
+     * hold them: ask the table for what it kept.
+     */
+    statements
+        = nr_php_objtable_get(NRPRG_SHARED(pgsql_statements), pgsql_conn);
   }
 
   return statements;
@@ -328,6 +335,12 @@ static void nr_php_pgsql_least_used_iterator(void* value,
  * names that are not used again, would otherwise hold them all. Making room
  * drops the statement used least recently: its execute is reported as an
  * unknown prepared statement, never with the SQL of another one.
+ *
+ * The limit is a number of statements, not a number of bytes, so a connection
+ * that holds the maximum number of statements with very long SQL holds a lot of
+ * memory. Looking for the statement used least recently visits every statement
+ * of the connection, and happens only for a new name once the limit is
+ * reached.
  */
 static void nr_php_pgsql_statements_make_room(
     nr_php_pgsql_statements_t* statements) {
@@ -422,6 +435,12 @@ const char* nr_php_pgsql_statement_find(const zval* pgsql_conn,
     return NULL;
   }
 
+  /*
+   * The agent does not follow a statement that the application removes on the
+   * server (DEALLOCATE, DISCARD ALL) or that a connection reset drops. The SQL
+   * stays here, and a pg_execute() of that name fails on the server: the failed
+   * call is named after the SQL that was saved.
+   */
   statement->used = ++statements->clock;
   return statement->sql;
 }
