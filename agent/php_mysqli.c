@@ -1185,7 +1185,11 @@ void nr_php_mysqli_statement_sql_set(const zval* stmt,
                                      nr_string_len_t sql_len) {
   nr_php_mysqli_statement_t* statement;
 
-  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+  /*
+   * The table does not take what it is given for a NULL object, so return
+   * before an entry or a copy of the SQL is made.
+   */
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
     return;
   }
 
@@ -1220,7 +1224,7 @@ void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
   nr_mysqli_metadata_link_t metadata;
   nr_php_mysqli_statement_t* statement;
 
-  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
     return;
   }
 
