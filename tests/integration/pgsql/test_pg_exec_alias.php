@@ -1,0 +1,98 @@
+<?php
+/*
+ * Copyright 2026 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+The agent should report Database metrics for pg_exec, an alias of pg_query
+that PHP gives its own function entry.
+*/
+
+/*SKIPIF
+<?php require("skipif.inc");
+if (!function_exists('pg_exec')) {
+  die("skip: pg_exec() does not exist\n");
+}
+*/
+
+/*INI
+error_reporting = E_ALL & ~E_DEPRECATED
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
+newrelic.datastore_tracer.instance_reporting.enabled = 0
+newrelic.transaction_tracer.stack_trace_threshold = 0
+newrelic.transaction_tracer.explain_threshold = 0
+newrelic.transaction_tracer.record_sql = raw
+*/
+
+/*EXPECT
+ok - pg_exec successful
+*/
+
+/*EXPECT_METRICS
+[
+  "?? agent run id",
+  "?? start time",
+  "?? stop time",
+  [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Postgres/select"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/Postgres/pg_user/select"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/Postgres/pg_user/select",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Postgres/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Postgres/allOther"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},           [1, "??", "??", "??", "??", "??"]]
+  ]
+]
+*/
+
+
+
+
+/*EXPECT_SLOW_SQLS
+[
+  [
+    [
+      "OtherTransaction/php__FILE__",
+      "<unknown>",
+      "?? SQL ID",
+      "SELECT 1 FROM pg_user",
+      "Datastore/statement/Postgres/pg_user/select",
+      1,
+      "?? total time",
+      "?? min time",
+      "?? max time",
+      {
+        "backtrace": [
+          " in pg_exec called at __FILE__ (??)"
+        ]
+      }
+    ]
+  ]
+]
+*/
+
+/*EXPECT_TRACED_ERRORS
+null
+*/
+
+require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
+require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
+
+$pg = pg_connect($PG_CONNECTION);
+$result = pg_exec($pg, "SELECT 1 FROM pg_user");
+$row = pg_fetch_row($result);
+tap_assert($row[0] == 1, "pg_exec successful");
+pg_close($pg);
+$pg = NULL;

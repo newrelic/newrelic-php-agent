@@ -65,7 +65,7 @@ static void nr_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
   COPY_BASIC(deprecated_capture_request_parameters);
   COPY_BASIC(check_cufa);
 
-  COPY_BASIC(predis_commands);
+  COPY_BASIC(predis_command_starts);
 
   dest->context_root = NULL;
 
