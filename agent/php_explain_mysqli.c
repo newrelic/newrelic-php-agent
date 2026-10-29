@@ -103,12 +103,13 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
 static zval* nr_php_explain_mysqli_prepare(zval* link,
                                            const char* query TSRMLS_DC);
 
-nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
-                                               zval* link,
-                                               const char* sql,
-                                               int sql_len,
-                                               nrtime_t start,
-                                               nrtime_t stop TSRMLS_DC) {
+nr_explain_plan_t* nr_php_explain_mysqli_query_params(const nrtxn_t* txn,
+                                                      zval* link,
+                                                      const char* sql,
+                                                      int sql_len,
+                                                      zval* params,
+                                                      nrtime_t start,
+                                                      nrtime_t stop TSRMLS_DC) {
   nrtime_t duration;
   nr_explain_plan_t* plan = NULL;
   char* query;
@@ -133,10 +134,20 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
   query = nr_strndup(sql, sql_len);
   plan = nr_php_explain_mysqli_issue(
       (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), NULL, 0, query,
-      NULL TSRMLS_CC);
+      params TSRMLS_CC);
   nr_free(query);
 
   return plan;
+}
+
+nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
+                                               zval* link,
+                                               const char* sql,
+                                               int sql_len,
+                                               nrtime_t start,
+                                               nrtime_t stop TSRMLS_DC) {
+  return nr_php_explain_mysqli_query_params(txn, link, sql, sql_len, NULL,
+                                            start, stop TSRMLS_CC);
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
