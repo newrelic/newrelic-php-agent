@@ -65,6 +65,8 @@ nr_app_harvest_stats_t* nr_app_get_or_create_thread_harvest(nrapp_t* app,
     return NULL;
   }
 
+  nr_app_tid_maps_check_owner(app, key);
+
   ah = (nr_app_harvest_stats_t*)nr_hashmap_index_get(app->harvest_map, key);
   if (ah) {
     return ah;
