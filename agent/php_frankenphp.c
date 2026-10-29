@@ -23,12 +23,15 @@
  */
 typedef struct _nr_php_frankenphp_worker_request_t {
   /*
-   * Set by the request handler's begin handler. Reset by
+   * Set by the request handler's begin handler, even when it can't begin a
+   * transaction: the request handler may still begin one with
+   * newrelic_start_transaction(), and that one has to end as the request's
+   * transaction too, not as the bootstrap transaction. Reset by
    * nr_php_frankenphp_handle_request_end, on entry to
    * frankenphp_handle_request and at RSHUTDOWN, so a value that a bailout
    * leaves behind ends with its worker lifetime.
    */
-  bool txn_begun;
+  bool in_progress;
 
   /*
    * The response's Content-Type and Content-Length, taken at the request
@@ -45,7 +48,7 @@ typedef struct _nr_php_frankenphp_worker_request_t {
 
 static nrt_thread_local nr_php_frankenphp_worker_request_t
     nr_php_frankenphp_worker_request
-    = {.txn_begun = false, .content_type = NULL, .content_length = -1};
+    = {.in_progress = false, .content_type = NULL, .content_length = -1};
 
 static void nr_php_frankenphp_clear_response_headers(void) {
   nr_free(nr_php_frankenphp_worker_request.content_type);
@@ -125,7 +128,7 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
   nrl_verbosedebug(NRL_INSTRUMENT, "frankenphp_request_handler_fcall_begin");
   // start web transaction at the start of web request handling
   nr_php_txn_begin(0, 0);
-  nr_php_frankenphp_worker_request.txn_begun = true;
+  nr_php_frankenphp_worker_request.in_progress = true;
 }
 
 static void nr_php_frankenphp_request_handler_fcall_end(
@@ -163,7 +166,7 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // nr_php_frankenphp_rshutdown resets this state after a request handler
   // bails out. Reset it here too, so that this call never acts on what an
   // earlier one left behind.
-  nr_php_frankenphp_worker_request.txn_begun = false;
+  nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 
   // If recording, end current transaction and record it as FrankenPHP worker
@@ -228,10 +231,10 @@ void nr_php_frankenphp_handle_request_end(void) {
   // In classic mode frankenphp_handle_request throws before calling the
   // request handler, and on the shutdown path it returns false without
   // calling it.
-  if (!nr_php_frankenphp_worker_request.txn_begun) {
+  if (!nr_php_frankenphp_worker_request.in_progress) {
     return;
   }
-  nr_php_frankenphp_worker_request.txn_begun = false;
+  nr_php_frankenphp_worker_request.in_progress = false;
 
   // FrankenPHP has reported any uncaught exception and flushed the output by
   // now. SG(sapi_headers).http_response_code holds the final status, and the
@@ -249,7 +252,7 @@ void nr_php_frankenphp_rshutdown(void) {
   // A request handler that bailed out (exit() or a fatal error) ended the
   // worker script without reaching nr_php_frankenphp_handle_request_end, and
   // the agent's shutdown path ends its transaction.
-  nr_php_frankenphp_worker_request.txn_begun = false;
+  nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 }
 #endif /* ZTS */

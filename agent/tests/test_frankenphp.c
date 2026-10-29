@@ -994,6 +994,44 @@ static void test_api_calls_inside_callback(void) {
 }
 
 /*
+ * The request handler's begin handler can't begin a transaction, here because
+ * no license key is configured, and the request handler begins one with
+ * newrelic_start_transaction() and tlib's default license key. That
+ * transaction is the request's: it's ended when frankenphp_handle_request
+ * returns, not at the next call, where it would be ended as the bootstrap one.
+ */
+static void test_api_started_txn_after_failed_begin(void) {
+  engine_create("newrelic.license=\n");
+  request_start(FAKE_CALL_AND_FINISH);
+
+  tlib_pass_if_null("failed begin: no bootstrap transaction", NRPRG(txn));
+  tlib_php_request_eval(
+      "$cb = function () {"
+      "  newrelic_start_transaction(ini_get('newrelic.appname'),"
+      "    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');"
+      "  newrelic_name_transaction('started_by_api');"
+      "};"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_true(
+      "failed begin: no transaction when the real function is entered",
+      fake.on_entry[0].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal(
+      "failed begin: sent when frankenphp_handle_request returns", 1,
+      captured_count);
+  tlib_pass_if_null("failed begin: no transaction left", NRPRG(txn));
+  tlib_pass_if_str_equal("failed begin: keeps its name",
+                         "WebTransaction/Custom/started_by_api",
+                         captured[0].name);
+  tlib_pass_if_false("failed begin: not a background job",
+                     captured[0].background, "background=%d",
+                     captured[0].background);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
  * The callback throws. The request's transaction is still open when
  * zend_call_function returns, and the agent's wrapper ends it only after the
  * real function returns, which FrankenPHP does after reporting the exception
@@ -1371,6 +1409,7 @@ void test_main(void* p NRUNUSED) {
   test_callback_with_a_parameter();
   test_requests_are_isolated();
   test_api_calls_inside_callback();
+  test_api_started_txn_after_failed_begin();
   test_callback_throws();
   test_nested_call_site();
   test_uncaught_exception_recorded_with_status_500();
