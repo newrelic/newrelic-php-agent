@@ -14,6 +14,26 @@
 #include "util_memory.h"
 #include "util_object.h"
 #include "util_strings.h"
+#include "util_time.h"
+
+/* The connection epoch of the link, or 0 if it has none. */
+static int64_t nr_mysqli_metadata_get_epoch(const nrobj_t* link) {
+  nr_status_t err = NR_SUCCESS;
+  int64_t epoch = nro_get_hash_long(link, "epoch", &err);
+
+  return (NR_SUCCESS == err && epoch > 0) ? epoch : 0;
+}
+
+/*
+ * Give the link a new connection epoch: the current time, or one more than the
+ * last epoch if the clock did not move forward.
+ */
+static void nr_mysqli_metadata_new_epoch(nrobj_t* link) {
+  int64_t previous = nr_mysqli_metadata_get_epoch(link);
+  int64_t now = (int64_t)nr_get_time();
+
+  nro_set_hash_long(link, "epoch", now > previous ? now : previous + 1);
+}
 
 /* Set a property, or clear it when the value is NULL. */
 static inline void nr_mysqli_metadata_set_property(nrobj_t* link,
@@ -81,6 +101,7 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
   link->flags = (long)nro_get_hash_long(link_obj, "flags", NULL);
   link->options = nro_get_hash_value(link_obj, "options", NULL);
   link->complete = (1 == nro_get_hash_boolean(link_obj, "complete", NULL));
+  link->epoch = (uint64_t)nr_mysqli_metadata_get_epoch(link_obj);
 
   ssl_obj = nro_get_hash_hash(link_obj, "ssl", NULL);
   link->ssl_key = ssl_obj ? nro_get_hash_string(ssl_obj, "key", NULL) : NULL;
@@ -129,6 +150,7 @@ nr_status_t nr_mysqli_metadata_set_connect(
   nro_set_hash_int(link, "port", (int)port);
   nro_set_hash_long(link, "flags", (int64_t)flags);
   nro_set_hash_boolean(link, "complete", 1);
+  nr_mysqli_metadata_new_epoch(link);
 
   nr_mysqli_metadata_save(metadata, handle, link);
 
@@ -191,6 +213,15 @@ nr_status_t nr_mysqli_metadata_set_user(nr_mysqli_metadata_t* metadata,
     nro_set_hash_string(link, "database", database);
   } else {
     nro_set_hash_none(link, "database");
+  }
+
+  /*
+   * The server drops the prepared statements of a connection when its user
+   * changes. A link the agent did not see connect has no connection to
+   * identify.
+   */
+  if (1 == nro_get_hash_boolean(link, "complete", NULL)) {
+    nr_mysqli_metadata_new_epoch(link);
   }
 
   nr_mysqli_metadata_save(metadata, handle, link);
