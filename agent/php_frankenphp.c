@@ -84,6 +84,12 @@ static bool nr_php_frankenphp_called_from_handle_request(
  * zend_objects_destroy_object does around a destructor, for the error group
  * callback to run. An exception that the callback throws is discarded, so
  * that FrankenPHP still reports the request handler's.
+ *
+ * Expects execute_data to be the request handler's frame, as its Observer
+ * end handler gets it, and exception to be the non-NULL EG(exception) that
+ * leaves it, other than an exit() or a graceful exit. NRPRG(txn) may be
+ * NULL: nr_php_error_record_exception checks it, as it does for
+ * newrelic_exception_handler.
  */
 static void nr_php_frankenphp_record_uncaught_exception(
     zend_execute_data* execute_data,
