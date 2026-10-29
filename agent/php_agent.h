@@ -101,7 +101,8 @@ extern zval* nr_php_backtrace(TSRMLS_D);
  * Purpose : Write a dump of the current VM position to a file descriptor.
  *
  * Params  : 1. The destination file descriptor.
- *           2. The maximum number of execution frames to write.
+ *           2. The maximum number of execution frames to write, or zero or
+ *              less for no limit. A line says when frames were left out.
  */
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
 
