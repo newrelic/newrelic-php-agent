@@ -12,6 +12,16 @@
 #include "util_strings.h"
 #include "util_time.h"
 
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+#if defined(__x86_64__)
+__asm__(".symver strtoll,strtoll@GLIBC_2.2.5");
+#elif defined(__aarch64__)
+__asm__(".symver strtoll,strtoll@GLIBC_2.17");
+#endif
+#endif
+#endif
+
 nrtime_t nr_parse_time(const char* str) {
   char* ep;
   int suffix_seen = 0;
