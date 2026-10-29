@@ -42,6 +42,8 @@ extern void nr_php_oci_statement_sql_set(const zval* stmt,
 /*
  * Purpose : Get the SQL saved for an oci8 statement.
  *
+ * Params  : 1. The oci8 statement resource.
+ *
  * Returns : The SQL, which stays owned by the store, or NULL if none was
  *           saved.
  */
@@ -49,6 +51,8 @@ extern const char* nr_php_oci_statement_sql_get(const zval* stmt);
 
 /*
  * Purpose : Count the entries in the store, for tests.
+ *
+ * Returns : The number of entries.
  */
 extern size_t nr_php_oci_statements_count(void);
 
