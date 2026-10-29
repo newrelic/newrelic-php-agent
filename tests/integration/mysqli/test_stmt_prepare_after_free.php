@@ -6,7 +6,8 @@
 
 /*DESCRIPTION
 A statement prepared after an earlier statement was freed, and that took the
-freed statement's object handle, SHALL be reported with its own SQL.
+freed statement's object handle, SHALL be reported with its own SQL. The agent
+SHALL NOT keep the freed statement's SQL for the object that took its handle.
 */
 
 /*SKIPIF

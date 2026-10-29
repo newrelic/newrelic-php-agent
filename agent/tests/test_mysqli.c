@@ -793,9 +793,18 @@ static void test_statement_link(TSRMLS_D) {
       "one entry", 1,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
 
-  /* Settings that do not replace the connection keep the link valid. */
+  /*
+   * A statement stays with the database it was prepared in: after select_db()
+   * the link is not used for it, until it is prepared again.
+   */
   nr_php_mysqli_metadata_set_database(link, "other");
-  tlib_pass_if_status_success("select_db keeps the link",
+  tlib_pass_if_status_failure("select_db: the statement is in another database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared in the new database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_metadata_set_database(link, "other");
+  tlib_pass_if_status_success("the same database selected again",
                               nr_php_mysqli_statement_link_get(stmt, &handle));
 
   /* A change of user and a connect replace the connection. */
@@ -933,6 +942,33 @@ static void free_fake_bound_statement(zval** stmt) {
   nr_free(my_stmt);
   nr_free(resource);
   nr_php_zval_free(stmt);
+}
+
+static void test_explain_bind_type_letter(void) {
+  tlib_pass_if_int_equal("double", 'd',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_DOUBLE));
+  tlib_pass_if_int_equal("long", 'i',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_LONG));
+  tlib_pass_if_int_equal("long long", 'i',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_LONGLONG));
+  tlib_pass_if_int_equal("string", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_STRING));
+  tlib_pass_if_int_equal("var string", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_VAR_STRING));
+  tlib_pass_if_int_equal("blob", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_BLOB));
+  tlib_pass_if_int_equal("null", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_NULL));
+  tlib_pass_if_int_equal("float", 's',
+                         nr_php_explain_mysqli_bind_type_letter(
+                             MYSQL_TYPE_FLOAT));
 }
 
 static void test_explain_bound_count_mocked(TSRMLS_D) {
@@ -1091,6 +1127,7 @@ void test_main(void* p NRUNUSED) {
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
     test_explain_bound_count(TSRMLS_C);
+    test_explain_bind_type_letter();
     test_explain_bound_count_mocked(TSRMLS_C);
 #endif
   }

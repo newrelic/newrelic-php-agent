@@ -147,8 +147,9 @@ extern void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link);
  *           2. Receives the handle of the link.
  *
  * Returns : NR_SUCCESS, or NR_FAILURE if the statement has no link saved, the
- *           link was freed, or its connection was replaced (the same handle
- *           can belong to another link by then).
+ *           link was freed, its connection was replaced (the same handle can
+ *           belong to another link by then), or the application selected
+ *           another database on the link after the statement was prepared.
  */
 extern nr_status_t nr_php_mysqli_statement_link_get(
     const zval* stmt,

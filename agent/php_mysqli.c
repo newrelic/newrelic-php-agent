@@ -1119,11 +1119,17 @@ void nr_php_mysqli_rshutdown() {
  * on, as the handle of the link and the epoch of the link's connection (see
  * nr_mysqli_metadata_link_t). The handle alone could belong to another link
  * once the first is freed; the epoch changes when the connection does.
+ *
+ * The database that the link had when the statement was prepared is kept too:
+ * a statement stays with the database it was prepared in when the application
+ * selects another one on the link, and the epoch does not change for that.
+ * The database is NULL for a link with none selected.
  */
 typedef struct {
   char* sql;
   nr_mysqli_metadata_link_handle_t link_handle;
   uint64_t link_epoch;
+  char* link_database;
 } nr_php_mysqli_statement_t;
 
 static void nr_php_mysqli_statement_destroy(void* value) {
@@ -1134,6 +1140,7 @@ static void nr_php_mysqli_statement_destroy(void* value) {
   }
 
   nr_free(statement->sql);
+  nr_free(statement->link_database);
   nr_free(statement);
 }
 
@@ -1178,7 +1185,11 @@ void nr_php_mysqli_statement_sql_set(const zval* stmt,
                                      nr_string_len_t sql_len) {
   nr_php_mysqli_statement_t* statement;
 
-  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+  /*
+   * The table does not take what it is given for a NULL object, so return
+   * before an entry or a copy of the SQL is made.
+   */
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
     return;
   }
 
@@ -1213,7 +1224,7 @@ void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
   nr_mysqli_metadata_link_t metadata;
   nr_php_mysqli_statement_t* statement;
 
-  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
     return;
   }
 
@@ -1225,6 +1236,9 @@ void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
       statement->link_handle
           = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
       statement->link_epoch = metadata.epoch;
+      nr_free(statement->link_database);
+      statement->link_database
+          = metadata.database ? nr_strdup(metadata.database) : NULL;
     }
     return;
   }
@@ -1234,6 +1248,7 @@ void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
   if (statement) {
     statement->link_handle = 0;
     statement->link_epoch = 0;
+    nr_free(statement->link_database);
     nr_php_mysqli_statement_prune(stmt, statement);
   }
 }
@@ -1261,6 +1276,17 @@ nr_status_t nr_php_mysqli_statement_link_get(
        == nr_mysqli_metadata_get(nr_php_mysqli_links(), statement->link_handle,
                                  &metadata))
       || !metadata.complete || (metadata.epoch != statement->link_epoch)) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * The explain connection is opened with the database the link has now. A
+   * statement prepared in another database would be explained in this one,
+   * where its tables can be missing or be different tables with the same
+   * names. A database that the application selects with a statement such as
+   * USE is not followed.
+   */
+  if (0 != nr_strcmp(metadata.database, statement->link_database)) {
     return NR_FAILURE;
   }
 

@@ -150,32 +150,37 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
                                             start, stop TSRMLS_CC);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
- * The number of parameters of a prepared statement, or 0 if it cannot be read.
+ * The number of parameters of a prepared statement, or -1 if it cannot be read.
  * The property is read here and not with nr_php_get_zval_object_property():
  * mysqli computes its properties and returns them in storage that belongs to
  * the caller.
  */
 static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   zval rv;
   const zval* count;
 
   if (NULL != EG(exception)) {
-    return 0;
+    return -1;
   }
 
   count = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
                              "param_count", sizeof("param_count") - 1, 1, &rv);
 
-  return (count && (IS_LONG == Z_TYPE_P(count))) ? Z_LVAL_P(count) : 0;
-#else
-  (void)stmt;
-  return 0;
-#endif
+  /*
+   * mysqli throws when the statement is closed or was never initialized. The
+   * exception is the agent's, not the application's: no exception was pending
+   * before the read.
+   */
+  if (NULL != EG(exception)) {
+    zend_clear_exception();
+    return -1;
+  }
+
+  return (count && (IS_LONG == Z_TYPE_P(count))) ? (long)Z_LVAL_P(count) : -1;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
  * Whether the mysqli extension that is loaded was built on mysqlnd. The data
  * read below is mysqlnd's: the agent is compiled against the headers of one
@@ -225,6 +230,18 @@ static const MYSQLND_STMT_DATA* nr_php_explain_mysqli_stmt_data(
   return (my_stmt && my_stmt->stmt) ? my_stmt->stmt->data : NULL;
 }
 
+char nr_php_explain_mysqli_bind_type_letter(unsigned char type) {
+  switch (type) {
+    case MYSQL_TYPE_DOUBLE:
+      return 'd';
+    case MYSQL_TYPE_LONGLONG:
+    case MYSQL_TYPE_LONG:
+      return 'i';
+    default:
+      return 's';
+  }
+}
+
 /* The number of variables that bind_param() bound. */
 long nr_php_explain_mysqli_bound_count(const zval* stmt) {
   const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
@@ -271,18 +288,7 @@ static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
       bound = Z_REFVAL_P(bound);
     }
 
-    switch (data->param_bind[i].type) {
-      case MYSQL_TYPE_DOUBLE:
-        format[i] = 'd';
-        break;
-      case MYSQL_TYPE_LONGLONG:
-      case MYSQL_TYPE_LONG:
-        format[i] = 'i';
-        break;
-      default:
-        format[i] = 's';
-        break;
-    }
+    format[i] = nr_php_explain_mysqli_bind_type_letter(data->param_bind[i].type);
 
     /* bind_param() takes its arguments by reference. */
     ZVAL_COPY(&copy, bound);
@@ -358,13 +364,17 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
      * Without the parameters the statement would fail to execute on the
      * explain connection, so it is not opened. The parameters are the ones
      * mysqli holds for the statement, if they can be read and there are as
-     * many as the statement has.
+     * many as the statement has. A statement whose number of parameters cannot
+     * be read is not opened either.
      */
-    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)
-        && (nr_php_explain_mysqli_stmt_param_count(stmt)
-            != nr_php_explain_mysqli_bound_count(stmt))) {
-      nr_free(query);
-      return NULL;
+    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)) {
+      long param_count = nr_php_explain_mysqli_stmt_param_count(stmt);
+
+      if ((param_count < 0)
+          || (param_count != nr_php_explain_mysqli_bound_count(stmt))) {
+        nr_free(query);
+        return NULL;
+      }
     }
   }
 #else
