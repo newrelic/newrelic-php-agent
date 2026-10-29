@@ -50,7 +50,6 @@ if (false === $link) {
   exit(1);
 }
 
-$tables = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name = 'TRIGGERS'";
 
 function split_transaction() {
   newrelic_end_transaction();

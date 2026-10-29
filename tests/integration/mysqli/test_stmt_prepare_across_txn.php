@@ -101,7 +101,6 @@ if (false === $link) {
 }
 
 $tables = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name = 'TRIGGERS'";
-$columns = "SELECT COLUMN_NAME FROM information_schema.columns WHERE column_name = 'TABLE_NAME'";
 
 function split_transaction() {
   newrelic_end_transaction();
