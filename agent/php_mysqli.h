@@ -123,6 +123,8 @@ extern void nr_php_mysqli_statement_sql_set(const zval* stmt,
 /*
  * Purpose : Get the SQL saved for a mysqli statement object.
  *
+ * Params  : 1. The mysqli_stmt object.
+ *
  * Returns : The SQL, which stays owned by the table, or NULL if none was
  *           saved.
  */
@@ -191,12 +193,20 @@ extern nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,
 
 /*
  * Purpose : Whether the transaction has an entry for a statement object.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : Non-zero if the transaction has an entry, zero if not.
  */
 extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle TSRMLS_DC);
 
 /*
  * Purpose : Whether the transaction has bound parameters for a statement
  *           object.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : Non-zero if parameters are saved for the statement, zero if not.
  */
 extern int nr_php_mysqli_query_has_bind(
     nr_php_object_handle_t handle TSRMLS_DC);
@@ -205,6 +215,11 @@ extern int nr_php_mysqli_query_has_bind(
  * Purpose : Make sure the transaction has an entry for a statement object, so
  *           that bound parameters can be saved for a statement that was
  *           prepared in an earlier transaction.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : NR_SUCCESS if the transaction has an entry for the statement now,
+ *           or NR_FAILURE if no entry could be made.
  */
 extern nr_status_t nr_php_mysqli_query_ensure(
     nr_php_object_handle_t handle TSRMLS_DC);
