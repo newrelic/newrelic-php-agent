@@ -421,7 +421,23 @@ static void test_memchr(void) {
   tlib_pass_if_ptr_equal("value present at buf[2]", &buf[2], rv);
 }
 
+static void test_secure_zero(void) {
+  char buf[8] = {'s', 'e', 'c', 'r', 'e', 't', '!', 'x'};
+  int i;
+
+  nr_secure_zero(NULL, 4);
+  nr_secure_zero(buf, 0);
+  tlib_pass_if_char_equal("zero size changes nothing", 's', buf[0]);
+
+  nr_secure_zero(buf, 7);
+  for (i = 0; i < 7; i++) {
+    tlib_pass_if_char_equal("byte is zero", 0, buf[i]);
+  }
+  tlib_pass_if_char_equal("byte past the size is untouched", 'x', buf[7]);
+}
+
 void test_main(void* p NRUNUSED) {
+  test_secure_zero();
   test_malloc_valid();
   test_calloc_0_valid();
   test_calloc_null_valid();

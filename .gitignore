@@ -8,6 +8,7 @@ pkg/
 
 # Test artifacts
 integration-tests.log
+tests/tls/certs/
 make/secrets.mk
 php_agent.log
 

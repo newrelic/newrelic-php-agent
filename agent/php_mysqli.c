@@ -19,6 +19,7 @@
 #include "php_mysqli_private.h"
 #include "fw_support.h"
 #include "nr_mysqli_metadata.h"
+#include "php_objtable.h"
 #include "util_memory.h"
 
 /*
@@ -47,6 +48,10 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
                                                  long option,
                                                  const char* value TSRMLS_DC);
 
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata);
+
 /*
  * Purpose : Create a blank query metadata array.
  *
@@ -74,6 +79,228 @@ static zval* nr_php_mysqli_query_find(nr_php_object_handle_t handle TSRMLS_DC);
 static zval* nr_php_mysqli_query_find_or_create(
     nr_php_object_handle_t handle TSRMLS_DC);
 
+/*
+ * PHP 8.0 and later: the store lives for the request and an entry is removed
+ * when its link is freed. PHP 7.x has no weak reference API: the store is per
+ * transaction, and a new link is kept from inheriting an old entry only by the
+ * reset when a link is created or closed. A subclass that never calls the
+ * parent constructor is a known gap there.
+ */
+nr_mysqli_metadata_t* nr_php_mysqli_links(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  return NRPRG_SHARED(mysqli_links);
+#else
+  return NRTXNGLOBAL(mysqli_links);
+#endif
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void nr_php_mysqli_link_handle_dtor(void* value) {
+  nr_mysqli_metadata_link_handle_t* handle = value;
+
+  if (NULL == handle) {
+    return;
+  }
+
+  nr_mysqli_metadata_remove(NRPRG_SHARED(mysqli_links), *handle);
+  nr_free(handle);
+}
+#endif
+
+void nr_php_mysqli_links_create(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  NRPRG_SHARED(mysqli_links) = nr_mysqli_metadata_create();
+  NRPRG_SHARED(mysqli_link_handles)
+      = nr_php_objtable_create(nr_php_mysqli_link_handle_dtor);
+#endif
+}
+
+void nr_php_mysqli_links_destroy(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* The destructors of the handles still in the table use the metadata. */
+  nr_php_objtable_destroy(&NRPRG_SHARED(mysqli_link_handles));
+  nr_mysqli_metadata_destroy(&NRPRG_SHARED(mysqli_links));
+#endif
+}
+
+int nr_php_mysqli_metadata_wanted(void) {
+  const nrtxn_t* txn = NRPRG(txn);
+
+  /*
+   * The metadata is used only to open the explain connection, so it is not
+   * kept, and the password in particular is not, when no explain plan can be
+   * produced.
+   */
+  return txn && txn->options.ep_enabled
+         && NR_SQL_NONE != txn->options.tt_recordsql
+         && 0 != txn->options.tt_slowsql;
+}
+
+/*
+ * Tie the metadata of a link to the life of the link object, so that it is
+ * dropped when the object is freed and a new object that reuses the handle
+ * cannot find it.
+ */
+static void nr_php_mysqli_metadata_track(const zval* link) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_mysqli_metadata_link_handle_t* handle;
+
+  if ((NULL == NRPRG_SHARED(mysqli_link_handles))
+      || nr_php_objtable_get(NRPRG_SHARED(mysqli_link_handles), link)) {
+    return;
+  }
+
+  handle = (nr_mysqli_metadata_link_handle_t*)nr_malloc(sizeof(*handle));
+  *handle = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
+  nr_php_objtable_set(NRPRG_SHARED(mysqli_link_handles), link, handle);
+#else
+  (void)link;
+#endif
+}
+
+/*
+ * Start a save for a link. Returns 0 if nothing is to be saved.
+ *
+ * When the transaction does not allow explain, the save is skipped and the
+ * link's entry is removed: the entry is now out of date, and an update that
+ * was dropped must not leave the old user or database for a later transaction
+ * to use.
+ */
+static int nr_php_mysqli_metadata_begin(const zval* link) {
+  if (NULL == link) {
+    return 0;
+  }
+
+  if (!nr_php_mysqli_metadata_wanted()) {
+    nr_php_mysqli_metadata_remove(link);
+    return 0;
+  }
+
+  nr_php_mysqli_metadata_track(link);
+  return 1;
+}
+
+int nr_php_mysqli_metadata_known(const zval* link) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  return link && NRPRG_SHARED(mysqli_link_handles)
+         && (NULL
+             != nr_php_objtable_get(NRPRG_SHARED(mysqli_link_handles), link));
+#else
+  (void)link;
+  return 0;
+#endif
+}
+
+void nr_php_mysqli_metadata_remove(const zval* link) {
+  if (NULL == link) {
+    return;
+  }
+
+  nr_mysqli_metadata_remove(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_objtable_del(NRPRG_SHARED(mysqli_link_handles), link);
+#endif
+}
+
+nr_status_t nr_php_mysqli_metadata_get(const zval* link,
+                                       nr_mysqli_metadata_link_t* out) {
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  if (NR_FAILURE
+      == nr_mysqli_metadata_get(
+          nr_php_mysqli_links(),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), out)) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * An entry made only by a setter, for a link the agent did not see connect,
+   * has no host or user: replaying it would connect to the ini defaults.
+   */
+  return out->complete ? NR_SUCCESS : NR_FAILURE;
+}
+
+nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
+                                               const char* host,
+                                               const char* user,
+                                               const char* password,
+                                               const char* database,
+                                               uint16_t port,
+                                               const char* socket,
+                                               long flags) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_connect(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), host, user,
+      password, database, port, socket, flags);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_database(const zval* link,
+                                                const char* database) {
+  if (NULL == database || !nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_database(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), database);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
+                                            const char* user,
+                                            const char* password,
+                                            const char* database) {
+  if (NULL == user || !nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_user(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), user, password,
+      database);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_option(const zval* link,
+                                              long option,
+                                              const char* value) {
+  if (NULL == value || !nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_option(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), option, value);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
+                                           const char* key,
+                                           const char* cert,
+                                           const char* ca,
+                                           const char* capath,
+                                           const char* cipher) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_ssl(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), key, cert, ca,
+      capath, cipher);
+}
+
+/*
+ * The metadata fields used below point into the store. PHP code runs while
+ * they are in use (the warnings of the connection calls can reach a user error
+ * handler), and a handler that closes or frees the original link would free
+ * them. That is a known limit; it is not guarded.
+ */
 zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
   zval* dup = NULL;
   int i;
@@ -83,9 +310,7 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
     return NULL;
   }
 
-  if (NR_FAILURE
-      == nr_mysqli_metadata_get(NRTXNGLOBAL(mysqli_links), Z_OBJ_HANDLE_P(orig),
-                                &metadata)) {
+  if (NR_FAILURE == nr_php_mysqli_metadata_get(orig, &metadata)) {
     return NULL;
   }
 
@@ -119,6 +344,11 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
         return NULL;
       }
     }
+  }
+
+  if (NR_FAILURE == nr_php_mysqli_link_set_ssl(dup, &metadata)) {
+    nr_php_zval_free(&dup);
+    return NULL;
   }
 
   if (NR_FAILURE == nr_php_mysqli_link_real_connect(dup, &metadata TSRMLS_CC)) {
@@ -402,33 +632,73 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   zval* argv[7] = {0};
   zend_ulong i;
   zval* retval = NULL;
+  const char* host;
+  const char* user;
+  const char* password;
 
 #define ADD_IF_INT_SET(null_ok, args, argc, value) \
-  if (value) {                                    \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_LONG(args[argc], value);                 \
-    argc++;                                       \
-  } else if (true == null_ok) {                   \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_NULL(args[argc]);                        \
-    argc++;                                       \
+  if (value) {                                     \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_LONG(args[argc], value);                  \
+    argc++;                                        \
+  } else if (true == null_ok) {                    \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_NULL(args[argc]);                         \
+    argc++;                                        \
   }
 
 #define ADD_IF_STR_SET(null_ok, args, argc, value) \
-  if (value) {                                    \
-    args[argc] = nr_php_zval_alloc();             \
-    nr_php_zval_str(args[argc], value);           \
-    argc++;                                       \
-  } else if (true == null_ok) {                   \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_NULL(args[argc]);                        \
-    argc++;                                       \
+  if (value) {                                     \
+    args[argc] = nr_php_zval_alloc();              \
+    nr_php_zval_str(args[argc], value);            \
+    argc++;                                        \
+  } else if (true == null_ok) {                    \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_NULL(args[argc]);                         \
+    argc++;                                        \
   }
 
-  ADD_IF_STR_SET(false, argv, argc,
-                 nr_php_mysqli_strip_persistent_prefix(metadata->host));
-  ADD_IF_STR_SET(false, argv, argc, metadata->user);
-  ADD_IF_STR_SET(false, argv, argc, metadata->password);
+  /*
+   * The application may have left out a leading argument and relied on the
+   * mysqli.default_* ini setting. The arguments that follow are positional, so
+   * a missing one cannot just be skipped: the next argument would take its
+   * place. If any of the arguments was given, fill in the missing host, user
+   * and password from the ini settings, read when the explain runs and not
+   * when the link connected. This includes the case where the
+   * application left out all three and only gave a later one, such as the
+   * flags: without the three leading arguments the flags (for example
+   * MYSQLI_CLIENT_SSL) cannot be passed on.
+   */
+  host = nr_php_mysqli_strip_persistent_prefix(metadata->host);
+  user = metadata->user;
+  password = metadata->password;
+  if (host || user || password || metadata->database || metadata->port
+      || metadata->socket || metadata->flags) {
+    if (NULL == host) {
+      /* The ini value may carry the "p:" prefix too: no persistent link. */
+      host = nr_php_mysqli_strip_persistent_prefix(
+          nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0));
+    }
+    if (NULL == user) {
+      user = nr_php_zend_ini_string(NR_PSTR("mysqli.default_user"), 0);
+    }
+    if (NULL == password) {
+      password = nr_php_zend_ini_string(NR_PSTR("mysqli.default_pw"), 0);
+    }
+    if (NULL == host) {
+      host = "";
+    }
+    if (NULL == user) {
+      user = "";
+    }
+    if (NULL == password) {
+      password = "";
+    }
+  }
+
+  ADD_IF_STR_SET(false, argv, argc, host);
+  ADD_IF_STR_SET(false, argv, argc, user);
+  ADD_IF_STR_SET(false, argv, argc, password);
 
   /*
    * We can only add the remaining metadata fields if we already have three
@@ -442,7 +712,8 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     ADD_IF_INT_SET(true, argv, argc, metadata->port);
     ADD_IF_STR_SET(true, argv, argc, metadata->socket);
     ADD_IF_INT_SET(false, argv, argc, metadata->flags);
-  }  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
+  }
+  retval = nr_php_call_user_func(link, "real_connect", argc, argv);
 
   for (i = 0; i < argc; i++) {
     nr_php_zval_free(&argv[i]);
@@ -497,6 +768,53 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
   nr_php_zval_free(&option_zv);
   nr_php_zval_free(&retval);
   nr_php_zval_free(&value_zv);
+
+  return status;
+}
+
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata) {
+  const char* values[5];
+  zval* argv[5] = {0};
+  zval* retval = NULL;
+  nr_status_t status = NR_SUCCESS;
+  size_t i;
+
+  values[0] = metadata->ssl_key;
+  values[1] = metadata->ssl_cert;
+  values[2] = metadata->ssl_ca;
+  values[3] = metadata->ssl_capath;
+  values[4] = metadata->ssl_cipher;
+
+  /*
+   * The application never called mysqli_ssl_set(), or called it with no
+   * values, so there is nothing to replay.
+   */
+  if ((NULL == values[0]) && (NULL == values[1]) && (NULL == values[2])
+      && (NULL == values[3]) && (NULL == values[4])) {
+    return NR_SUCCESS;
+  }
+
+  for (i = 0; i < 5; i++) {
+    argv[i] = nr_php_zval_alloc();
+    if (values[i]) {
+      nr_php_zval_str(argv[i], values[i]);
+    } else {
+      ZVAL_NULL(argv[i]);
+    }
+  }
+
+  retval = nr_php_call(link, "ssl_set", argv[0], argv[1], argv[2], argv[3],
+                       argv[4]);
+  if (!nr_php_is_zval_true(retval)) {
+    status = NR_FAILURE;
+  }
+
+  for (i = 0; i < 5; i++) {
+    nr_php_zval_free(&argv[i]);
+  }
+  nr_php_zval_free(&retval);
 
   return status;
 }
@@ -681,6 +999,49 @@ void nr_php_mysqli_remove_datastore_instance(const zval* mysqli_obj TSRMLS_DC) {
   nr_free(key);
 }
 
+/*
+ * mysqli_options() converts its value argument in place before it uses it, so
+ * after a successful call the value is a string for a string option and an
+ * integer for an integer option. The wrapper reads the value after that call:
+ * an object given to a string option is read as the string mysqli made from
+ * it, and its __toString() has run once. The cases other than a string or an
+ * integer are not reached from the wrapper.
+ */
+char* nr_php_mysqli_option_to_string(zval* value) {
+  zend_string* str;
+  char* term;
+
+  if (NULL == value) {
+    return NULL;
+  }
+
+  switch (Z_TYPE_P(value)) {
+    case IS_STRING:
+      return nr_strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
+    case IS_LONG:
+      return nr_formatf("%ld", (long)Z_LVAL_P(value));
+    case IS_TRUE:
+      return nr_strdup("1");
+    case IS_FALSE:
+      return nr_strdup("0");
+    case IS_DOUBLE:
+    case IS_NULL:
+      /*
+       * Converting these runs no user code.
+       */
+      str = zval_get_string(value);
+      term = nr_strndup(ZSTR_VAL(str), ZSTR_LEN(str));
+      zend_string_release(str);
+      return term;
+    default:
+      /*
+       * An object's __toString() would run user code a second time, so an
+       * object is not converted here.
+       */
+      return NULL;
+  }
+}
+
 const char* nr_php_mysqli_strip_persistent_prefix(const char* host) {
   if (host && 'p' == host[0] && ':' == host[1]) {
     return host + 2;
@@ -713,3 +1074,34 @@ void nr_php_mysqli_rshutdown() {
     nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
   }
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void nr_php_mysqli_statement_sql_destroy(void* sql) {
+  nr_free(sql);
+}
+
+void nr_php_mysqli_statement_sql_create_table(void) {
+  NRPRG_SHARED(mysqli_statement_sql)
+      = nr_php_objtable_create(nr_php_mysqli_statement_sql_destroy);
+}
+
+void nr_php_mysqli_statement_sql_set(const zval* stmt,
+                                     const char* sql,
+                                     nr_string_len_t sql_len) {
+  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+    return;
+  }
+
+  if ((NULL == sql) || (0 == sql_len)) {
+    nr_php_objtable_del(NRPRG_SHARED(mysqli_statement_sql), stmt);
+    return;
+  }
+
+  nr_php_objtable_set(NRPRG_SHARED(mysqli_statement_sql), stmt,
+                      nr_strndup(sql, sql_len));
+}
+
+const char* nr_php_mysqli_statement_sql_get(const zval* stmt) {
+  return nr_php_objtable_get(NRPRG_SHARED(mysqli_statement_sql), stmt);
+}
+#endif

@@ -35,4 +35,11 @@ extern nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
 extern void nr_php_pgsql_remove_datastore_instance(
     const zval* pgsql_conn TSRMLS_DC);
 
+/*
+ * Purpose : Destroy the datastore instance stored for a pgsql connection
+ *           object. This is the value destructor of the table in
+ *           shared_globals_t.pgsql_instances.
+ */
+extern void nr_php_pgsql_instance_destroy(void* instance);
+
 #endif /* PHP_PGSQL_HDR */

@@ -11,6 +11,7 @@
 #include "php_agent.h"
 #include "php_fibers.h"
 #include "php_newrelic.h"
+#include "php_objtable.h"
 #include "nr_mysqli_metadata.h"
 #include "util_hashmap.h"
 #include "util_memory.h"
@@ -51,20 +52,6 @@ static nr_hashmap_t* dummy_hashmap_datastore() {
 
 static void dtor_time(void* val) {
   nr_free(val);
-}
-
-static nr_hashmap_t* dummy_hashmap_time() {
-  nr_hashmap_t* h = nr_hashmap_create(dtor_time);
-  nrtime_t* ta = nr_malloc(sizeof(nrtime_t));
-  nrtime_t* tb = nr_malloc(sizeof(nrtime_t));
-  nrtime_t* tc = nr_malloc(sizeof(nrtime_t));
-  *ta = 1000;
-  *tb = 2000;
-  *tc = 3000;
-  nr_hashmap_set(h, NR_PSTR("a"), ta);
-  nr_hashmap_set(h, NR_PSTR("b"), tb);
-  nr_hashmap_set(h, NR_PSTR("c"), tc);
-  return h;
 }
 
 static void dtor_free_stack_str(void* e, NRUNUSED void* d) {
@@ -126,7 +113,7 @@ static ctx_globals_t* dummy_ctx_globals() {
   cg->datastore_connections = dummy_hashmap_datastore();
   cg->deprecated_capture_request_parameters = 1;
   cg->check_cufa = true;
-  cg->predis_commands = dummy_hashmap_time();
+  cg->predis_command_starts = nr_php_objtable_create(dtor_time);
   cg->context_root = NULL;  // Main ctx root should always be NULL
   cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
   cg->drupal_invoke_all_states = dummy_stack_data_bool();
@@ -141,7 +128,7 @@ static void free_ctx_globals(ctx_globals_t* cg) {
   nr_free(cg->mysql_last_conn);
   nr_free(cg->pgsql_last_conn);
   nr_hashmap_destroy(&cg->datastore_connections);
-  nr_hashmap_destroy(&cg->predis_commands);
+  nr_php_objtable_destroy(&cg->predis_command_starts);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_hooks);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_states);
   nr_stack_destroy_fields(&cg->wordpress_tags);
@@ -152,7 +139,7 @@ static void free_ctx_globals(ctx_globals_t* cg) {
 
 /*
  * Cleanup for a ctx_globals returned by nr_fiber_copy_ctx_globals: skips the
- * fields that are shallow-copied (datastore_connections, predis_commands)
+ * fields that are shallow-copied (datastore_connections, predis_command_starts)
  * since those are still owned by the source. Mirrors the ctx_globals section
  * of free_fiber_globals.
  */
@@ -237,14 +224,15 @@ static void test_copy_ctx_globals(void) {
   tlib_pass_if_int_equal("check_cufa is copied", true, copy->check_cufa);
 
   /*
-   * datastore_connections and predis_commands are shallow-copied: the copy
-   * must share the same hashmap pointer as the source.
+   * datastore_connections and predis_command_starts are shallow-copied: the
+   * copy must share the same pointer as the source.
    */
   tlib_pass_if_ptr_equal("datastore_connections is shared with src",
                          src->datastore_connections,
                          copy->datastore_connections);
-  tlib_pass_if_ptr_equal("predis_commands is shared with src",
-                         src->predis_commands, copy->predis_commands);
+  tlib_pass_if_ptr_equal("predis_command_starts is shared with src",
+                         src->predis_command_starts,
+                         copy->predis_command_starts);
 
   /*
    * drupal_http_request_segment is intentionally reset to NULL in the copy.
@@ -292,7 +280,7 @@ static ctx_globals_t* dummy_ctx_globals_null_strings() {
   cg->datastore_connections = dummy_hashmap_datastore();
   cg->deprecated_capture_request_parameters = 0;
   cg->check_cufa = false;
-  cg->predis_commands = dummy_hashmap_time();
+  cg->predis_command_starts = nr_php_objtable_create(dtor_time);
   cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
   cg->drupal_invoke_all_states = dummy_stack_data_bool();
   cg->wordpress_tags = dummy_stack_data_str();
