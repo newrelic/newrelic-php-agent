@@ -534,10 +534,11 @@ PHP_MINIT_FUNCTION(newrelic) {
 #ifdef ZTS
   /*
    * Registration ran the INI handlers with ZEND_INI_STAGE_STARTUP, which
-   * staged the INI wraprecs. PHP repeats those STARTUP-stage calls on every
-   * new thread; this flag makes the handlers skip staging for those.
+   * applied the process-global settings and staged the INI wraprecs. PHP
+   * repeats those STARTUP-stage calls on every new thread; this flag makes
+   * the handlers skip the process-global part for those.
    */
-  NR_PHP_PROCESS_GLOBALS(ini_wraprecs_staged) = 1;
+  NR_PHP_PROCESS_GLOBALS(ini_startup_done) = 1;
 #endif
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
