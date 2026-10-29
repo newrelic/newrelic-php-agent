@@ -1044,10 +1044,8 @@ static void test_explain_query_params(TSRMLS_D) {
   other = tlib_php_request_eval_expr("$other");
   params = tlib_php_request_eval_expr("$params");
 
-  txn->options.ep_enabled = 1;
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
   txn->options.ep_threshold = 0;
-  txn->options.tt_slowsql = 1;
-  txn->options.tt_recordsql = NR_SQL_OBFUSCATED;
 
   tlib_pass_if_null("no transaction", nr_php_explain_mysqli_query_params(
                                           NULL, link, select, nr_strlen(select),
