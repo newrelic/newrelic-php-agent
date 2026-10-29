@@ -50,7 +50,8 @@ typedef struct {
    * For the unnamed statement only: the start time of the transaction that
    * prepared it. The server destroys the unnamed statement with the next
    * query of almost any kind, so one that outlives its transaction is nearly
-   * never the one the next pg_execute() runs. 0 for a named statement.
+   * never the one the next pg_execute() runs. 0 for a named statement, and
+   * for an unnamed one prepared while no transaction was active.
    */
   nrtime_t txn_start;
 } nr_php_pgsql_statement_t;

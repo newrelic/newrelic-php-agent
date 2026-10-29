@@ -8,8 +8,6 @@
 An error handler that closes the connection while pg_query() is failing SHALL
 NOT break the query's segment, and pg_query() SHALL still be reported, without
 the instance of the connection that was closed.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -40,6 +38,8 @@ Datastore/instance/Postgres/ENV[PG_HOST]/ENV[PG_PORT]
 null
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind.
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 $conn = pg_connect($PG_CONNECTION, PGSQL_CONNECT_FORCE_NEW);
