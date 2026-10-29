@@ -33,6 +33,7 @@
  */
 static char* argv;
 static int fake_daemon_fd = -1;
+int tlib_php_use_fake_daemon_fd = 1;
 static zend_llist global_vars;
 static char* ini;
 static char* logfile;
@@ -124,8 +125,8 @@ static zend_string* ZEND_FASTCALL tlib_php_init_interned_string(const char* str,
 
 /* }}} */
 
-static nr_status_t stub_cmd_appinfo_tx(int daemon_fd, nrapp_t* app);
-static nr_status_t stub_cmd_txndata_tx(int daemon_fd, const nrtxn_t* txn);
+static nr_status_t stub_cmd_appinfo_tx(nrapp_t* app);
+static nr_status_t stub_cmd_txndata_tx(const nrtxn_t* txn);
 
 /* {{{ Public API functions */
 
@@ -146,7 +147,7 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
    * If you see flatbuffers on stdout when running tests, that's a bug!
    */
   fake_daemon_fd = nr_dup(1);
-  nr_set_daemon_fd(fake_daemon_fd);
+  nr_set_daemon_fd(tlib_php_use_fake_daemon_fd ? fake_daemon_fd : -1);
 
   sapi_module_struct tlib_module;
 
@@ -1085,7 +1086,7 @@ const char* app_connect_reply
       "   \"product_level\" : 40"
       "}";
 
-static nr_status_t stub_cmd_appinfo_tx(int daemon_fd NRUNUSED, nrapp_t* app) {
+static nr_status_t stub_cmd_appinfo_tx(nrapp_t* app) {
   /*
    * Fake just enough of the app to satisfy the agent.
    */
@@ -1109,8 +1110,7 @@ static nr_status_t stub_cmd_appinfo_tx(int daemon_fd NRUNUSED, nrapp_t* app) {
   return NR_SUCCESS;
 }
 
-static nr_status_t stub_cmd_txndata_tx(int daemon_fd NRUNUSED,
-                                       const nrtxn_t* txn NRUNUSED) {
+static nr_status_t stub_cmd_txndata_tx(const nrtxn_t* txn NRUNUSED) {
   /*
    * Discard any TXNDATA. In the longer term, we may want to capture this for
    * testing purposes.
