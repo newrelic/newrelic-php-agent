@@ -1088,7 +1088,11 @@ void nr_php_mysqli_statement_sql_create_table(void) {
 void nr_php_mysqli_statement_sql_set(const zval* stmt,
                                      const char* sql,
                                      nr_string_len_t sql_len) {
-  if (NULL == NRPRG_SHARED(mysqli_statement_sql)) {
+  /*
+   * The table does not take the SQL copy when the object is NULL, so return
+   * before the copy is made.
+   */
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
     return;
   }
 

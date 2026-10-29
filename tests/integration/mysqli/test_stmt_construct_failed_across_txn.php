@@ -6,7 +6,8 @@
 
 /*DESCRIPTION
 A statement whose constructor failed to prepare it SHALL NOT be reported with the
-SQL it was given.
+SQL it was given, and the agent SHALL NOT raise a warning or call the
+application's error handler while it finds out that the preparation failed.
 */
 
 /*SKIPIF
@@ -25,6 +26,7 @@ newrelic.transaction_tracer.explain_enabled = false
 /*EXPECT
 constructed
 execute threw
+error handler calls: 0
 */
 
 /*EXPECT_METRICS_EXIST
@@ -42,6 +44,12 @@ null
 require_once(realpath(dirname(__FILE__)) . '/mysqli.inc');
 
 mysqli_report(MYSQLI_REPORT_OFF);
+
+$handler_calls = 0;
+set_error_handler(function () use (&$handler_calls) {
+  $handler_calls++;
+  return true;
+});
 
 $link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB,
                        $MYSQL_PORT, $MYSQL_SOCKET);
@@ -62,3 +70,5 @@ try {
 } catch (Error $e) {
   echo "execute threw\n";
 }
+
+echo "error handler calls: " . $handler_calls . "\n";
