@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-A mysqli statement whose parameters of several types were bound in an earlier transaction SHALL be explained with the current values of the bound variables when it is executed in a later one.
+A mysqli statement whose parameters of several types (integer, double, string and NULL) were bound in an earlier transaction SHALL be explained when it is executed in a later one.
 */
 
 /*SKIPIF
