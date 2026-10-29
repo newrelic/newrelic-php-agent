@@ -111,6 +111,8 @@ extern void nr_php_mysqli_statement_sql_set(const zval* stmt,
 /*
  * Purpose : Get the SQL saved for a mysqli statement object.
  *
+ * Params  : 1. The mysqli_stmt object.
+ *
  * Returns : The SQL, which stays owned by the table, or NULL if none was
  *           saved.
  */
