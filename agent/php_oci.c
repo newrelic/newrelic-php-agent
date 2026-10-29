@@ -43,7 +43,9 @@ static void nr_php_oci_statements_collect_freed(void* value,
 
   /*
    * The resource list drops a resource when its last reference is released,
-   * and its id is not given to another resource.
+   * and its id is not given to another resource. A statement that was closed
+   * with oci_free_statement() but is still referenced stays in the list, and
+   * so does its entry, until the reference is released.
    */
   if (!zend_hash_index_exists(&EG(regular_list), (zend_ulong)statement->id)) {
     nr_vector_push_back(freed, (void*)(uintptr_t)statement->id);
@@ -54,7 +56,7 @@ static void nr_php_oci_statements_collect_freed(void* value,
  * The entries of freed statements are dropped when a new statement is parsed,
  * not when the statement is freed. The SQL of a statement that was freed stays
  * in memory until then, or until the request ends; it is bounded by the number
- * of statements that were parsed since the last parse.
+ * of statements that were freed since the last parse.
  */
 static void nr_php_oci_statements_sweep(void) {
   size_t i;
