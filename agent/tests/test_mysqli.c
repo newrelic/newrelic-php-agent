@@ -793,9 +793,18 @@ static void test_statement_link(TSRMLS_D) {
       "one entry", 1,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
 
-  /* Settings that do not replace the connection keep the link valid. */
+  /*
+   * A statement stays with the database it was prepared in: after select_db()
+   * the link is not used for it, until it is prepared again.
+   */
   nr_php_mysqli_metadata_set_database(link, "other");
-  tlib_pass_if_status_success("select_db keeps the link",
+  tlib_pass_if_status_failure("select_db: the statement is in another database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared in the new database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_metadata_set_database(link, "other");
+  tlib_pass_if_status_success("the same database selected again",
                               nr_php_mysqli_statement_link_get(stmt, &handle));
 
   /* A change of user and a connect replace the connection. */
