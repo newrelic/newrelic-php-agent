@@ -34,20 +34,18 @@ require_once(realpath(dirname(__FILE__)) . '/predis.inc');
 
 class EndsTransactionCommand extends Predis\Command\Command {
   private $ended = false;
-  private $calls = 0;
 
   public function getId() {
-    /*
-     * The first call is the agent's, which reads the command's name before the
-     * call starts. The transaction ends in the second, from executeCommand(),
-     * after the agent has started its segment.
-     */
-    $this->calls++;
-    if ($this->ended || $this->calls < 2) {
+    if ($this->ended) {
       return 'GET';
     }
+    /*
+     * The agent reads the command's name too, before the call starts on PHP 7.
+     * The transaction ends only when executeCommand() asks, through
+     * getCommandId(), which is after the agent has started its segment.
+     */
     foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-      if ('executeCommand' === $frame['function']) {
+      if ('getCommandId' === $frame['function']) {
         $this->ended = true;
         newrelic_end_transaction();
         newrelic_start_transaction(ini_get("newrelic.appname"));
