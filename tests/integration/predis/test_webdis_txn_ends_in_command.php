@@ -34,9 +34,16 @@ require_once(realpath(dirname(__FILE__)) . '/predis.inc');
 
 class EndsTransactionCommand extends Predis\Command\Command {
   private $ended = false;
+  private $calls = 0;
 
   public function getId() {
-    if ($this->ended) {
+    /*
+     * The first call is the agent's, which reads the command's name before the
+     * call starts. The transaction ends in the second, from executeCommand(),
+     * after the agent has started its segment.
+     */
+    $this->calls++;
+    if ($this->ended || $this->calls < 2) {
       return 'GET';
     }
     foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {

@@ -159,14 +159,6 @@ static void test_call_old_handler_segment(TSRMLS_D) {
   tlib_pass_if_not_null("same transaction: segment kept", segment);
 
   /*
-   * A bailout is returned and does not change the segment.
-   */
-  zcaught = nr_zend_call_old_handler_segment(&segment, old_handler_bails_out,
-                                             NULL, NULL);
-  tlib_pass_if_int_equal("bailout is returned", 1, zcaught);
-  tlib_pass_if_not_null("bailout, same transaction: segment kept", segment);
-
-  /*
    * The transaction ended during the call: the segment is cleared.
    */
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
@@ -188,18 +180,6 @@ static void test_call_old_handler_segment(TSRMLS_D) {
   tlib_pass_if_not_null("transaction restarted: a new transaction", NRPRG(txn));
 
   /*
-   * The same when the old handler bails out after the transaction ended, and
-   * the bailout is still returned.
-   */
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  zcaught = nr_zend_call_old_handler_segment(
-      &segment, old_handler_ends_txn_and_bails_out, NULL, NULL);
-  tlib_pass_if_int_equal("transaction ended with a bailout: bailout returned",
-                         1, zcaught);
-  tlib_pass_if_null("transaction ended with a bailout: segment cleared",
-                    segment);
-
-  /*
    * No segment: nothing to clear, and a NULL pointer is accepted.
    */
   segment = NULL;
@@ -210,6 +190,32 @@ static void test_call_old_handler_segment(TSRMLS_D) {
       = nr_zend_call_old_handler_segment(NULL, old_handler_noop, NULL, NULL);
   tlib_pass_if_int_equal("NULL pointer: no bailout", 0, zcaught);
 
+  tlib_php_request_end();
+
+  /*
+   * A bailout is returned and does not change the segment. A bailout leaves
+   * the engine with an unclean shutdown, so each case has a request of its own.
+   */
+  tlib_php_request_start();
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  zcaught = nr_zend_call_old_handler_segment(&segment, old_handler_bails_out,
+                                             NULL, NULL);
+  tlib_pass_if_int_equal("bailout is returned", 1, zcaught);
+  tlib_pass_if_not_null("bailout, same transaction: segment kept", segment);
+  tlib_php_request_end();
+
+  /*
+   * The same when the old handler bails out after the transaction ended, and
+   * the bailout is still returned.
+   */
+  tlib_php_request_start();
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  zcaught = nr_zend_call_old_handler_segment(
+      &segment, old_handler_ends_txn_and_bails_out, NULL, NULL);
+  tlib_pass_if_int_equal("transaction ended with a bailout: bailout returned",
+                         1, zcaught);
+  tlib_pass_if_null("transaction ended with a bailout: segment cleared",
+                    segment);
   tlib_php_request_end();
 }
 

@@ -178,11 +178,10 @@ int nr_zend_call_old_handler_segment(nr_segment_t** segment,
    * The function can run PHP code, such as an error handler, a callback or a
    * __toString() method, and that code can end the transaction. The segment
    * is freed with the transaction, and a transaction started afterwards is
-   * not the one the segment belongs to. The start time tells them apart, as it
-   * does for user function wrappers. NR_PHP_WRAPPER_TXN_CHANGED also compares
-   * the address of the transaction, which cannot find a change that the start
-   * time misses (a new transaction can get the address of the one that was
-   * freed), so it is not repeated here.
+   * not the one the segment belongs to. The start time identifies a
+   * transaction, as it does for user function wrappers. The address of the
+   * transaction is not compared: a new transaction can get the address of the
+   * one that was freed, so the address alone cannot tell them apart.
    */
   if (segment && *segment
       && nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
@@ -2088,6 +2087,18 @@ NR_INNER_WRAPPER(pg_execute) {
       break;
   }
 
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
+  zcaught = nr_zend_call_old_handler_segment(
+      &segment, nr_wrapper->oldhandler, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The statement is looked up after the call, and used before any PHP code
+   * can run again. pg_execute() converts its parameters to strings, which can
+   * run an object's __toString(), and an error handler can run when the
+   * statement fails: that code can end the transaction, which frees the
+   * statements saved for it.
+   */
   if (SUCCESS == rv) {
     char* key;
 
@@ -2109,10 +2120,6 @@ NR_INNER_WRAPPER(pg_execute) {
     query = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
   }
 
-  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-
-  zcaught = nr_zend_call_old_handler_segment(
-      &segment, nr_wrapper->oldhandler, INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
 

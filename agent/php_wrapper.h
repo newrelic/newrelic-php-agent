@@ -292,7 +292,8 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
  * ended and another one started. A segment started by the wrapper is freed with
  * its transaction, so a wrapper that started a segment of its own, and not the
  * auto_segment, must not use it after NR_PHP_WRAPPER_CALL when this is true.
- * It is only meaningful after NR_PHP_WRAPPER_CALL.
+ * It is only meaningful after NR_PHP_WRAPPER_CALL, and it needs the locals
+ * (txn and txn_start_time) that NR_PHP_WRAPPER_START declares.
  */
 #define NR_PHP_WRAPPER_TXN_CHANGED \
   (NRPRG(txn) != txn || nr_txn_start_time(NRPRG(txn)) != txn_start_time)
