@@ -8,8 +8,6 @@
 A transaction that the __toString() method of a bound parameter ends and starts
 again while mysqli_stmt_execute() runs SHALL NOT break the agent, and the
 statement SHALL NOT be recorded in either transaction.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -37,6 +35,8 @@ Datastore/operation/MySQL/select
 null
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind.
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 class EndsTransaction {

@@ -8,8 +8,6 @@
 A transaction that a command ends and starts again while
 WebdisConnection::executeCommand() runs SHALL NOT break the agent, and the
 command SHALL NOT be recorded in either transaction.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -30,6 +28,10 @@ done
 Datastore/operation/Redis/get
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind. On PHP 7 the agent wraps WebdisConnection::executeCommand();
+// from PHP 8 it instruments the method with before and after hooks, so there
+// the test checks that the agent survives the transaction ending in the call.
 require_once(realpath(dirname(__FILE__)) . '/predis.inc');
 
 class EndsTransactionCommand extends Predis\Command\Command {
