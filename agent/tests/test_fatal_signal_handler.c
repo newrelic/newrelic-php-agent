@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -141,18 +142,21 @@ static void test_signal_in_thread(const char* what, void* (*fn)(void*)) {
  * can be in:
  *  - with its PHP storage: the stack is read, and there is no "not available"
  * message;
- *  - after ts_free_thread (the storage was released: the agent's globals
- * shutdown ran): the message says so, and nothing is read;
- *  - a thread that PHP does not know: reading faults, the guard catches it, and
- * the message says that reading failed;
- *  - after ts_free_thread and a new ts_resource: the globals constructor ran
- * again, so the stack is read as for a live thread. Each call has to come back,
- * and the thread has to be able to end.
+ *  - after ts_free_thread, or a thread that PHP does not know:
+ * tsrm_get_ls_cache() is NULL, so nothing is read, and the message says that
+ * the thread has no PHP state;
+ *  - a thread whose TSRM key points at memory that cannot be read (the storage
+ * was damaged, or freed in a way the key does not show): reading faults, the
+ * guard catches it, and the message says that reading failed;
+ *  - after ts_free_thread and a new ts_resource: the stack is read as for a
+ * live thread. Each call has to come back, and the thread has to be able to
+ * end.
  */
 typedef enum {
   THREAD_LIVE,
   THREAD_FREED,
   THREAD_UNKNOWN,
+  THREAD_UNREADABLE,
   THREAD_REALLOCATED
 } thread_kind_t;
 
@@ -160,6 +164,23 @@ typedef struct {
   int fd;
   thread_kind_t kind;
 } guard_args_t;
+
+/*
+ * In a thread that has its PHP storage: makes the current execute data point at
+ * a page that cannot be read, as damaged storage would, so that the guard's
+ * read of the first frame faults. Returns the page.
+ */
+static void* make_frame_unreadable(void) {
+  void* page = mmap(NULL, 4096, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+  EG(current_execute_data) = (zend_execute_data*)page;
+  return page;
+}
+
+static void restore_frame(void* page) {
+  EG(current_execute_data) = NULL;
+  munmap(page, 4096);
+}
 
 static void prepare_thread(thread_kind_t kind) {
   switch (kind) {
@@ -174,6 +195,10 @@ static void prepare_thread(thread_kind_t kind) {
       break;
     case THREAD_UNKNOWN:
       break;
+    case THREAD_UNREADABLE:
+      (void)ts_resource(0);
+      ZEND_TSRMLS_CACHE_UPDATE();
+      break;
     case THREAD_REALLOCATED:
       (void)ts_resource(0);
       ts_free_thread();
@@ -185,11 +210,21 @@ static void prepare_thread(thread_kind_t kind) {
 
 static void* thread_guarded_backtrace(void* p) {
   guard_args_t* args = (guard_args_t*)p;
+  void* page = NULL;
 
   prepare_thread(args->kind);
+  if (THREAD_UNREADABLE == args->kind) {
+    page = make_frame_unreadable();
+  }
   nr_php_guarded_backtrace_fd(args->fd);
-  /* the thread can have storage that nothing else would free */
-  ts_free_thread();
+  if (THREAD_UNREADABLE == args->kind) {
+    restore_frame(page);
+  }
+  /* a thread that was given storage frees it */
+  if (THREAD_LIVE == args->kind || THREAD_REALLOCATED == args->kind
+      || THREAD_UNREADABLE == args->kind) {
+    ts_free_thread();
+  }
   return NULL;
 }
 
@@ -221,11 +256,12 @@ static char* guarded_backtrace_output(thread_kind_t kind) {
 }
 
 /*
- * Several threads in the guard at once, each one a thread PHP does not know, so
- * that every one of them faults and jumps back: the guard must not depend on
- * anything shared between threads (the fault handler must not be swapped in and
- * out, for example), so every one of them comes back with the message, and the
- * handlers of the fault signals are the same as before.
+ * Several threads in the guard at once, each with a key that points at memory
+ * that cannot be read, so that every one of them faults and jumps back: the
+ * guard must not depend on anything shared between threads (the fault handler
+ * must not be swapped in and out, for example), so every one of them comes back
+ * with the message, and the handlers of the fault signals are the same as
+ * before.
  */
 #define GUARD_THREADS 4
 #define GUARD_ROUNDS 10
@@ -236,19 +272,23 @@ static volatile int guard_failures;
 static void* thread_guard_rounds(void* arg NRUNUSED) {
   int round;
 
+  (void)ts_resource(0);
+  ZEND_TSRMLS_CACHE_UPDATE();
   pthread_barrier_wait(&guard_barrier);
   for (round = 0; round < GUARD_ROUNDS; round++) {
     char path[] = "/tmp/test_fatal_signal_handler.XXXXXX";
     char out[256] = {0};
     int fd = mkstemp(path);
+    void* page;
 
     if (fd < 0) {
       __sync_fetch_and_add(&guard_failures, 1);
       continue;
     }
     unlink(path);
+    page = make_frame_unreadable();
     nr_php_guarded_backtrace_fd(fd);
-    ts_free_thread();
+    restore_frame(page);
     lseek(fd, 0, SEEK_SET);
     if (read(fd, out, sizeof(out) - 1) <= 0
         || NULL == strstr(out, "reading it failed")) {
@@ -256,6 +296,7 @@ static void* thread_guard_rounds(void* arg NRUNUSED) {
     }
     close(fd);
   }
+  ts_free_thread();
   return NULL;
 }
 
@@ -311,10 +352,14 @@ static void test_guard_in_this_process(void) {
 
   check_guard_output("a thread with PHP storage: no message", THREAD_LIVE,
                      NULL);
-  check_guard_output("a thread whose storage was released: says so",
-                     THREAD_FREED, "the thread's PHP state was released");
-  check_guard_output("a thread PHP does not know: the guard catches the fault",
-                     THREAD_UNKNOWN, "reading it failed");
+  check_guard_output("a thread whose storage was released: no PHP state",
+                     THREAD_FREED, "the thread has no PHP state");
+  check_guard_output("a thread PHP does not know: no PHP state", THREAD_UNKNOWN,
+                     "the thread has no PHP state");
+  check_guard_output(
+      "a thread whose storage cannot be read: the guard catches "
+      "the fault",
+      THREAD_UNREADABLE, "reading it failed");
   check_guard_output("a thread with new storage after a release: reads again",
                      THREAD_REALLOCATED, NULL);
 

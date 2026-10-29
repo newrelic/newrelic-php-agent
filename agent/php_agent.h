@@ -106,9 +106,14 @@ extern zval* nr_php_backtrace(TSRMLS_D);
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
 
 /*
- * Purpose : Write the PHP stack of the current thread to fd, unless reading
- *           it faults (a thread whose PHP storage was already freed). Used by
- *           the fatal signal handler; extern for its unit test.
+ * Purpose : Write the PHP stack of the current thread to fd, for the fatal
+ *           signal handler, unless it cannot be read: a thread that has no PHP
+ *           state (thread-safe PHP) gets a line that says so, and a read that
+ *           faults is caught and gets a line that says that it failed.
+ *
+ * Params  : 1. The destination file descriptor.
+ *
+ * Returns : Nothing. The caller reraises the signal it is handling.
  */
 extern void nr_php_guarded_backtrace_fd(int fd);
 
