@@ -15,6 +15,16 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+#if defined(__x86_64__)
+__asm__(".symver sscanf,sscanf@GLIBC_2.7");
+#elif defined(__aarch64__)
+__asm__(".symver sscanf,sscanf@GLIBC_2.17");
+#endif
+#endif
+#endif
+
 /*
  * txnName is hashed against a bit-rotated hash of the caller's path hash.
  *

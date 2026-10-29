@@ -39,6 +39,16 @@
 #include <procfs.h>
 #endif
 
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+#if defined(__x86_64__)
+__asm__(".symver strtoll,strtoll@GLIBC_2.2.5");
+#elif defined(__aarch64__)
+__asm__(".symver strtoll,strtoll@GLIBC_2.17");
+#endif
+#endif
+#endif
+
 #define timeval_to_micros(T) \
   (int64_t)(((int64_t)(T).tv_sec * 1000000) + (int64_t)(T).tv_usec)
 
