@@ -17,7 +17,7 @@
 #include "php_agent.h"
 #include "util_system.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 #include "ext/mysqli/php_mysqli_structs.h"
 #endif
 
@@ -867,7 +867,7 @@ static void test_statement_link(TSRMLS_D) {
 }
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 static void test_explain_bound_count(TSRMLS_D) {
   zval* stmt;
   zval* other;
@@ -1037,6 +1037,8 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
+#endif
+#ifdef NR_PHP_MYSQLI_MYSQLND
     test_explain_bound_count(TSRMLS_C);
     test_explain_bind_type_letter();
     test_explain_bound_count_mocked(TSRMLS_C);

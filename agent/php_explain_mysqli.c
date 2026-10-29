@@ -18,7 +18,7 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
 #include "ext/mysqli/php_mysqli_structs.h"
 #endif
 
@@ -170,6 +170,7 @@ static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
   return (count && (IS_LONG == Z_TYPE_P(count))) ? (long)Z_LVAL_P(count) : -1;
 }
 
+#ifdef NR_PHP_MYSQLI_MYSQLND
 /*
  * Whether the mysqli extension that is loaded was built on mysqlnd. The data
  * read below is mysqlnd's: the agent is compiled against the headers of one
@@ -305,6 +306,7 @@ static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
 
   return status;
 }
+#endif /* NR_PHP_MYSQLI_MYSQLND */
 #endif
 
 nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
@@ -359,16 +361,18 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
      */
     if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)) {
       long param_count = nr_php_explain_mysqli_stmt_param_count(stmt);
+      long bound_count = 0;
 
-      if ((param_count < 0)
-          || (param_count != nr_php_explain_mysqli_bound_count(stmt))) {
+#ifdef NR_PHP_MYSQLI_MYSQLND
+      bound_count = nr_php_explain_mysqli_bound_count(stmt);
+#endif
+
+      if ((param_count < 0) || (param_count != bound_count)) {
         nr_free(query);
         return NULL;
       }
     }
   }
-#else
-  (void)stmt;
 #endif
 
   if (NULL == query) {
@@ -560,7 +564,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+#ifndef NR_PHP_MYSQLI_MYSQLND
   (void)app_stmt;
 #endif
 
@@ -582,7 +586,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
       goto end;
     }
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef NR_PHP_MYSQLI_MYSQLND
   else if (app_stmt && (NULL == params)
            && (nr_php_explain_mysqli_bound_count(app_stmt) > 0)) {
     /*
