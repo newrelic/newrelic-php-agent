@@ -7,6 +7,8 @@
 #include "php_agent.h"
 
 #include <dlfcn.h>
+#include <pthread.h>
+#include <setjmp.h>
 #include <signal.h>
 
 #include "php_api_distributed_trace.h"
@@ -86,6 +88,17 @@ static char* php_newrelic_init_daemon_path(void) {
 }
 
 /*
+ * Whether this thread's PHP storage was torn down (its module globals were shut
+ * down, as ts_free_thread does for a thread that is ending). The fatal signal
+ * handler does not read the PHP stack of such a thread: its executor globals
+ * are being or have been freed. It is false for a thread that never ran the
+ * globals constructor (a thread PHP does not know), which is the case the guard
+ * in nr_php_guarded_backtrace_fd is for. A new set of storage for the same
+ * thread clears it again.
+ */
+static nrt_thread_local volatile sig_atomic_t nr_php_thread_storage_freed = 0;
+
+/*
  * Zend uses newrelic_globals as the auto-generated name for the per-request
  * globals and then uses the same name to pass the per-request globals
  * as a parameter to the GINIT and GSHUTDOWN functions.
@@ -105,6 +118,7 @@ void zm_globals_ctor_newrelic(
 PHP_GINIT_FUNCTION(newrelic) {
   NR_UNUSED_TSRMLS;
 
+  nr_php_thread_storage_freed = 0;
   php_newrelic_init_globals(newrelic_globals);
 }
 
@@ -117,6 +131,8 @@ void zm_globals_dtor_newrelic(
 #endif
 PHP_GSHUTDOWN_FUNCTION(newrelic) {
   NR_UNUSED_TSRMLS;
+
+  nr_php_thread_storage_freed = 1;
 
   /*
    * Note that this is allocated the first time RINIT is called, rather than
@@ -784,16 +800,86 @@ PHP_MINIT_FUNCTION(newrelic) {
   return (SUCCESS);
 }
 
+/*
+ * Where to jump back to when reading the PHP stack faults, and whether this
+ * thread is reading it. Each thread has its own, because several threads can be
+ * in the fatal signal handler at once. Nothing about the signal handlers
+ * changes while a thread reads the stack: the fatal signal handler itself finds
+ * the flag and jumps back.
+ */
+static nrt_thread_local sigjmp_buf nr_php_backtrace_guard;
+static nrt_thread_local volatile sig_atomic_t nr_php_backtrace_guard_active = 0;
+
+/*
+ * Write the PHP stack of the current thread, unless reading it faults.
+ *
+ * The PHP stack is read from the thread's PHP globals. A thread that PHP has
+ * already torn down (a thread that is exiting, for example in FrankenPHP when
+ * the C library aborts on a corrupted heap while it frees the thread) has no
+ * valid globals any more: reading them faults inside the handler, and that
+ * second signal replaces the original one, so the original is never reported
+ * and the core is not that of the original failure.
+ *
+ * A thread whose storage the globals shutdown released is known (the flag
+ * set there), and its stack is not read. For any other thread that has no valid
+ * globals (a thread PHP does not know, damaged storage) the fault is caught
+ * here, and the original signal is reraised.
+ *
+ * A fault while the flag is set makes nr_php_fatal_signal_handler jump back
+ * to the sigsetjmp below. The handler runs with every signal blocked, and a
+ * blocked synchronous SIGSEGV ends the process, so the two signals of a fault
+ * are unblocked for the length of the read. If the fault happened while a lock
+ * was held, the lock stays held, which does not matter as the process ends
+ * next.
+ */
+void nr_php_guarded_backtrace_fd(int fd) {
+  sigset_t faults;
+  sigset_t old_mask;
+
+  if (nr_php_thread_storage_freed) {
+    nr_write(fd, NR_PSTR("PHP execution trace not available: the thread's PHP "
+                         "state was released\n"));
+    return;
+  }
+
+  sigemptyset(&faults);
+  sigaddset(&faults, SIGSEGV);
+  sigaddset(&faults, SIGBUS);
+  pthread_sigmask(SIG_UNBLOCK, &faults, &old_mask);
+
+  if (0 == sigsetjmp(nr_php_backtrace_guard, 1)) {
+    TSRMLS_FETCH();
+    nr_php_backtrace_guard_active = 1;
+    nr_php_backtrace_fd(fd, -1 /* unlimited */ TSRMLS_CC);
+  } else {
+    nr_write(fd,
+             NR_PSTR("PHP execution trace not available: reading it failed\n"));
+  }
+  nr_php_backtrace_guard_active = 0;
+
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+}
+
 static void nr_php_fatal_signal_handler(int sig) {
   int fd;
 
-  TSRMLS_FETCH();
+  if (nr_php_backtrace_guard_active) {
+    if (SIGSEGV == sig || SIGBUS == sig) {
+      /* the read of the PHP stack faulted */
+      siglongjmp(nr_php_backtrace_guard, 1);
+    }
+    /* another fatal signal while the stack was read: no trace, and the process
+     * ends with this signal */
+    nr_php_backtrace_guard_active = 0;
+    nr_signal_reraise(sig);
+    return;
+  }
 
   fd = nrl_get_log_fd();
   if (fd >= 0) {
     nr_signal_tracer_common(sig);  // TODO: nr_backtrace_fd (fd);
     nr_write(fd, NR_PSTR("PHP execution trace follows...\n"));
-    nr_php_backtrace_fd(fd, -1 /* unlimited */ TSRMLS_CC);
+    nr_php_guarded_backtrace_fd(fd);
   }
 
   /*

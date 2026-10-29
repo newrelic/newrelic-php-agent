@@ -106,6 +106,13 @@ extern zval* nr_php_backtrace(TSRMLS_D);
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
 
 /*
+ * Purpose : Write the PHP stack of the current thread to fd, unless reading
+ *           it faults (a thread whose PHP storage was already freed). Used by
+ *           the fatal signal handler; extern for its unit test.
+ */
+extern void nr_php_guarded_backtrace_fd(int fd);
+
+/*
  * Purpose : Same as nr_php_backtrace_to_json but designed as a callback
  * parameter for nr_segment_datastore_end().
  */
