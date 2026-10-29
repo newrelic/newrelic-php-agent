@@ -985,6 +985,85 @@ static void test_explain_bound_count_mocked(TSRMLS_D) {
 }
 #endif
 
+/*
+ * The cases in which the explain for a query run with parameters, as
+ * mysqli_execute_query() does, makes no explain connection. The plan itself
+ * needs a database and is covered by the integration tests.
+ */
+static void test_explain_query_params(TSRMLS_D) {
+  nrtxn_t* txn;
+  zval* link;
+  zval* other;
+  zval* params;
+  const char* select = "SELECT * FROM t WHERE id = ?";
+  const char* insert = "INSERT INTO t VALUES (?)";
+  nrtime_t stop = 10 * NR_TIME_DIVISOR;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  tlib_php_request_eval(
+      "$link = (new ReflectionClass('mysqli'))->newInstanceWithoutConstructor();"
+      "$other = new stdClass;"
+      "$params = [1];");
+  link = tlib_php_request_eval_expr("$link");
+  other = tlib_php_request_eval_expr("$other");
+  params = tlib_php_request_eval_expr("$params");
+
+  txn->options.ep_enabled = 1;
+  txn->options.ep_threshold = 0;
+  txn->options.tt_slowsql = 1;
+  txn->options.tt_recordsql = NR_SQL_OBFUSCATED;
+
+  tlib_pass_if_null("no transaction",
+                    nr_php_explain_mysqli_query_params(
+                        NULL, link, select, nr_strlen(select), params, 0,
+                        stop TSRMLS_CC));
+  tlib_pass_if_null("no sql", nr_php_explain_mysqli_query_params(
+                                  txn, link, NULL, 0, params, 0,
+                                  stop TSRMLS_CC));
+  tlib_pass_if_null("not a link", nr_php_explain_mysqli_query_params(
+                                      txn, other, select, nr_strlen(select),
+                                      params, 0, stop TSRMLS_CC));
+  tlib_pass_if_null("sql that cannot be explained",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, insert, nr_strlen(insert), params, 0,
+                        stop TSRMLS_CC));
+
+  /* A link that was never connected has no parameters to connect with. */
+  tlib_pass_if_null("link with nothing saved",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0,
+                        stop TSRMLS_CC));
+  tlib_pass_if_int_equal("explain state is restored", 0,
+                         NRTXNGLOBAL(generating_explain_plan));
+
+  /* The query without parameters takes the same path. */
+  tlib_pass_if_null("without parameters",
+                    nr_php_explain_mysqli_query(txn, link, select,
+                                                nr_strlen(select), 0,
+                                                stop TSRMLS_CC));
+
+  txn->options.ep_threshold = 20 * NR_TIME_DIVISOR;
+  tlib_pass_if_null("faster than the threshold",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0,
+                        stop TSRMLS_CC));
+
+  txn->options.ep_threshold = 0;
+  txn->options.ep_enabled = 0;
+  tlib_pass_if_null("explain disabled",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0,
+                        stop TSRMLS_CC));
+
+  nr_php_zval_free(&link);
+  nr_php_zval_free(&other);
+  nr_php_zval_free(&params);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
@@ -1004,6 +1083,7 @@ void test_main(void* p NRUNUSED) {
     test_link_metadata_lifetime();
 #endif
     test_option_to_string();
+    test_explain_query_params(TSRMLS_C);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_statement_sql(TSRMLS_C);
     test_statement_link(TSRMLS_C);
