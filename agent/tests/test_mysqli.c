@@ -1036,7 +1036,8 @@ static void test_explain_query_params(TSRMLS_D) {
   txn = NRPRG(txn);
 
   tlib_php_request_eval(
-      "$link = (new ReflectionClass('mysqli'))->newInstanceWithoutConstructor();"
+      "$link = (new "
+      "ReflectionClass('mysqli'))->newInstanceWithoutConstructor();"
       "$other = new stdClass;"
       "$params = [1];");
   link = tlib_php_request_eval_expr("$link");
@@ -1048,47 +1049,46 @@ static void test_explain_query_params(TSRMLS_D) {
   txn->options.tt_slowsql = 1;
   txn->options.tt_recordsql = NR_SQL_OBFUSCATED;
 
-  tlib_pass_if_null("no transaction",
-                    nr_php_explain_mysqli_query_params(
-                        NULL, link, select, nr_strlen(select), params, 0,
-                        stop TSRMLS_CC));
-  tlib_pass_if_null("no sql", nr_php_explain_mysqli_query_params(
-                                  txn, link, NULL, 0, params, 0,
-                                  stop TSRMLS_CC));
+  tlib_pass_if_null("no transaction", nr_php_explain_mysqli_query_params(
+                                          NULL, link, select, nr_strlen(select),
+                                          params, 0, stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "no sql", nr_php_explain_mysqli_query_params(txn, link, NULL, 0, params,
+                                                   0, stop TSRMLS_CC));
   tlib_pass_if_null("not a link", nr_php_explain_mysqli_query_params(
                                       txn, other, select, nr_strlen(select),
                                       params, 0, stop TSRMLS_CC));
-  tlib_pass_if_null("sql that cannot be explained",
-                    nr_php_explain_mysqli_query_params(
-                        txn, link, insert, nr_strlen(insert), params, 0,
-                        stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "sql that cannot be explained",
+      nr_php_explain_mysqli_query_params(txn, link, insert, nr_strlen(insert),
+                                         params, 0, stop TSRMLS_CC));
 
   /* A link that was never connected has no parameters to connect with. */
-  tlib_pass_if_null("link with nothing saved",
-                    nr_php_explain_mysqli_query_params(
-                        txn, link, select, nr_strlen(select), params, 0,
-                        stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "link with nothing saved",
+      nr_php_explain_mysqli_query_params(txn, link, select, nr_strlen(select),
+                                         params, 0, stop TSRMLS_CC));
   tlib_pass_if_int_equal("explain state is restored", 0,
                          NRTXNGLOBAL(generating_explain_plan));
 
   /* The query without parameters takes the same path. */
-  tlib_pass_if_null("without parameters",
-                    nr_php_explain_mysqli_query(txn, link, select,
-                                                nr_strlen(select), 0,
-                                                stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "without parameters",
+      nr_php_explain_mysqli_query(txn, link, select, nr_strlen(select), 0,
+                                  stop TSRMLS_CC));
 
   txn->options.ep_threshold = 20 * NR_TIME_DIVISOR;
-  tlib_pass_if_null("faster than the threshold",
-                    nr_php_explain_mysqli_query_params(
-                        txn, link, select, nr_strlen(select), params, 0,
-                        stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "faster than the threshold",
+      nr_php_explain_mysqli_query_params(txn, link, select, nr_strlen(select),
+                                         params, 0, stop TSRMLS_CC));
 
   txn->options.ep_threshold = 0;
   txn->options.ep_enabled = 0;
-  tlib_pass_if_null("explain disabled",
-                    nr_php_explain_mysqli_query_params(
-                        txn, link, select, nr_strlen(select), params, 0,
-                        stop TSRMLS_CC));
+  tlib_pass_if_null(
+      "explain disabled",
+      nr_php_explain_mysqli_query_params(txn, link, select, nr_strlen(select),
+                                         params, 0, stop TSRMLS_CC));
 
   nr_php_zval_free(&link);
   nr_php_zval_free(&other);
