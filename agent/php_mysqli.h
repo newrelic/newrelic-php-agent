@@ -142,6 +142,17 @@ extern const char* nr_php_mysqli_statement_sql_get(const zval* stmt);
 extern void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link);
 
 /*
+ * Purpose : Save again the connection and the database that the link of a
+ *           statement object has now. A statement made with stmt_init() is
+ *           prepared later, and the application can select another database
+ *           in between.
+ *
+ * Params  : 1. The mysqli_stmt object. Nothing is done if no link was saved
+ *              for it, or if the link has no complete metadata any more.
+ */
+extern void nr_php_mysqli_statement_link_refresh(const zval* stmt);
+
+/*
  * Purpose : Get the handle of the link a statement object was prepared on, if
  *           the link still has the connection the statement was prepared on.
  *

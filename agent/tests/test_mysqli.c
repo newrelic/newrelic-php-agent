@@ -807,6 +807,15 @@ static void test_statement_link(TSRMLS_D) {
   tlib_pass_if_status_success("the same database selected again",
                               nr_php_mysqli_statement_link_get(stmt, &handle));
 
+  /* A statement that is prepared after select_db() belongs to the new one. */
+  nr_php_mysqli_metadata_set_database(link, "third");
+  tlib_pass_if_status_failure("select_db again: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(stmt);
+  tlib_pass_if_status_success("refreshed after the prepare",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(NULL);
+
   /* A change of user and a connect replace the connection. */
   nr_php_mysqli_metadata_set_user(link, "v", "pw", NULL);
   tlib_pass_if_status_failure("change_user: the statement is stale",

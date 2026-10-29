@@ -1863,6 +1863,14 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
   nr_php_mysqli_statement_save(
       mysqli_stmt_obj, (IS_TRUE == Z_TYPE_P(return_value)) ? sqlstr : NULL,
       sqlstrlen TSRMLS_CC);
+
+  /*
+   * The statement was made by stmt_init() and is prepared now: it belongs to
+   * the connection and the database the link has at this moment.
+   */
+  if (IS_TRUE == Z_TYPE_P(return_value)) {
+    nr_php_mysqli_statement_link_refresh(mysqli_stmt_obj);
+  }
 #else
   nr_php_mysqli_statement_save(mysqli_stmt_obj, sqlstr, sqlstrlen TSRMLS_CC);
 #endif
