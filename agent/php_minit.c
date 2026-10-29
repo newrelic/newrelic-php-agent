@@ -128,8 +128,9 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
   /*
    * Remove this thread's per-thread harvest stats entry from every app's
    * harvest_map so it is not left dangling after the thread exits.
-   * Also removes the per-thread RNG state entry from rnd_map and the
-   * per-thread Composer detection status entry from composer_map.
+   * Also removes the per-thread RNG state entry from rnd_map, the
+   * per-thread Composer detection status entry from composer_map, and the
+   * thread's tid_owner_map record.
    */
   if (nr_agent_applist) {
     uint64_t key = (uint64_t)nr_gettid();
@@ -137,7 +138,9 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
     nrt_mutex_lock(&nr_agent_applist->applist_lock);
     for (int i = 0; i < nr_agent_applist->num_apps; i++) {
       nrapp_t* app = nr_agent_applist->apps[i];
-      if (app && (app->harvest_map || app->rnd_map || app->composer_map)) {
+      if (app
+          && (app->harvest_map || app->rnd_map || app->composer_map
+              || app->tid_owner_map)) {
         nrt_mutex_lock(&app->app_lock);
         nr_app_tid_maps_evict(app, key);
         nrt_mutex_unlock(&app->app_lock);
@@ -561,6 +564,15 @@ PHP_MINIT_FUNCTION(newrelic) {
 #endif
 #endif
   nr_php_register_ini_entries(module_number TSRMLS_CC);
+#ifdef ZTS
+  /*
+   * Registration ran the INI handlers with ZEND_INI_STAGE_STARTUP, which
+   * applied the process-global settings and staged the INI wraprecs. PHP
+   * repeats those STARTUP-stage calls on every new thread; this flag makes
+   * the handlers skip the process-global part for those.
+   */
+  NR_PHP_PROCESS_GLOBALS(ini_startup_done) = 1;
+#endif
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
   disbad:
