@@ -899,8 +899,7 @@ static void test_explain_bound_count(TSRMLS_D) {
  * A statement object whose mysqli data is built by hand, laid out as mysqlnd
  * lays it out, with param_count bound variables.
  */
-static zval* new_fake_bound_statement(unsigned int param_count,
-                                      int with_bind) {
+static zval* new_fake_bound_statement(unsigned int param_count, int with_bind) {
   zval* stmt;
   mysqli_object* intern;
   MYSQLI_RESOURCE* resource = nr_zalloc(sizeof(MYSQLI_RESOURCE));
@@ -920,7 +919,8 @@ static zval* new_fake_bound_statement(unsigned int param_count,
       "$stmt = (new ReflectionClass('mysqli_stmt'))"
       "->newInstanceWithoutConstructor();");
   stmt = tlib_php_request_eval_expr("$stmt");
-  intern = (mysqli_object*)((char*)Z_OBJ_P(stmt) - XtOffsetOf(mysqli_object, zo));
+  intern
+      = (mysqli_object*)((char*)Z_OBJ_P(stmt) - XtOffsetOf(mysqli_object, zo));
   intern->ptr = resource;
 
   return stmt;
@@ -945,30 +945,24 @@ static void free_fake_bound_statement(zval** stmt) {
 }
 
 static void test_explain_bind_type_letter(void) {
-  tlib_pass_if_int_equal("double", 'd',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_DOUBLE));
-  tlib_pass_if_int_equal("long", 'i',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_LONG));
-  tlib_pass_if_int_equal("long long", 'i',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_LONGLONG));
-  tlib_pass_if_int_equal("string", 's',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_STRING));
-  tlib_pass_if_int_equal("var string", 's',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_VAR_STRING));
-  tlib_pass_if_int_equal("blob", 's',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_BLOB));
-  tlib_pass_if_int_equal("null", 's',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_NULL));
-  tlib_pass_if_int_equal("float", 's',
-                         nr_php_explain_mysqli_bind_type_letter(
-                             MYSQL_TYPE_FLOAT));
+  tlib_pass_if_int_equal(
+      "double", 'd', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_DOUBLE));
+  tlib_pass_if_int_equal(
+      "long", 'i', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_LONG));
+  tlib_pass_if_int_equal(
+      "long long", 'i',
+      nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_LONGLONG));
+  tlib_pass_if_int_equal(
+      "string", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_STRING));
+  tlib_pass_if_int_equal(
+      "var string", 's',
+      nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_VAR_STRING));
+  tlib_pass_if_int_equal(
+      "blob", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_BLOB));
+  tlib_pass_if_int_equal(
+      "null", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_NULL));
+  tlib_pass_if_int_equal(
+      "float", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_FLOAT));
 }
 
 static void test_explain_bound_count_mocked(TSRMLS_D) {
