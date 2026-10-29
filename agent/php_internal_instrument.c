@@ -1333,6 +1333,75 @@ NR_INNER_WRAPPER(mysqli_general_query) {
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+/*
+ * Handle
+ *   mysqli_result|bool mysqli_execute_query ( mysqli $mysql, string $query,
+ *                                             ?array $params = null )
+ *   mysqli_result|bool mysqli::execute_query ( string $query,
+ *                                              ?array $params = null )
+ *
+ * The call prepares, binds, executes and fetches in one step, so there is no
+ * statement object to keep: the query and its parameters are the arguments.
+ */
+NR_INNER_WRAPPER(mysqli_execute_query) {
+  char* sqlstr = NULL;
+  nr_string_len_t sqlstrlen = 0;
+  zval* params = NULL;
+  zval* mysqli_obj = NULL;
+  int zcaught = 0;
+  nr_segment_t* segment = NULL;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "os|a!",
+                                  &mysqli_obj, &sqlstr, &sqlstrlen, &params)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "s|a!", &sqlstr,
+                                    &sqlstrlen, &params)) {
+      sqlstr = "(unknown sql)";
+      sqlstrlen = nr_strlen(sqlstr);
+      params = NULL;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (nrlikely(NULL != segment)) {
+    nr_datastore_instance_t* instance = NULL;
+    nr_explain_plan_t* plan = NULL;
+
+    /*
+     * Set the stop time now so that we don't include the explain plan time.
+     */
+    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj TSRMLS_CC);
+
+    if ((0 == NRTXNGLOBAL(generating_explain_plan))
+        && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
+      plan = nr_php_explain_mysqli_query_params(
+          NRPRG(txn), mysqli_obj, sqlstr, sqlstrlen, params,
+          segment->start_time, segment->stop_time TSRMLS_CC);
+    }
+
+    nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
+                               NR_DATASTORE_MYSQL, instance TSRMLS_CC);
+
+    nr_explain_plan_destroy(&plan);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+#endif /* PHP 8.2+ */
+
 #define NR_PHP_PREPARED_STATEMENT_UNKNOWN "(prepared statement)"
 
 /*
@@ -3627,6 +3696,9 @@ NR_OUTER_WRAPPER(mysqli_multi_query)
 NR_OUTER_WRAPPER(mysqli_options)
 NR_OUTER_WRAPPER(mysqli_prepare)
 NR_OUTER_WRAPPER(mysqli_query)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+NR_OUTER_WRAPPER(mysqli_execute_query)
+#endif
 NR_OUTER_WRAPPER(mysqli_real_connect)
 NR_OUTER_WRAPPER(mysqli_ssl_set)
 NR_OUTER_WRAPPER(mysqli_change_user)
@@ -3642,6 +3714,9 @@ NR_OUTER_WRAPPER(mysqliC_multi_query)
 NR_OUTER_WRAPPER(mysqliC_options)
 NR_OUTER_WRAPPER(mysqliC_prepare)
 NR_OUTER_WRAPPER(mysqliC_query)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+NR_OUTER_WRAPPER(mysqliC_execute_query)
+#endif
 NR_OUTER_WRAPPER(mysqliC_real_connect)
 NR_OUTER_WRAPPER(mysqliC_ssl_set)
 NR_OUTER_WRAPPER(mysqliC_change_user)
@@ -4135,6 +4210,10 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli_options", mysqli_options, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_prepare", mysqli_prepare, mysqli_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_query", mysqli_query, mysqli_general_query, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  NR_INTERNAL_WRAPREC("mysqli_execute_query", mysqli_execute_query,
+                      mysqli_execute_query, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("mysqli_real_query", mysqli_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_real_connect", mysqli_real_connect,
@@ -4160,6 +4239,10 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli::prepare", mysqliC_prepare, mysqli_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::query", mysqliC_query, mysqli_general_query, 0,
                       0)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  NR_INTERNAL_WRAPREC("mysqli::execute_query", mysqliC_execute_query,
+                      mysqli_execute_query, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("mysqli::real_connect", mysqliC_real_connect,
                       mysqli_real_connect, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::ssl_set", mysqliC_ssl_set, mysqli_ssl_set, 0, 0)
