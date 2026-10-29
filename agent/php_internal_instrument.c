@@ -3145,6 +3145,10 @@ NR_INNER_WRAPPER(frankenphp_handle_request) {
 
   // Let frankenphp take over
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  // Not reached when the request handler bails out (exit() or a fatal error):
+  // the agent's shutdown path ends the transaction then.
+  nr_php_frankenphp_handle_request_end();
   nrl_verbosedebug(NRL_INIT, "frankenphp_handle_request done");
 }
 #endif

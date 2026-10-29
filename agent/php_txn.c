@@ -1255,9 +1255,17 @@ void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC) {
   }
 }
 
-static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn TSRMLS_DC) {
-  char* content_type;
-  int content_length;
+/*
+ * With read_response_headers, the Content-Type and Content-Length are read
+ * from the response headers, and the given values are ignored. Without it,
+ * the given values are recorded: NULL and -1 record none.
+ */
+static void nr_php_txn_set_response_header_attributes(
+    nrtxn_t* txn,
+    bool read_response_headers,
+    const char* content_type,
+    int content_length) {
+  char* response_content_type = NULL;
 
   if (NULL == txn) {
     return;
@@ -1267,11 +1275,15 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn TSRMLS_DC) {
     return;
   }
 
-  content_type = nr_php_get_response_content_type(TSRMLS_C);
-  nr_txn_set_string_attribute(txn, nr_txn_response_content_type, content_type);
-  nr_free(content_type);
+  if (read_response_headers) {
+    response_content_type = nr_php_get_response_content_type();
+    content_type = response_content_type;
+    content_length = nr_php_get_response_content_length();
+  }
 
-  content_length = nr_php_get_response_content_length(TSRMLS_C);
+  nr_txn_set_string_attribute(txn, nr_txn_response_content_type, content_type);
+  nr_free(response_content_type);
+
   if (content_length < 0) {
     return;
   }
@@ -1280,7 +1292,11 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn TSRMLS_DC) {
                             content_length);
 }
 
-nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
+static nr_status_t nr_php_txn_end_internal(int ignoretxn,
+                                           int in_post_deactivate,
+                                           bool read_response_headers,
+                                           const char* content_type,
+                                           int content_length) {
   nr_status_t ret;
 
   if (NULL == NRPRG(txn)) {
@@ -1352,7 +1368,8 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
     nr_framework_create_metric(TSRMLS_C);
 
-    nr_php_txn_set_response_header_attributes(txn TSRMLS_CC);
+    nr_php_txn_set_response_header_attributes(txn, read_response_headers,
+                                              content_type, content_length);
 
     nr_php_txn_handle_fpm_error(txn TSRMLS_CC);
 
@@ -1419,4 +1436,13 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
   nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
 
   return NR_SUCCESS;
+}
+
+nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
+  return nr_php_txn_end_internal(ignoretxn, in_post_deactivate, true, NULL, -1);
+}
+
+nr_status_t nr_php_txn_end_with_response_headers(const char* content_type,
+                                                 int content_length) {
+  return nr_php_txn_end_internal(0, 0, false, content_type, content_length);
 }
