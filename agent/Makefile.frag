@@ -86,6 +86,7 @@ TEST_BINARIES = \
 	tests/test_datastore \
 	tests/test_environment \
 	tests/test_fibers \
+	tests/test_frankenphp \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
 	tests/test_fw_laravel \

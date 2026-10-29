@@ -266,6 +266,21 @@ extern nr_status_t nr_php_txn_end(int ignoretxn,
                                   int in_post_deactivate TSRMLS_DC);
 
 /*
+ * Purpose : End the transaction as nr_php_txn_end(0, 0) does, but record the
+ *           given Content-Type and Content-Length instead of reading them from
+ *           the response headers. For a caller that ends the transaction after
+ *           the SAPI has destroyed them.
+ *
+ * Params  : 1. The Content-Type to record, or NULL to record none.
+ *           2. The Content-Length to record, or -1 to record none.
+ *
+ * Returns : As nr_php_txn_end.
+ */
+extern nr_status_t nr_php_txn_end_with_response_headers(
+    const char* content_type,
+    int content_length);
+
+/*
  * Purpose : Check if the given extension is loaded.
  *
  * Params  : 1. The extension name.
