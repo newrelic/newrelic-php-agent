@@ -42,11 +42,6 @@ null
 
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
-function split_transaction() {
-  newrelic_end_transaction();
-  newrelic_start_transaction(ini_get("newrelic.appname"));
-}
-
 $users = "SELECT usename FROM pg_user WHERE usename = $1";
 
 $conn = pg_connect($PG_CONNECTION, PGSQL_CONNECT_FORCE_NEW);
