@@ -288,7 +288,8 @@ static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
       bound = Z_REFVAL_P(bound);
     }
 
-    format[i] = nr_php_explain_mysqli_bind_type_letter(data->param_bind[i].type);
+    format[i]
+        = nr_php_explain_mysqli_bind_type_letter(data->param_bind[i].type);
 
     /* bind_param() takes its arguments by reference. */
     ZVAL_COPY(&copy, bound);
