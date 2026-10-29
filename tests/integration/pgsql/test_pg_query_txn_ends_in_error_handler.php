@@ -8,8 +8,6 @@
 A transaction that an error handler ends and starts again while pg_query() is
 failing SHALL NOT break the agent, and the query SHALL NOT be recorded in either
 transaction.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -35,6 +33,8 @@ Datastore/operation/Postgres/select
 null
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind.
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 $conn = pg_connect($PG_CONNECTION, PGSQL_CONNECT_FORCE_NEW);

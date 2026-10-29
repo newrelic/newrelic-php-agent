@@ -9,8 +9,6 @@ A transaction that a function of the application ends and starts again while
 PDO::query() or PDOStatement::execute() runs the SQL that calls it SHALL NOT
 break the agent, and the statements SHALL NOT be recorded in either
 transaction.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -36,6 +34,8 @@ Datastore/operation/SQLite/select
 null
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind.
 $pdo = new PDO('sqlite::memory:');
 $pdo->sqliteCreateFunction('nr_end_txn', function () {
   newrelic_end_transaction();

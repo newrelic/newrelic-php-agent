@@ -8,8 +8,6 @@
 A transaction that the cache callback of Memcached::get() ends and starts again
 SHALL NOT break the agent, and the call SHALL NOT be recorded in either
 transaction.
-
-The use of freed memory this guards against is only detected under valgrind.
 */
 
 /*SKIPIF
@@ -34,6 +32,8 @@ Datastore/operation/Memcached/get
 null
 */
 
+// The use of freed memory that this test guards against is only detected
+// under valgrind.
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 $memcached = new Memcached();
