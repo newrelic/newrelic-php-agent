@@ -857,16 +857,51 @@ void nr_php_guarded_backtrace_fd(int fd) {
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 }
 
-static void nr_php_fatal_signal_handler(int sig) {
+/*
+ * A SIGSEGV or SIGBUS is a fault of the read unless the signal was sent: with
+ * kill(), raise(), sigqueue() or by a timer or an asynchronous I/O completion.
+ * The codes of the signals that were sent are listed, not those of the faults,
+ * so that a fault code that a kernel or an architecture adds later (a memory
+ * tag mismatch, for example) is still taken for a fault.
+ */
+bool nr_php_signal_is_fault(int sig, const siginfo_t* info) {
+  if (SIGSEGV != sig && SIGBUS != sig) {
+    return false;
+  }
+  if (NULL == info) {
+    return true;
+  }
+  switch (info->si_code) {
+    case SI_USER:
+    case SI_QUEUE:
+    case SI_TIMER:
+    case SI_MESGQ:
+    case SI_ASYNCIO:
+#ifdef SI_TKILL
+    case SI_TKILL:
+#endif
+#ifdef SI_SIGIO
+    case SI_SIGIO:
+#endif
+      return false;
+    default:
+      return true;
+  }
+}
+
+static void nr_php_fatal_signal_handler(int sig,
+                                        siginfo_t* info,
+                                        void* context NRUNUSED) {
   int fd;
 
   if (NULL != nr_php_backtrace_guard) {
     /*
-     * A signal while the PHP stack is read. A SIGSEGV or SIGBUS is the read
-     * faulting (a kill() of one of them is taken for that too). Another fatal
-     * signal gives up the trace: the process ends with that signal.
+     * A signal while the PHP stack is read. A fault of the read (SIGSEGV or
+     * SIGBUS from the kernel) jumps back. Any other signal, including a
+     * SIGSEGV that was sent with kill(), gives up the trace: the process ends
+     * with that signal.
      */
-    if (SIGSEGV == sig || SIGBUS == sig) {
+    if (nr_php_signal_is_fault(sig, info)) {
       siglongjmp(*nr_php_backtrace_guard, 1);
     }
     nr_php_backtrace_guard = NULL;
@@ -924,7 +959,7 @@ void nr_php_late_initialization(void) {
    * telling us not to.
    */
   if (0 == (NR_PHP_PROCESS_GLOBALS(special_flags).no_signal_handler)) {
-    nr_signal_handler_install(nr_php_fatal_signal_handler);
+    nr_signal_handler_install_siginfo(nr_php_fatal_signal_handler);
   }
 
   NR_PHP_PROCESS_GLOBALS(appenv) = nr_php_get_environment(TSRMLS_C);

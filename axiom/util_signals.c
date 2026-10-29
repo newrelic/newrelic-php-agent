@@ -136,6 +136,14 @@ static void default_fatal_signal_handler(int sig) {
   nr_signal_reraise(sig);
 }
 
+static void install_on_fatal_signals(const struct sigaction* sa) {
+  sigaction(SIGSEGV, sa, 0);
+  sigaction(SIGBUS, sa, 0);
+  sigaction(SIGFPE, sa, 0);
+  sigaction(SIGILL, sa, 0);
+  sigaction(SIGABRT, sa, 0);
+}
+
 void nr_signal_handler_install(void (*handler)(int sig)) {
   struct sigaction sa;
 
@@ -144,9 +152,19 @@ void nr_signal_handler_install(void (*handler)(int sig)) {
   nr_memset(&sa, 0, sizeof(sa));
   sa.sa_handler = handler ? handler : default_fatal_signal_handler;
   sigfillset(&sa.sa_mask);
-  sigaction(SIGSEGV, &sa, 0);
-  sigaction(SIGBUS, &sa, 0);
-  sigaction(SIGFPE, &sa, 0);
-  sigaction(SIGILL, &sa, 0);
-  sigaction(SIGABRT, &sa, 0);
+  install_on_fatal_signals(&sa);
+}
+
+void nr_signal_handler_install_siginfo(void (*handler)(int sig,
+                                                       siginfo_t* info,
+                                                       void* context)) {
+  struct sigaction sa;
+
+  nr_signal_tracer_prep();
+
+  nr_memset(&sa, 0, sizeof(sa));
+  sa.sa_sigaction = handler;
+  sa.sa_flags = SA_SIGINFO;
+  sigfillset(&sa.sa_mask);
+  install_on_fatal_signals(&sa);
 }

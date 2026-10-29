@@ -13,6 +13,7 @@
  * PHP specific.
  */
 
+#include <signal.h>
 #include <stdbool.h>
 
 #ifndef PHP_AGENT_HDR
@@ -117,6 +118,19 @@ extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
  * Returns : Nothing. The caller reraises the signal it is handling.
  */
 extern void nr_php_guarded_backtrace_fd(int fd);
+
+/*
+ * Purpose : Tell a fault from a signal that was sent. The fatal signal handler
+ *           uses it while the PHP stack is read, to jump back only for a fault
+ *           of the read.
+ *
+ * Params  : 1. The signal number.
+ *           2. The details of the signal (si_code); NULL is taken for a fault.
+ *
+ * Returns : True for a SIGSEGV or SIGBUS that the kernel raised, false for any
+ *           other signal and for one that was sent (kill(), raise(), ...).
+ */
+extern bool nr_php_signal_is_fault(int sig, const siginfo_t* info);
 
 /*
  * Purpose : Same as nr_php_backtrace_to_json but designed as a callback
@@ -252,8 +266,8 @@ extern nr_status_t nr_php_txn_begin(const char* appnames,
  *              a configured default (see nr_php_use_license()).
  */
 extern void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
-                                                   const char* appnames,
-                                                   const char* license);
+                                                  const char* appnames,
+                                                  const char* license);
 
 /*
  * Purpose : Perform the transaction ending tasks that have to be performed at

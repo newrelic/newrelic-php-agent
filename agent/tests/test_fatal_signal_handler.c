@@ -148,6 +148,7 @@ static void test_signal_in_thread(const char* what, void* (*fn)(void*)) {
  *  - a thread whose TSRM key points at memory that cannot be read (the storage
  * was damaged, or freed in a way the key does not show): reading faults, the
  * guard catches it, and the message says that reading failed;
+ * guard catches it, and the message says that reading failed;
  *  - after ts_free_thread and a new ts_resource: the stack is read as for a
  * live thread. Each call has to come back, and the thread has to be able to
  * end.
@@ -371,7 +372,59 @@ static void test_guard_in_this_process(void) {
 
 #endif /* ZTS */
 
+/*
+ * A SIGSEGV or SIGBUS that was sent is not a fault of the read: kill(),
+ * raise(), sigqueue(), a timer and the like. Every code the kernel uses for a
+ * fault is.
+ */
+static void check_fault(const char* what,
+                        bool expected,
+                        int sig,
+                        const siginfo_t* info) {
+  tlib_pass_if_bool_equal(what, expected, nr_php_signal_is_fault(sig, info));
+}
+
+static void test_signal_is_fault(void) {
+  siginfo_t info;
+
+  nr_memset(&info, 0, sizeof(info));
+
+  info.si_code = SEGV_MAPERR;
+  check_fault("SEGV_MAPERR", true, SIGSEGV, &info);
+  info.si_code = SEGV_ACCERR;
+  check_fault("SEGV_ACCERR", true, SIGSEGV, &info);
+  info.si_code = BUS_ADRALN;
+  check_fault("BUS_ADRALN", true, SIGBUS, &info);
+  info.si_code = BUS_ADRERR;
+  check_fault("BUS_ADRERR", true, SIGBUS, &info);
+  info.si_code = BUS_OBJERR;
+  check_fault("BUS_OBJERR", true, SIGBUS, &info);
+#ifdef SI_KERNEL
+  /* x86: an access to a non-canonical address. */
+  info.si_code = SI_KERNEL;
+  check_fault("SI_KERNEL", true, SIGSEGV, &info);
+#endif
+
+  info.si_code = SI_USER;
+  check_fault("SI_USER, SIGSEGV", false, SIGSEGV, &info);
+  check_fault("SI_USER, SIGBUS", false, SIGBUS, &info);
+  info.si_code = SI_QUEUE;
+  check_fault("SI_QUEUE", false, SIGSEGV, &info);
+  info.si_code = SI_TIMER;
+  check_fault("SI_TIMER", false, SIGSEGV, &info);
+#ifdef SI_TKILL
+  /* raise() and pthread_kill() on Linux. */
+  info.si_code = SI_TKILL;
+  check_fault("SI_TKILL", false, SIGSEGV, &info);
+#endif
+
+  info.si_code = SEGV_MAPERR;
+  check_fault("another signal with a fault code", false, SIGABRT, &info);
+  check_fault("no details is taken for a fault", true, SIGSEGV, NULL);
+}
+
 void test_main(void* p NRUNUSED) {
+  test_signal_is_fault();
 #ifdef ZTS
   /* Control: a thread that still has its PHP storage. */
   test_signal_in_thread("thread with PHP storage", thread_signal_in_request);
