@@ -424,6 +424,59 @@ static void test_complete(void) {
   nr_mysqli_metadata_destroy(&metadata);
 }
 
+static void test_epoch(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+  uint64_t first;
+  uint64_t second;
+
+  /* An entry that was not completed by a connect has no connection. */
+  nr_mysqli_metadata_set_database(metadata, 1, "db");
+  nr_mysqli_metadata_get(metadata, 1, &link);
+  tlib_pass_if_uint64_t_equal("no connect: no epoch", 0, link.epoch);
+  nr_mysqli_metadata_set_user(metadata, 1, "user", "pw", NULL);
+  nr_mysqli_metadata_get(metadata, 1, &link);
+  tlib_pass_if_uint64_t_equal("change_user without a connect: no epoch", 0,
+                              link.epoch);
+
+  /* A connect gives the link an epoch. */
+  nr_mysqli_metadata_set_connect(metadata, 2, "host", "user", "pw", "db", 3306,
+                                 NULL, 0);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  first = link.epoch;
+  tlib_pass_if_true("connect: an epoch", first > 0, "first=" NR_UINT64_FMT,
+                    first);
+
+  /* Settings that do not replace the connection keep it. */
+  nr_mysqli_metadata_set_database(metadata, 2, "other");
+  nr_mysqli_metadata_set_option(metadata, 2, 7, "opt");
+  nr_mysqli_metadata_set_ssl(metadata, 2, "key", NULL, NULL, NULL, NULL);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  tlib_pass_if_uint64_t_equal("select_db, options and ssl keep the epoch",
+                              first, link.epoch);
+
+  /* A user change and a connect on the same link replace the connection. */
+  nr_mysqli_metadata_set_user(metadata, 2, "other", "pw", NULL);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  second = link.epoch;
+  tlib_pass_if_true("change_user: a later epoch", second > first,
+                    "first=" NR_UINT64_FMT " second=" NR_UINT64_FMT, first,
+                    second);
+  nr_mysqli_metadata_set_connect(metadata, 2, "host", "user", "pw", "db", 3306,
+                                 NULL, 0);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  tlib_pass_if_true("connect again: a later epoch", link.epoch > second,
+                    "second=" NR_UINT64_FMT " third=" NR_UINT64_FMT, second,
+                    link.epoch);
+
+  /* A removed link has no epoch to compare. */
+  nr_mysqli_metadata_remove(metadata, 2);
+  tlib_pass_if_status_failure("removed link",
+                              nr_mysqli_metadata_get(metadata, 2, &link));
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
 static void test_set_connect_replaces(void) {
   nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
   nr_mysqli_metadata_link_t link;
@@ -555,6 +608,7 @@ void test_main(void* p NRUNUSED) {
   test_remove();
   test_password_survives_updates();
   test_complete();
+  test_epoch();
   test_set_connect_replaces();
   test_remove_many();
   test_id();
