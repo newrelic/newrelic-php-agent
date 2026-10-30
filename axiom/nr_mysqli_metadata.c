@@ -16,7 +16,13 @@
 #include "util_strings.h"
 #include "util_time.h"
 
-/* The connection epoch of the link, or 0 if it has none. */
+/*
+ * Purpose : Get the connection epoch of a link.
+ *
+ * Params  : 1. The metadata object of the link.
+ *
+ * Returns : The epoch, or 0 if the link has none.
+ */
 static int64_t nr_mysqli_metadata_get_epoch(const nrobj_t* link) {
   nr_status_t err = NR_SUCCESS;
   int64_t epoch = nro_get_hash_long(link, "epoch", &err);
@@ -25,8 +31,10 @@ static int64_t nr_mysqli_metadata_get_epoch(const nrobj_t* link) {
 }
 
 /*
- * Give the link a new connection epoch: the current time, or one more than the
- * last epoch if the clock did not move forward.
+ * Purpose : Give the link a new connection epoch: the current time, or one more
+ *           than the last epoch if the clock did not move forward.
+ *
+ * Params  : 1. The metadata object of the link.
  */
 static void nr_mysqli_metadata_new_epoch(nrobj_t* link) {
   int64_t previous = nr_mysqli_metadata_get_epoch(link);
