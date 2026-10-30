@@ -1132,6 +1132,12 @@ typedef struct {
   char* link_database;
 } nr_php_mysqli_statement_t;
 
+/*
+ * Purpose : Destroy what is kept for one statement object. This is the value
+ *           destructor of the table in shared_globals_t.mysqli_statement_sql.
+ *
+ * Params  : 1. The nr_php_mysqli_statement_t, or NULL.
+ */
 static void nr_php_mysqli_statement_destroy(void* value) {
   nr_php_mysqli_statement_t* statement = value;
 
@@ -1144,11 +1150,27 @@ static void nr_php_mysqli_statement_destroy(void* value) {
   nr_free(statement);
 }
 
+/*
+ * Purpose : Find what is kept for a statement object.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The entry, which the table owns, or NULL if there is none.
+ */
 static nr_php_mysqli_statement_t* nr_php_mysqli_statement_find(
     const zval* stmt) {
   return nr_php_objtable_get(NRPRG_SHARED(mysqli_statement_sql), stmt);
 }
 
+/*
+ * Purpose : Find what is kept for a statement object, and make the entry if
+ *           there is none.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The entry, which the table owns, or NULL if the zval is not an
+ *           object the table can track.
+ */
 static nr_php_mysqli_statement_t* nr_php_mysqli_statement_find_or_create(
     const zval* stmt) {
   nr_php_mysqli_statement_t* statement = nr_php_mysqli_statement_find(stmt);
@@ -1166,7 +1188,12 @@ static nr_php_mysqli_statement_t* nr_php_mysqli_statement_find_or_create(
   return statement;
 }
 
-/* Drop the entry of a statement that has neither SQL nor link. */
+/*
+ * Purpose : Drop the entry of a statement that has neither SQL nor link.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. Its entry, or NULL.
+ */
 static void nr_php_mysqli_statement_prune(
     const zval* stmt,
     const nr_php_mysqli_statement_t* statement) {

@@ -1459,8 +1459,12 @@ static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
 }
 
 /*
- * Save the link a mysqli statement was prepared on, so that its explain plan
- * can be made in a later transaction. From PHP 8.0 only.
+ * Purpose : Save the link a mysqli statement was prepared on, so that its
+ *           explain plan can be made in a later transaction. From PHP 8.0
+ *           only.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. The link it was prepared on.
  */
 static void nr_php_mysqli_statement_link_save(const zval* stmt,
                                               zval* link TSRMLS_DC) {

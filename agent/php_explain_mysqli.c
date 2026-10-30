@@ -152,10 +152,17 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
- * The number of parameters of a prepared statement, or -1 if it cannot be read.
- * The property is read here and not with nr_php_get_zval_object_property():
- * mysqli computes its properties and returns them in storage that belongs to
- * the caller.
+ * Purpose : The number of parameters of a prepared statement.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The number, or -1 if it cannot be read (the statement is closed
+ *           or was not initialized, or an exception is pending).
+ *
+ * Notes   : The property is read here and not with
+ *           nr_php_get_zval_object_property(): mysqli computes its properties
+ *           and returns them in storage that belongs to the caller. An
+ *           exception that the read throws is cleared.
  */
 static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
   zval rv;
@@ -183,10 +190,13 @@ static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
 
 #ifdef NR_PHP_MYSQLI_MYSQLND
 /*
- * Whether the mysqli extension that is loaded was built on mysqlnd. The data
- * read below is mysqlnd's: the agent is compiled against the headers of one
- * PHP build and runs in the customer's, whose mysqli may use libmysqlclient
- * instead, with a different structure behind the same pointers.
+ * Purpose : Tell whether the mysqli extension that is loaded was built on
+ *           mysqlnd. The data read below is mysqlnd's: the agent is compiled
+ *           against the headers of one PHP build and runs in the customer's,
+ *           whose mysqli may use libmysqlclient instead, with a different
+ *           structure behind the same pointers.
+ *
+ * Returns : 1 if mysqli requires mysqlnd, 0 if not or if mysqli is not loaded.
  */
 int nr_php_explain_mysqli_uses_mysqlnd(void) {
   const zend_module_entry* mysqli;
@@ -209,8 +219,15 @@ int nr_php_explain_mysqli_uses_mysqlnd(void) {
 }
 
 /*
- * The mysqlnd data of a statement object, or NULL. mysqli binds the variables
- * of bind_param() into it, and holds them for as long as the statement lives.
+ * Purpose : Get the mysqlnd data of a statement object. mysqli binds the
+ *           variables of bind_param() into it, and holds them for as long as
+ *           the statement lives.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The data, which mysqli owns, or NULL if the zval is not a
+ *           statement, the statement was not initialized, or mysqli is not
+ *           built on mysqlnd.
  */
 static const MYSQLND_STMT_DATA* nr_php_explain_mysqli_stmt_data(
     const zval* stmt) {
@@ -243,7 +260,13 @@ char nr_php_explain_mysqli_bind_type_letter(unsigned char type) {
   }
 }
 
-/* The number of variables that bind_param() bound. */
+/*
+ * Purpose : Count the variables that bind_param() bound.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The count, or 0 if nothing is bound or the data cannot be read.
+ */
 long nr_php_explain_mysqli_bound_count(const zval* stmt) {
   const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
 
