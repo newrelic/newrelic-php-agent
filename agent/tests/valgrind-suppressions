@@ -193,10 +193,41 @@
 
 # The fatal signal handler reads the PHP stack of a thread whose storage cannot be read (the case
 # test_fatal_signal_handler.c tests with an unreadable current execute data): the read faults on
-# purpose and nr_php_guarded_backtrace_fd catches the signal.
+# purpose and nr_php_guarded_backtrace_fd catches the signal. The faulting read can be in a function
+# that nr_php_backtrace_fd calls (for example zend_generator_check_placeholder_frame on PHP 7), and
+# its size depends on the PHP version, so the frames below nr_php_backtrace_fd and the sizes are
+# wildcards; the entries match only reads under nr_php_guarded_backtrace_fd.
 {
-   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack>
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 1 bytes>
+   Memcheck:Addr1
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 2 bytes>
+   Memcheck:Addr2
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 4 bytes>
+   Memcheck:Addr4
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 8 bytes>
    Memcheck:Addr8
+   ...
    fun:nr_php_backtrace_fd
    fun:nr_php_guarded_backtrace_fd
    ...
@@ -257,7 +288,7 @@
 }
 
 {
-   <test_fatal_signal_handler: thread of a child whose PHP stack is unreadable when it raises a signal>
+   <test_fatal_signal_handler: thread of a child with an unreadable PHP stack>
    Memcheck:Leak
    match-leak-kinds: all
    ...
