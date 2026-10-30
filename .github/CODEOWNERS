@@ -1,0 +1,6 @@
+# The PHP agent team reviews changes to the CI and build files.
+# Rulesets on this repository require code owner review for these paths.
+# The .github/ entry also covers this file, the workflows and the Dependabot config.
+/.github/  @newrelic/phpc
+/make/     @newrelic/phpc
+/Makefile  @newrelic/phpc
