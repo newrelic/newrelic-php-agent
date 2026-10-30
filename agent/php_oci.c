@@ -9,11 +9,18 @@
 #include "util_memory.h"
 #include "util_vector.h"
 
+/* What is saved for one oci8 statement: its resource id and its SQL. */
 typedef struct {
   uint64_t id;
   char* sql;
 } nr_php_oci_statement_t;
 
+/*
+ * Purpose : Destroy one saved statement. This is the value destructor of the
+ *           store.
+ *
+ * Params  : 1. The nr_php_oci_statement_t, or NULL.
+ */
 static void nr_php_oci_statement_destroy(void* value) {
   nr_php_oci_statement_t* statement = value;
 
@@ -34,6 +41,15 @@ void nr_php_oci_statements_destroy(void) {
   nr_hashmap_destroy(&NRPRG_SHARED(oci_statements));
 }
 
+/*
+ * Purpose : Iterator for nr_hashmap_apply() that collects the ids of the
+ *           statements whose resource is gone from the resource list.
+ *
+ * Params  : 1. The nr_php_oci_statement_t.
+ *           2. The key of the entry. Not used.
+ *           3. The length of the key. Not used.
+ *           4. The nr_vector_t that receives the ids.
+ */
 static void nr_php_oci_statements_collect_freed(void* value,
                                                 const char* key NRUNUSED,
                                                 size_t key_len NRUNUSED,
@@ -53,10 +69,16 @@ static void nr_php_oci_statements_collect_freed(void* value,
 }
 
 /*
- * The entries of freed statements are dropped when a new statement is parsed,
- * not when the statement is freed. The SQL of a statement that was freed stays
- * in memory until then, or until the request ends; it is bounded by the number
- * of statements that were freed since the last parse.
+ * Purpose : Drop the entries of the statements that were freed.
+ *
+ * Notes   : This visits every saved statement, so a parse costs a pass over the
+ *           statements that are alive. That is a few statements for an
+ *           application, and the pass is skipped when none is saved. The
+ *           entries of freed statements are dropped when a new statement is
+ *           parsed, not when the statement is freed. The SQL of a statement
+ *           that was freed stays in memory until then, or until the request
+ *           ends; it is bounded by the number of statements that were freed
+ *           since the last parse.
  */
 static void nr_php_oci_statements_sweep(void) {
   size_t i;
