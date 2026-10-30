@@ -59,8 +59,6 @@ STATISTICS
 ]
 */
 
-
-
 /*EXPECT_SLOW_SQLS
 [
   [
