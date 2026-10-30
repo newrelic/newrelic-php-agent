@@ -48,7 +48,6 @@ function split_transaction() {
   newrelic_start_transaction(ini_get("newrelic.appname"));
 }
 
-
 $conn = pg_connect($PG_CONNECTION);
 pg_query($conn, "CREATE TEMPORARY TABLE nr_stmt_tmp (x INT)");
 

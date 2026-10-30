@@ -30,8 +30,6 @@ Datastore/Postgres/allOther, 1
 Datastore/instance/Postgres/ENV[PG_HOST]/ENV[PG_PORT], 1
 */
 
-
-
 /*EXPECT_TRACED_ERRORS
 null
 */
