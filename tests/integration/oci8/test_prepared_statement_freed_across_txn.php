@@ -31,7 +31,6 @@ Datastore/statement/Oracle/dual/select, 1
 Datastore/statement/Oracle/user_tables/select, 1
 */
 
-
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
