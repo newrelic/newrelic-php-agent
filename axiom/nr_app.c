@@ -34,9 +34,13 @@ bool nr_app_consider_appinfo(nrapp_t* app, time_t now) {
     return false;
   }
 
+  if (NR_SUCCESS != nr_agent_probe_daemon_connection()) {
+    return false;
+  }
+
   if (nr_agent_should_do_app_daemon_query(app, now)) {
     app->last_daemon_query = now;
-    result = nr_cmd_appinfo_tx(nr_get_daemon_fd(), app);
+    result = nr_cmd_appinfo_tx(app);
     if (NR_APP_OK == app->state) {
       app->failed_daemon_query_count = 0;
     } else {
