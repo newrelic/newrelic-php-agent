@@ -31,11 +31,11 @@ dnl install, as built by running "make" at the level above this.
 PHP_ARG_WITH(protobuf-c,,
 [  --with-protobuf-c=DIR   Path to protobuf-c], ../vendor/local, no)
 
-dnl The path to libpcre.a. The default is to look for a php-build-scripts
-dnl install in /opt/nr/pcre/8.40 local vendored as built by running 
+dnl The path to libpcre2-8.a. The default is to look for a php-build-scripts
+dnl install in /opt/nr/pcre local vendored as built by running 
 dnl "./make.sh pcre" from top level directory of php-build-scripts.
 PHP_ARG_WITH(pcre,,
-[  --with-pcre=DIR   Path to pcre], /opt/nr/pcre/8.40, no)
+[  --with-pcre=DIR   Path to pcre2], /opt/nr/pcre, no)
 
 PHP_ARG_WITH(pcre-static,,
 [  --with-pcre-static=no   link to static pcre], no, no)
@@ -104,35 +104,35 @@ if test "$PHP_NEWRELIC" = "yes"; then
     AC_MSG_ERROR([unknown or unsupported system])
   fi
 
-  dnl Check for libpcre - an external dependency, which axiom needs. Use
+  dnl Check for libpcre2 - an external dependency, which axiom needs. Use
   dnl install location provided via --with-pcre.
   PCRE_INCLINE=$PHP_PCRE/include
   if echo "$PHP_PCRE" | grep -q /opt/nr/camp; then
     dnl Legacy agent's build system quirks:
-    dnl libpcre provided by NRCAMP as libnrpcre is not position independent.
+    dnl libpcre2 provided by NRCAMP as libnrpcre2-8 is not position independent.
     dnl Since the agent is a shared object it needs to be position independent
     dnl and therefore requires linking to the position independent version 
-    dnl of libpcre which in NRCAMP is available as libnrpcre-pic (a symlink
-    dnl to libpcre-pic).
-    PCRE_LIBLINE=-lnrpcre-pic
-    PCRE_LIBRARY=nrpcre-pic
+    dnl of libpcre2 which in NRCAMP is available as libnrpcre2-8-pic (a symlink
+    dnl to libpcre2-8-pic).
+    PCRE_LIBLINE=-lnrpcre2-8-pic
+    PCRE_LIBRARY=nrpcre2-8-pic
   elif echo "$PHP_PCRE_STATIC" | grep -q yes; then
     dnl Force the agent to use static version of pcre library. This avoids the
-    dnl issue with runtime dependency on libpcre shared object that is hard to
+    dnl issue with runtime dependency on libpcre2 shared object that is hard to
     dnl satisfy universally because different Linux distributions use different
-    dnl name of the shared object: libpcre.so or libpcre3.so.
-    PCRE_LIBLINE="-L$PHP_PCRE -l:libpcre.a"
-    PCRE_LIBRARY=pcre
+    dnl name of the shared object: libpcre2-8.so.
+    PCRE_LIBLINE="-L$PHP_PCRE -l:libpcre2-8.a"
+    PCRE_LIBRARY=pcre2-8
   else
     dnl When casually building from source and not enforcing static linking,
     dnl through PCRE_STATIC=yes environmental variable, let the linker decide
-    dnl what version of libpcre to link to. This is allowed because usually
+    dnl what version of libpcre2 to link to. This is allowed because usually
     dnl when building from source, build platform = runtime platform.
-    PCRE_LIBLINE="-L$PHP_PCRE -lpcre"
-    PCRE_LIBRARY=pcre
+    PCRE_LIBLINE="-L$PHP_PCRE -lpcre2-8"
+    PCRE_LIBRARY=pcre2-8
   fi
 
-  PHP_CHECK_LIBRARY($PCRE_LIBRARY, pcre_exec, [
+  PHP_CHECK_LIBRARY($PCRE_LIBRARY, pcre2_compile_8, [
     PHP_EVAL_INCLINE($PCRE_INCLINE)
     PHP_EVAL_LIBLINE($PCRE_LIBLINE, NEWRELIC_SHARED_LIBADD)
   ],[

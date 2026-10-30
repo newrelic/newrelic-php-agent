@@ -64,9 +64,7 @@ AXIOM_CFLAGS += -Wno-typedef-redefinition
 AXIOM_CFLAGS += -Wno-missing-field-initializers
 endif
 
-# OS X 10.11 (at least) does not provide pcre-config by default.
-# Check whether it exists, and if not assume a sensible default.
-PCRE_CFLAGS := $(shell pcre-config --cflags)
+PCRE_CFLAGS := $(shell pkg-config --cflags libpcre2-8)
 
 #
 # Correct agent version handling.
