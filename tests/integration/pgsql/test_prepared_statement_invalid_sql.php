@@ -47,7 +47,6 @@ function split_transaction() {
   newrelic_start_transaction(ini_get("newrelic.appname"));
 }
 
-
 $conn = pg_connect($PG_CONNECTION);
 
 if (false === @pg_prepare($conn, 'nr_bad', 'SELECT x FROM nr_no_such_table')) {
