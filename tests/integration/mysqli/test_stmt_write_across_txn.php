@@ -50,7 +50,6 @@ if (false === $link) {
   exit(1);
 }
 
-
 function split_transaction() {
   newrelic_end_transaction();
   newrelic_start_transaction(ini_get("newrelic.appname"));
