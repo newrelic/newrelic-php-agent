@@ -662,7 +662,8 @@ static void test_strip_persistent_prefix(void) {
 
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
-  tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
+  tlib_php_engine_create(
+      "extension = mysqli\nmysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
 
   if (tlib_php_require_extension("mysqli" TSRMLS_CC)) {
     test_save_datastore_instance(TSRMLS_C);
