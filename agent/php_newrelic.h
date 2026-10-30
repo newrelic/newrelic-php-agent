@@ -496,6 +496,13 @@ typedef struct _shared_globals_t {
    */
   nr_php_objtable_t* pdo_options;
 
+  /*
+   * The SQL of each oci8 statement, by resource id. A statement resource can
+   * be used in a later transaction than the one that parsed it. Entries of
+   * statements that were freed are dropped when a new statement is parsed.
+   */
+  nr_hashmap_t* oci_statements;
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /*
    * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
