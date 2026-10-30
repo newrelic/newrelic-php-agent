@@ -59,6 +59,9 @@ ok - statement executed
 null
 */
 
+// EXPLAIN output does not depend on the values of the parameters, so this test
+// checks that a plan was produced. The letters that stand for the types of the
+// parameters have a unit test.
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
