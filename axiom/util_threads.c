@@ -13,6 +13,28 @@
 #include "util_logging.h"
 #include "util_threads.h"
 
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+#if defined(__x86_64__)
+__asm__(".symver pthread_join,pthread_join@GLIBC_2.2.5");
+__asm__(".symver pthread_create,pthread_create@GLIBC_2.2.5");
+__asm__(".symver pthread_mutexattr_init,pthread_mutexattr_init@GLIBC_2.2.5");
+__asm__(
+    ".symver pthread_mutexattr_settype,pthread_mutexattr_settype@GLIBC_2.2.5");
+__asm__(
+    ".symver pthread_mutexattr_destroy,pthread_mutexattr_destroy@GLIBC_2.2.5");
+#elif defined(__aarch64__)
+__asm__(".symver pthread_join,pthread_join@GLIBC_2.17");
+__asm__(".symver pthread_create,pthread_create@GLIBC_2.17");
+__asm__(".symver pthread_mutexattr_init,pthread_mutexattr_init@GLIBC_2.17");
+__asm__(
+    ".symver pthread_mutexattr_settype,pthread_mutexattr_settype@GLIBC_2.17");
+__asm__(
+    ".symver pthread_mutexattr_destroy,pthread_mutexattr_destroy@GLIBC_2.17");
+#endif
+#endif
+#endif
+
 nr_status_t nrt_create_f(nrthread_t* thread,
                          const nrthread_attr_t* attr,
                          void*(start_routine)(void*),
