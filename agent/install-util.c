@@ -19,15 +19,15 @@
 #define NRUNUSED
 #endif
 
-#if defined(__GLIBC__)
-#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
-#if defined(__x86_64__)
-__asm__(".symver stat,stat@GLIBC_2.2.5");
-#elif defined(__aarch64__)
-__asm__(".symver stat,stat@GLIBC_2.17");
-#endif
-#endif
-#endif
+// #if defined(__GLIBC__)
+// #if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+// #if defined(__x86_64__)
+// __asm__(".symver stat,stat@GLIBC_2.2.5");
+// #elif defined(__aarch64__)
+// __asm__(".symver stat,stat@GLIBC_2.17");
+// #endif
+// #endif
+// #endif
 
 typedef int (*cmdfunc_t)(int argc, char* const argv[]);
 

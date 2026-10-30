@@ -25,15 +25,15 @@
 
 #include "util_syscalls.h"
 
-#if defined(__GLIBC__)
-#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
-#if defined(__x86_64__)
-__asm__(".symver stat,stat@GLIBC_2.2.5");
-#elif defined(__aarch64__)
-__asm__(".symver stat,stat@GLIBC_2.17");
-#endif
-#endif
-#endif
+// #if defined(__GLIBC__)
+// #if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+// #if defined(__x86_64__)
+// __asm__(".symver stat,stat@GLIBC_2.2.5");
+// #elif defined(__aarch64__)
+// __asm__(".symver stat,stat@GLIBC_2.17");
+// #endif
+// #endif
+// #endif
 
 int nr_accept(int sock, struct sockaddr* address, socklen_t* address_len_p) {
   return (accept)(sock, address, address_len_p);
