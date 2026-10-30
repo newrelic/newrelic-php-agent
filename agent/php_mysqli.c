@@ -1076,6 +1076,12 @@ void nr_php_mysqli_rshutdown() {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : Destroy the SQL kept for one statement object. This is the value
+ *           destructor of the table in shared_globals_t.mysqli_statement_sql.
+ *
+ * Params  : 1. The SQL, a string on the heap.
+ */
 static void nr_php_mysqli_statement_sql_destroy(void* sql) {
   nr_free(sql);
 }

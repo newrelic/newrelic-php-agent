@@ -1357,10 +1357,16 @@ static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
 }
 
 /*
- * Save and find the SQL of a mysqli statement. From PHP 8.0 the SQL is kept
- * for the life of the statement object, so a statement prepared in one
- * transaction can be executed in a later one. Before PHP 8.0 it is kept for the
- * transaction, as the prepared statements of the other extensions are.
+ * Purpose : Save the SQL of a mysqli statement. From PHP 8.0 the SQL is kept
+ *           for the life of the statement object, so a statement prepared in
+ *           one transaction can be executed in a later one. Before PHP 8.0 it
+ *           is kept for the transaction, as the prepared statements of the
+ *           other extensions are.
+ *
+ * Params  : 1. The statement object.
+ *           2. The SQL, or NULL to forget the SQL saved for the statement (from
+ *              PHP 8.0).
+ *           3. The length of the SQL.
  */
 static void nr_php_mysqli_statement_save(const zval* stmt,
                                          const char* sql,
@@ -1372,6 +1378,14 @@ static void nr_php_mysqli_statement_save(const zval* stmt,
 #endif
 }
 
+/*
+ * Purpose : Find the SQL saved for a mysqli statement.
+ *
+ * Params  : 1. The statement object.
+ *
+ * Returns : The SQL, which stays owned by where it is saved, or
+ *           NR_PHP_PREPARED_STATEMENT_UNKNOWN if none was saved.
+ */
 static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   const char* sql = nr_php_mysqli_statement_sql_get(stmt);
@@ -1608,6 +1622,12 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
     }
   }
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * This function serves several extensions. Only mysqli keeps the SQL with
+   * the statement object (from PHP 8.0); the others use the table of prepared
+   * statements of the transaction.
+   */
   if (0 == nr_strcmp(extension, "mysqli")) {
     nr_php_mysqli_statement_save(return_value, sqlstr, sqlstrlen TSRMLS_CC);
   } else {
@@ -1648,13 +1668,19 @@ NR_INNER_WRAPPER(mysqli_prepare) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
- * Whether the constructor of a mysqli_stmt prepared its statement. When mysqli
- * throws on errors the constructor throws, and otherwise it returns an object
- * that is not prepared and has the error number of the failed prepare.
+ * Purpose : Tell whether the constructor of a mysqli_stmt prepared its
+ *           statement. When mysqli throws on errors the constructor throws,
+ *           and otherwise it returns an object that is not prepared and has
+ *           the error number of the failed prepare.
  *
- * The property is read here and not with nr_php_get_zval_object_property():
- * mysqli computes its properties and returns them in storage that belongs to
- * the caller.
+ * Params  : 1. The statement object that the constructor made.
+ *
+ * Returns : 1 if the statement is prepared, 0 if not or if an exception is
+ *           pending.
+ *
+ * Notes   : The property is read here and not with
+ *           nr_php_get_zval_object_property(): mysqli computes its properties
+ *           and returns them in storage that belongs to the caller.
  */
 static int nr_php_mysqli_stmt_construct_prepared(zval* stmt) {
   zval rv;
@@ -1704,7 +1730,11 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
 
   if (sqlstr) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-    /* A prepare that failed in the constructor leaves no SQL. */
+    /*
+     * A prepare that failed in the constructor leaves no SQL. Before PHP 8.0
+     * (the other arm) the statement is saved whether or not the prepare
+     * worked, as it always was.
+     */
     nr_php_mysqli_statement_save(
         this_obj,
         nr_php_mysqli_stmt_construct_prepared(this_obj) ? sqlstr : NULL,
