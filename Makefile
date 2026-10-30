@@ -105,8 +105,8 @@ echo_config:
 show-vendors:
 	@echo ""
 	@echo -----------------------------------------------------------------------
-	@echo "| Using pcre library from $(PCRE_PREFIX) (from $(origin PCRE_PREFIX))"
-	@echo -n "| Link to "; [ $(PCRE_STATIC) = yes ] && echo -n "static" || echo -n "shared"; echo " libpcre";
+	@echo "| Using pcre2 library from $(PCRE_PREFIX) (from $(origin PCRE_PREFIX))"
+	@echo -n "| Link to "; [ $(PCRE_STATIC) = yes ] && echo -n "static" || echo -n "shared"; echo " libpcre2";
 	@echo "| Using protobuf-c library from $(PROTOBUF_C_PREFIX) (from $(origin PROTOBUF_C_PREFIX))"
 	@echo -----------------------------------------------------------------------
 	@echo ""

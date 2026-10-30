@@ -38,7 +38,7 @@ Install the [latest version of Go](https://golang.org/dl/). Typically it's insta
 - `libxml2`
 - `libxslt`
 - `openssl`
-- `pcre`
+- `pcre2`
 - `protobuf-c` (`libprotobuf-c-dev` on Debian systems, `protobuf-c-devel` on RHEL systems)
 - `zlib`
 

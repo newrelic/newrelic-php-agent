@@ -9,7 +9,7 @@
 
 ARG PHP_VER
 
-FROM php:${PHP_VER:-8.5}-bookworm
+FROM php:${PHP_VER:-8.5}-trixie
 
 RUN docker-php-source extract
 
@@ -30,7 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Other useful developer tools:
     vim lcov gdb strace ccache procps psmisc curl wget bzip2 zip unzip perl sqlite3 openssl \
 # Other build dependencies:
-    argon2 \
     automake \
     autotools-dev \
     dnsutils \
@@ -39,11 +38,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc6 libc6-dev libc6-dbg \
     libcurl4-openssl-dev \
     libedit-dev \
-    libghc-argon2-dev \
     libgtest-dev \
     libmcrypt-dev \
     libonig-dev \
-    libpcre3 libpcre3-dev \
+    libpcre2-8-0 libpcre2-dev \
 # 8T protobuf code in axiom depends on libprotobuf-c library
     libprotobuf-c-dev \
     libreadline-dev \
@@ -75,6 +73,15 @@ ENV PATH /usr/local/go/bin:$PATH
 #
 RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
     apt-get install -y  --no-install-recommends python-dev-is-python3; \
+    fi
+
+#
+# argon2 is required to build PHP
+#
+RUN if [ -n "$(grep '^13\.' /etc/debian_version)" ]; then \
+    apt-get install -y --no-install-recommends libargon2-dev; \
+    else \
+    apt-get install -y --no-install-recommends argon2 libghc-argon2-dev; \
     fi
 
 # install composer
