@@ -1344,9 +1344,11 @@ NR_INNER_WRAPPER(mysqli_general_query) {
  * statement object to keep: the query and its parameters are the arguments.
  *
  * The second half of this wrapper follows the one of mysqli_general_query()
- * (the segment, the instance, the explain plan and the end of the segment). It
- * is not shared with it because the two read their arguments differently and
- * only this one passes parameters to the explain.
+ * (the segment, the instance, the explain plan and the end of the segment). The
+ * two differ in how they read their arguments and in the explain call, which
+ * here takes the parameters. A function shared by both would need those two
+ * differences as arguments, and would be harder to follow than the two copies.
+ * A change to the part that is the same should be made in both.
  */
 NR_INNER_WRAPPER(mysqli_execute_query) {
   char* sqlstr = NULL;
