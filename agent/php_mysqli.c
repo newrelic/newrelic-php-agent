@@ -296,10 +296,18 @@ nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
 }
 
 /*
- * The metadata fields used below point into the store. PHP code runs while
- * they are in use (the warnings of the connection calls can reach a user error
- * handler), and a handler that closes or frees the original link would free
- * them. That is a known limit; it is not guarded.
+ * Purpose : Make a new mysqli link with the settings the agent kept for a link,
+ *           for the connection of an explain.
+ *
+ * Params  : 1. The metadata of the link to copy.
+ *
+ * Returns : The new link, which the caller frees, or NULL on error.
+ *
+ * Notes   : The metadata fields used below point into the store. PHP code runs
+ *           while they are in use (the warnings of the connection calls can
+ *           reach a user error handler), and a handler that closes or frees the
+ *           original link would free them. That is a known limit; it is not
+ *           guarded.
  */
 static zval* nr_php_mysqli_link_duplicate_metadata(
     const nr_mysqli_metadata_link_t* metadata_ptr TSRMLS_DC) {
