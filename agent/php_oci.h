@@ -9,11 +9,15 @@
 #include "util_strings.h"
 
 /*
- * An oci8 statement is a PHP resource, not an object, so it cannot be tracked
- * with the weak table that is used for objects. The ids of resources are never
- * reused in a request (they come from the next free element of the resource
- * list), so the SQL is kept by id and the entries of freed statements are
- * dropped when a new statement is parsed.
+ * Purpose : Keep the SQL of oci8 statements for the life of the statement,
+ *           which can outlive the transaction that parsed it.
+ *
+ * Notes   : An oci8 statement is a PHP resource, not an object, so it cannot
+ *           be tracked with the weak table that is used for objects. The ids
+ *           of resources are never reused in a request (they come from the next
+ *           free element of the resource list), so the SQL is kept by id and
+ *           the entries of freed statements are dropped when a new statement
+ *           is parsed.
  */
 
 /*
