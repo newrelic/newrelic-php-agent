@@ -660,6 +660,86 @@ static void test_strip_persistent_prefix(void) {
                          nr_php_mysqli_strip_persistent_prefix("p:host.name"));
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * A stdClass stands in for a mysqli_stmt: the table accepts any object.
+ */
+static void test_statement_sql(TSRMLS_D) {
+  zval* first;
+  zval* second;
+  zval* not_object;
+  zval* reused;
+  nr_php_object_handle_t old_handle;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval("$first = new stdClass; $second = new stdClass;");
+  first = tlib_php_request_eval_expr("$first");
+  second = tlib_php_request_eval_expr("$second");
+  not_object = tlib_php_request_eval_expr("42");
+
+  tlib_pass_if_not_null("the table exists", NRPRG_SHARED(mysqli_statement_sql));
+  tlib_pass_if_null("a statement with no SQL saved",
+                    nr_php_mysqli_statement_sql_get(first));
+
+  nr_php_mysqli_statement_sql_set(first, "SELECT 1", 8);
+  tlib_pass_if_str_equal("saved SQL", "SELECT 1",
+                         nr_php_mysqli_statement_sql_get(first));
+  tlib_pass_if_null("another statement is untouched",
+                    nr_php_mysqli_statement_sql_get(second));
+
+  /* The length bounds the copy: the SQL needs no terminator. */
+  nr_php_mysqli_statement_sql_set(second, "SELECT 2 FROM t", 8);
+  tlib_pass_if_str_equal("the length bounds the SQL", "SELECT 2",
+                         nr_php_mysqli_statement_sql_get(second));
+
+  nr_php_mysqli_statement_sql_set(first, "SELECT 3", 8);
+  tlib_pass_if_str_equal("a second prepare replaces the SQL", "SELECT 3",
+                         nr_php_mysqli_statement_sql_get(first));
+  tlib_pass_if_str_equal("the other statement is untouched", "SELECT 2",
+                         nr_php_mysqli_statement_sql_get(second));
+  tlib_pass_if_size_t_equal(
+      "two entries", 2,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  nr_php_mysqli_statement_sql_set(first, NULL, 0);
+  tlib_pass_if_null("NULL SQL removes the entry",
+                    nr_php_mysqli_statement_sql_get(first));
+  nr_php_mysqli_statement_sql_set(second, "", 0);
+  tlib_pass_if_null("empty SQL removes the entry",
+                    nr_php_mysqli_statement_sql_get(second));
+
+  nr_php_mysqli_statement_sql_set(not_object, "SELECT 4", 8);
+  tlib_pass_if_null("a value that is not an object is rejected",
+                    nr_php_mysqli_statement_sql_get(not_object));
+
+  /* The entry goes when the object is freed. */
+  old_handle = Z_OBJ_HANDLE_P(first);
+  nr_php_mysqli_statement_sql_set(first, "SELECT 5", 8);
+  tlib_pass_if_size_t_equal(
+      "one entry", 1,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+  nr_php_zval_free(&first);
+  tlib_php_request_eval("$first = null;");
+  tlib_pass_if_size_t_equal(
+      "freeing the object drops the entry", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* A new object that takes the freed object's handle finds no entry. */
+  tlib_php_request_eval("$reused = new stdClass;");
+  reused = tlib_php_request_eval_expr("$reused");
+  tlib_pass_if_uint_equal("the new object takes the freed handle", old_handle,
+                          Z_OBJ_HANDLE_P(reused));
+  tlib_pass_if_null("the new object inherits nothing",
+                    nr_php_mysqli_statement_sql_get(reused));
+  nr_php_zval_free(&reused);
+
+  nr_php_zval_free(&second);
+  nr_php_zval_free(&not_object);
+  tlib_php_request_end();
+}
+#endif
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
@@ -679,6 +759,9 @@ void test_main(void* p NRUNUSED) {
     test_link_metadata_lifetime();
 #endif
     test_option_to_string();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    test_statement_sql(TSRMLS_C);
+#endif
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
