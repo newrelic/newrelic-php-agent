@@ -217,6 +217,7 @@ main();
 abstract class Classname{
 
         protected function functionName() : void {
+                time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
                 echo 'functionName';
                 for($i = 0; $i < 500; ++$i) {
                 /* Spin wheels. */
