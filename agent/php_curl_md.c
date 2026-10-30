@@ -318,6 +318,23 @@ nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC) {
   return metadata->segment;
 }
 
+bool nr_php_curl_md_reset_segment(const zval* ch TSRMLS_DC) {
+  nr_php_curl_md_t* metadata;
+
+  if (!check_curl_handle(ch)) {
+    return false;
+  }
+
+  metadata = get_curl_metadata(ch TSRMLS_CC);
+  if (nrunlikely(NULL == metadata)) {
+    return false;
+  }
+
+  metadata->segment = NULL;
+
+  return true;
+}
+
 void nr_curl_rshutdown(TSRMLS_D) {
   /*
    * This frees curl multi metadata stored in the transaction.
@@ -522,6 +539,24 @@ bool nr_php_curl_multi_md_set_initialized(const zval* mh TSRMLS_DC) {
   }
 
   multi_metadata->initialized = true;
+
+  return true;
+}
+
+bool nr_php_curl_multi_md_reset(const zval* mh TSRMLS_DC) {
+  nr_php_curl_multi_md_t* multi_metadata;
+
+  if (!check_curl_handle(mh)) {
+    return false;
+  }
+
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
+  if (nrunlikely(NULL == multi_metadata)) {
+    return false;
+  }
+
+  multi_metadata->segment = NULL;
+  multi_metadata->initialized = false;
 
   return true;
 }
