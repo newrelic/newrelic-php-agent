@@ -12,6 +12,8 @@ the agent is using the data saved for it.
 The test uses a MySQL user that is limited to one connection, so the explain
 connection is refused. With mysqli not throwing, the refusal is a warning,
 which calls the handler of the application. The handler here closes the link.
+The server SHALL see the refused attempt, which shows that the agent tried to
+open the explain connection.
 The TLS setup is in tests/tls (the user is created by init.sql).
 The test is skipped only if MYSQL_TLS_HOST is not set or PHP is below 7.4;
 an unusable server or user fails it.
@@ -33,6 +35,7 @@ newrelic.transaction_tracer.record_sql = obfuscated
 
 /*EXPECT
 ok - query succeeded
+ok - the agent tried to open the explain connection
 ok - the handler was not called
 ok - a later warning reaches the handler
 */
@@ -45,6 +48,20 @@ require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 mysqli_report(MYSQLI_REPORT_OFF);
+
+// The server counts the connections it refuses. Another user reads the count
+// before and after, so a refused explain connection shows as an increase. Other
+// tests can refuse connections too, which can only add to the count.
+$observer = new mysqli($MYSQL_TLS_HOST, 'tls_optional', 'tls_optional',
+                       $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT);
+
+function aborted_connects(mysqli $observer): int
+{
+    $row = $observer->query("SHOW GLOBAL STATUS LIKE 'Aborted_connects'")->fetch_row();
+    return (int)$row[1];
+}
+
+$aborted_before = aborted_connects($observer);
 
 $link = new mysqli($MYSQL_TLS_HOST, 'nr_one_conn', 'nr_one_conn', $MYSQL_TLS_DB,
                    (int)$MYSQL_TLS_PORT);
@@ -65,6 +82,8 @@ if ($ok) {
   mysqli_stmt_close($stmt);
 }
 tap_assert($ok, 'query succeeded');
+tap_assert(aborted_connects($observer) > $aborted_before,
+           'the agent tried to open the explain connection');
 tap_equal(0, $calls, 'the handler was not called');
 
 if (0 == $calls) {
@@ -78,4 +97,5 @@ if (0 == $calls) {
             'a later warning reaches the handler');
   mysqli_close($link);
 }
+mysqli_close($observer);
 restore_error_handler();
