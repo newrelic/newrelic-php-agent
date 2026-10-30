@@ -863,6 +863,12 @@ void nr_php_guarded_backtrace_fd(int fd) {
  * The codes of the signals that were sent are listed, not those of the faults,
  * so that a fault code that a kernel or an architecture adds later (a memory
  * tag mismatch, for example) is still taken for a fault.
+ *
+ * Linux also has SI_DETHREAD (sent by the kernel when a thread calls execve,
+ * and only with SIGKILL) and SI_ASYNCNL (completion of getaddrinfo_a, which
+ * sends a signal only if the caller asks for one). They were considered and
+ * left out: neither arrives as a SIGSEGV or SIGBUS in practice, and a sent
+ * signal taken for a fault only gives a misleading message.
  */
 bool nr_php_signal_is_fault(int sig, const siginfo_t* info) {
   if (SIGSEGV != sig && SIGBUS != sig) {
