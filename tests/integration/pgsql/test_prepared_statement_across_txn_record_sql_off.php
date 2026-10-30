@@ -47,7 +47,6 @@ function split_transaction() {
 }
 
 $users = "SELECT usename FROM pg_user WHERE usename = $1";
-$roles = "SELECT rolname FROM pg_roles WHERE rolname = $1";
 
 $conn = pg_connect($PG_CONNECTION);
 if (false === pg_prepare($conn, 'nr_stmt', $users)) {

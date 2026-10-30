@@ -43,7 +43,6 @@ null
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
 $users = "SELECT usename FROM pg_user WHERE usename = $1";
-$roles = "SELECT rolname FROM pg_roles WHERE rolname = $1";
 
 $conn = pg_connect($PG_CONNECTION, PGSQL_CONNECT_FORCE_NEW);
 $first_id = spl_object_id($conn);
