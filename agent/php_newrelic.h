@@ -483,6 +483,15 @@ typedef struct _shared_globals_t {
   nr_php_objtable_t* pgsql_instances;
 
   /*
+   * The SQL of each prepared statement of each pgsql connection object
+   * (PHP 8.1+), by statement name, kept for as long as the connection object
+   * lives. A statement can be prepared in one transaction and executed in a
+   * later one. It follows pgsql_instances: a connect replaces the entry and
+   * the last connection is the one a call with no connection uses.
+   */
+  nr_php_objtable_t* pgsql_statements;
+
+  /*
    * The datastore instance of each Predis node connection object (PHP 8.0+),
    * kept for as long as the object lives.
    */

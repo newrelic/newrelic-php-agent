@@ -2054,19 +2054,37 @@ NR_INNER_WRAPPER(pg_execute) {
       break;
   }
 
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The statement and the instance are looked up after the call, and used
+   * before any PHP code can run again. pg_execute() converts its parameters
+   * to strings, which can run an object's __toString(), and that code can
+   * prepare the statement again or connect again: the table frees what it held
+   * before.
+   */
   if (SUCCESS == rv) {
+#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
     char* key;
+#endif
 
     /*
-     * Note: The instrumentation for pg_prepare/pg_execute relies on the
-     * user to be consistent and either pass the connection to both functions,
-     * or pass the connection to neither. If they mix-and-match, we will not
-     * generate the same key for lookup as for insert.
+     * Before PHP 8.1 the instrumentation for pg_prepare/pg_execute relies on
+     * the user to be consistent and either pass the connection to both
+     * functions, or pass the connection to neither. If they mix-and-match, we
+     * will not generate the same key for lookup as for insert.
      */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+    query = nr_php_pgsql_statement_find(conn, stmtname, stmtname_len);
+#else
     key = nr_php_prepared_statement_make_pgsql_key(conn, stmtname,
                                                    stmtname_len);
     query = nr_php_prepared_statement_find_internal(key TSRMLS_CC);
     nr_free(key);
+#endif
 
     instance = nr_php_pgsql_retrieve_datastore_instance(conn TSRMLS_CC);
   }
@@ -2075,10 +2093,6 @@ NR_INNER_WRAPPER(pg_execute) {
     query = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
   }
 
-  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
 
@@ -2126,6 +2140,17 @@ NR_INNER_WRAPPER(pg_prepare) {
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  /*
+   * The SQL is kept for the life of the connection object. A successful
+   * prepare returns a result object. A prepare that fails returns false or
+   * throws, and leaves the statement name as it was, so it saves nothing.
+   */
+  if ((SUCCESS == rv) && (query_len > 0)
+      && (IS_OBJECT == Z_TYPE_P(return_value))) {
+    nr_php_pgsql_statement_save(conn, stmtname, stmtname_len, query, query_len);
+  }
+#else
   if ((SUCCESS == rv) && (query_len > 0)) {
     char* key = NULL;
 
@@ -2140,6 +2165,7 @@ NR_INNER_WRAPPER(pg_prepare) {
     nr_php_prepared_statement_save_internal(key, query, query_len TSRMLS_CC);
     nr_free(key);
   }
+#endif
 }
 
 /*
@@ -2183,16 +2209,18 @@ NR_INNER_WRAPPER(pg_query) {
     }
   }
 
-  /*
-   * If pgsql_link is not provided, pgsql uses the last connection made by
-   * pg_connect or pg_pconnect. The retrieve method handles this case.
-   */
-  instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
-
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The instance is looked up after the call: an error handler that runs
+   * during the call can close the connection and free what was found before.
+   * If pgsql_link is not provided, pgsql uses the last connection made by
+   * pg_connect or pg_pconnect. The retrieve method handles this case.
+   */
+  instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
