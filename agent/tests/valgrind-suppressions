@@ -190,3 +190,169 @@
   fun:test_main
   ...
 }
+
+# The fatal signal handler reads the PHP stack of a thread whose storage cannot be read (the case
+# test_fatal_signal_handler.c tests with an unreadable current execute data): the read faults on
+# purpose and nr_php_guarded_backtrace_fd catches the signal. The faulting read can be in a function
+# that nr_php_backtrace_fd calls (for example zend_generator_check_placeholder_frame on PHP 7), and
+# its size depends on the PHP version, so the frames below nr_php_backtrace_fd and the sizes are
+# wildcards; the entries match only reads under nr_php_guarded_backtrace_fd.
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 1 bytes>
+   Memcheck:Addr1
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 2 bytes>
+   Memcheck:Addr2
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 4 bytes>
+   Memcheck:Addr4
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+{
+   <nr_php_guarded_backtrace_fd: the deliberate read of an unreadable PHP stack, 8 bytes>
+   Memcheck:Addr8
+   ...
+   fun:nr_php_backtrace_fd
+   fun:nr_php_guarded_backtrace_fd
+   ...
+}
+
+# test_fatal_signal_handler.c: the children of its fork tests end on a fatal signal (that is what
+# is tested), so the engine they started, and the storage of the thread that raised the signal, are
+# never freed. Valgrind's check for leaks when a process ends cannot be switched off by a client
+# request. These entries are scoped to the test's own functions: only what is allocated below them
+# is matched, and a child ends right after.
+{
+   <test_fatal_signal_handler: the child that raises a signal, and the engine it started>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:child_signal_in_thread
+}
+
+{
+   <test_fatal_signal_handler: thread of a child that raises a signal after ts_free_thread>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_signal_after_free
+}
+
+{
+   <test_fatal_signal_handler: thread of a child that raises a signal while it has PHP storage>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_signal_in_request
+}
+
+# Non-thread-safe builds: the child of the unreadable PHP stack test (child_unreadable_stack) ends
+# on a signal with the engine it started, and takes a null write on purpose.
+{
+   <test_fatal_signal_handler: the child of the unreadable stack test, and the engine it started>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:child_unreadable_stack
+}
+
+{
+   <test_fatal_signal_handler: the deliberate write through a null pointer, non-thread-safe>
+   Memcheck:Addr4
+   fun:child_unreadable_stack
+   ...
+}
+
+# The hardware fault the test takes on purpose: a write through a null pointer.
+{
+   <test_fatal_signal_handler: the deliberate write through a null pointer>
+   Memcheck:Addr4
+   fun:thread_hardware_fault
+   ...
+}
+
+{
+   <test_fatal_signal_handler: thread of a child with an unreadable PHP stack>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_signal_unreadable
+}
+
+{
+   <test_fatal_signal_handler: thread of a child that takes a hardware fault>
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:thread_hardware_fault
+}
+
+# PHP's own leak: ts_free_thread does not release the timer of the max execution time or the cwd
+# globals of a thread's storage. They come from the ts_resource() calls the tests make to give a
+# thread storage (prepare_thread, thread_guard_rounds), not from the code under test, which
+# allocates nothing.
+{
+   <test_fatal_signal_handler: execution timer of the storage a test thread is given>
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:malloc
+   fun:timer_create
+   fun:zend_max_execution_timer_init
+   fun:ts_resource_ex
+   ...
+   fun:thread_guarded_backtrace
+}
+
+{
+   <test_fatal_signal_handler: cwd globals of the storage a test thread is given>
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:malloc
+   fun:__zend_malloc
+   fun:cwd_globals_ctor
+   fun:allocate_new_resource
+   fun:ts_resource_ex
+   ...
+   fun:thread_guarded_backtrace
+}
+
+{
+   <test_fatal_signal_handler: execution timer of the storage a concurrent test thread is given>
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:malloc
+   fun:timer_create
+   fun:zend_max_execution_timer_init
+   fun:ts_resource_ex
+   ...
+   fun:thread_guard_rounds
+}
+
+{
+   <test_fatal_signal_handler: cwd globals of the storage a concurrent test thread is given>
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:malloc
+   fun:__zend_malloc
+   fun:cwd_globals_ctor
+   fun:allocate_new_resource
+   fun:ts_resource_ex
+   ...
+   fun:thread_guard_rounds
+}

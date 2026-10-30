@@ -7,6 +7,8 @@
 #include "php_agent.h"
 
 #include <dlfcn.h>
+#include <pthread.h>
+#include <setjmp.h>
 #include <signal.h>
 
 #include "php_api_distributed_trace.h"
@@ -784,16 +786,140 @@ PHP_MINIT_FUNCTION(newrelic) {
   return (SUCCESS);
 }
 
-static void nr_php_fatal_signal_handler(int sig) {
+/*
+ * The most frames of the PHP stack the fatal signal handler writes. The read of
+ * a stack that was torn down, or damaged, does not always fault: it can follow
+ * a pointer into freed memory, and a limit keeps that from looping.
+ */
+#define NR_PHP_FATAL_TRACE_MAX_FRAMES 1000
+
+/*
+ * While a thread reads the PHP stack in the fatal signal handler: where to jump
+ * back to if the read faults, in that thread's stack frame
+ * (nr_php_guarded_backtrace_fd). NULL when the thread is not reading it. Only a
+ * pointer is thread-local: a module's thread-local storage that is large enough
+ * not to fit in the process's static thread-local storage is allocated, with
+ * malloc, the first time a thread touches it, and that is not wanted in a
+ * signal handler. Nothing about the signal handlers changes while the stack is
+ * read: the fatal signal handler itself finds the pointer and jumps back.
+ */
+static nrt_thread_local sigjmp_buf* volatile nr_php_backtrace_guard = NULL;
+
+/*
+ * Write the PHP stack of the current thread, unless it cannot be read.
+ *
+ * The PHP stack is read from the thread's PHP globals. A thread that PHP does
+ * not know, or whose PHP storage PHP has already torn down (a thread that is
+ * exiting, for example in FrankenPHP when the C library aborts on a corrupted
+ * heap while it frees the thread), has none: in a thread-safe PHP the thread's
+ * TSRM storage is found through a thread key that ts_free_thread clears, so
+ * there is no PHP state when it is NULL, and nothing is read and nothing is
+ * allocated. Reading the globals of such a thread would fault inside the
+ * handler, and that second signal would replace the original one, so the
+ * original is never reported and the core is not that of the original failure.
+ *
+ * For any other thread that has no valid globals (damaged storage, storage
+ * freed from another thread) the read is guarded: a fault makes
+ * nr_php_fatal_signal_handler jump back to the sigsetjmp below. The handler
+ * runs with every signal blocked, and a blocked synchronous SIGSEGV ends the
+ * process, so the two signals of a fault are unblocked for the length of the
+ * read. If the fault happened while a lock was held, the lock stays held, which
+ * does not matter as nothing after the jump takes a lock: the handler writes a
+ * line, restores the signal mask, and reraises the original signal.
+ */
+void nr_php_guarded_backtrace_fd(int fd) {
+  sigjmp_buf jump;
+  sigset_t faults;
+  sigset_t old_mask;
+
+#ifdef ZTS
+  if (NULL == tsrm_get_ls_cache()) {
+    nr_write(fd, NR_PSTR("PHP execution trace not available: the thread has no "
+                         "PHP state\n"));
+    return;
+  }
+#endif
+
+  sigemptyset(&faults);
+  sigaddset(&faults, SIGSEGV);
+  sigaddset(&faults, SIGBUS);
+  pthread_sigmask(SIG_UNBLOCK, &faults, &old_mask);
+
+  if (0 == sigsetjmp(jump, 1)) {
+    nr_php_backtrace_guard = &jump;
+    nr_php_backtrace_fd(fd, NR_PHP_FATAL_TRACE_MAX_FRAMES TSRMLS_CC);
+  } else {
+    nr_write(fd,
+             NR_PSTR("PHP execution trace not available: reading it failed\n"));
+  }
+  nr_php_backtrace_guard = NULL;
+
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+}
+
+/*
+ * A SIGSEGV or SIGBUS is a fault of the read unless the signal was sent: with
+ * kill(), raise(), sigqueue() or by a timer or an asynchronous I/O completion.
+ * The codes of the signals that were sent are listed, not those of the faults,
+ * so that a fault code that a kernel or an architecture adds later (a memory
+ * tag mismatch, for example) is still taken for a fault.
+ *
+ * Linux also has SI_DETHREAD (sent by the kernel when a thread calls execve,
+ * and only with SIGKILL) and SI_ASYNCNL (completion of getaddrinfo_a, which
+ * sends a signal only if the caller asks for one). They were considered and
+ * left out: neither arrives as a SIGSEGV or SIGBUS in practice, and a sent
+ * signal taken for a fault only gives a misleading message.
+ */
+bool nr_php_signal_is_fault(int sig, const siginfo_t* info) {
+  if (SIGSEGV != sig && SIGBUS != sig) {
+    return false;
+  }
+  if (NULL == info) {
+    return true;
+  }
+  switch (info->si_code) {
+    case SI_USER:
+    case SI_QUEUE:
+    case SI_TIMER:
+    case SI_MESGQ:
+    case SI_ASYNCIO:
+#ifdef SI_TKILL
+    case SI_TKILL:
+#endif
+#ifdef SI_SIGIO
+    case SI_SIGIO:
+#endif
+      return false;
+    default:
+      return true;
+  }
+}
+
+static void nr_php_fatal_signal_handler(int sig,
+                                        siginfo_t* info,
+                                        void* context NRUNUSED) {
   int fd;
 
-  TSRMLS_FETCH();
+  if (NULL != nr_php_backtrace_guard) {
+    /*
+     * A signal while the PHP stack is read. A fault of the read (SIGSEGV or
+     * SIGBUS from the kernel) jumps back. Any other signal, including a
+     * SIGSEGV that was sent with kill(), gives up the trace: the process ends
+     * with that signal.
+     */
+    if (nr_php_signal_is_fault(sig, info)) {
+      siglongjmp(*nr_php_backtrace_guard, 1);
+    }
+    nr_php_backtrace_guard = NULL;
+    nr_signal_reraise(sig);
+    return;
+  }
 
   fd = nrl_get_log_fd();
   if (fd >= 0) {
     nr_signal_tracer_common(sig);  // TODO: nr_backtrace_fd (fd);
     nr_write(fd, NR_PSTR("PHP execution trace follows...\n"));
-    nr_php_backtrace_fd(fd, -1 /* unlimited */ TSRMLS_CC);
+    nr_php_guarded_backtrace_fd(fd);
   }
 
   /*
@@ -839,7 +965,7 @@ void nr_php_late_initialization(void) {
    * telling us not to.
    */
   if (0 == (NR_PHP_PROCESS_GLOBALS(special_flags).no_signal_handler)) {
-    nr_signal_handler_install(nr_php_fatal_signal_handler);
+    nr_signal_handler_install_siginfo(nr_php_fatal_signal_handler);
   }
 
   NR_PHP_PROCESS_GLOBALS(appenv) = nr_php_get_environment(TSRMLS_C);
