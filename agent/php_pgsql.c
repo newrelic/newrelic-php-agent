@@ -61,6 +61,12 @@ typedef struct {
   uint64_t clock;
 } nr_php_pgsql_statements_t;
 
+/*
+ * Purpose : Destroy one saved statement. This is the value destructor of the
+ *           map of statements of a connection.
+ *
+ * Params  : 1. The nr_php_pgsql_statement_t.
+ */
 static void nr_php_pgsql_statement_destroy(void* statement) {
   nr_php_pgsql_statement_t* s = statement;
 
@@ -68,6 +74,12 @@ static void nr_php_pgsql_statement_destroy(void* statement) {
   nr_free(s);
 }
 
+/*
+ * Purpose : Make the statements of one connection.
+ *
+ * Returns : The statements, which the table of statements owns once the
+ *           connection is saved there.
+ */
 static nr_php_pgsql_statements_t* nr_php_pgsql_statements_create(void) {
   nr_php_pgsql_statements_t* statements
       = nr_malloc(sizeof(nr_php_pgsql_statements_t));
@@ -248,8 +260,17 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
  *           prefix so that the empty name, which PostgreSQL uses for the
  *           unnamed statement, is a valid key. A name that does not fit the
  *           buffer gets a heap key, which the caller frees.
+ *
+ * Params  : 1. The statement name. It can be NULL or empty.
+ *           2. The length of the name.
+ *           3. A buffer for the key.
+ *           4. The size of the buffer.
+ *           5. Receives the key on the heap if the buffer was too small, and
+ *              NULL if not. The caller frees it.
+ *           6. Receives the length of the key.
+ *
+ * Returns : The key: the buffer, or the key on the heap.
  */
-
 static const char* nr_php_pgsql_statement_key(const char* name,
                                               nr_string_len_t name_len,
                                               char* buffer,
@@ -276,6 +297,17 @@ static const char* nr_php_pgsql_statement_key(const char* name,
   return key;
 }
 
+/*
+ * Purpose : Find the statements of a connection.
+ *
+ * Params  : 1. The connection object, or NULL for the connection a call with
+ *              no connection uses (the last one).
+ *           2. Whether to make the statements, if the agent has none for the
+ *              connection. A connection the agent did not see connect has
+ *              none.
+ *
+ * Returns : The statements, which the table of statements owns, or NULL.
+ */
 static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
     const zval* pgsql_conn,
     int create) {
@@ -317,6 +349,16 @@ typedef struct {
   uint64_t used;
 } nr_php_pgsql_least_used_t;
 
+/*
+ * Purpose : Iterator for nr_hashmap_apply() that finds the statement used
+ *           least recently.
+ *
+ * Params  : 1. The nr_php_pgsql_statement_t.
+ *           2. The key of the statement.
+ *           3. The length of the key.
+ *           4. The nr_php_pgsql_least_used_t, which receives the least
+ *              recently used statement seen so far.
+ */
 static void nr_php_pgsql_least_used_iterator(void* value,
                                              const char* key,
                                              size_t key_len,
@@ -332,16 +374,20 @@ static void nr_php_pgsql_least_used_iterator(void* value,
 }
 
 /*
- * A connection that lives as long as a worker, and prepares statements with
- * names that are not used again, would otherwise hold them all. Making room
- * drops the statement used least recently: its execute is reported as an
- * unknown prepared statement, never with the SQL of another one.
+ * Purpose : Drop the statement used least recently when a connection holds the
+ *           most statements it may. A connection that lives as long as a
+ *           worker, and prepares statements with names that are not used
+ *           again, would otherwise hold them all. The execute of a statement
+ *           that was dropped is reported as an unknown prepared statement,
+ *           never with the SQL of another one.
  *
- * The limit is a number of statements, not a number of bytes, so a connection
- * that holds the maximum number of statements with very long SQL holds a lot of
- * memory. Looking for the statement used least recently visits every statement
- * of the connection, and happens only for a new name once the limit is
- * reached.
+ * Params  : 1. The statements of the connection.
+ *
+ * Notes   : The limit is a number of statements, not a number of bytes, so a
+ *           connection that holds the maximum number of statements with very
+ *           long SQL holds a lot of memory. Looking for the statement used
+ *           least recently visits every statement of the connection, and
+ *           happens only for a new name once the limit is reached.
  */
 static void nr_php_pgsql_statements_make_room(
     nr_php_pgsql_statements_t* statements) {
