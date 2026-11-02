@@ -664,7 +664,7 @@ static void test_strip_persistent_prefix(void) {
 /*
  * A stdClass stands in for a mysqli_stmt: the table accepts any object.
  */
-static void test_statement_sql(TSRMLS_D) {
+static void test_statement_sql(void) {
   zval* first;
   zval* second;
   zval* not_object;
@@ -760,7 +760,7 @@ void test_main(void* p NRUNUSED) {
 #endif
     test_option_to_string();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-    test_statement_sql(TSRMLS_C);
+    test_statement_sql();
 #endif
   }
 
