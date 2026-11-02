@@ -48,7 +48,7 @@ tlib_parallel_info_t parallel_info
  */
 static void child_start_engine(void) {
   alarm(CHILD_TIMEOUT_SECONDS);
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("");
   tlib_php_request_start();
 }
 
@@ -394,7 +394,7 @@ static void check_guard_output(const char* what,
 }
 
 static void test_guard_in_this_process(void) {
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("");
   tlib_php_request_start();
 
   check_guard_output("a thread with PHP storage: no message", THREAD_LIVE,
@@ -413,7 +413,7 @@ static void test_guard_in_this_process(void) {
   test_guard_in_several_threads_at_once();
 
   tlib_php_request_end();
-  tlib_php_engine_destroy(TSRMLS_C);
+  tlib_php_engine_destroy();
 }
 
 /*
@@ -512,7 +512,7 @@ static void child_unreadable_stack(int sig, bool hardware_fault) {
   void* page;
 
   alarm(60);
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("");
   tlib_php_request_start();
   page = mmap(NULL, 4096, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   EG(current_execute_data) = (zend_execute_data*)page;

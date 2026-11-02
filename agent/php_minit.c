@@ -847,7 +847,7 @@ void nr_php_guarded_backtrace_fd(int fd) {
 
   if (0 == sigsetjmp(jump, 1)) {
     nr_php_backtrace_guard = &jump;
-    nr_php_backtrace_fd(fd, NR_PHP_FATAL_TRACE_MAX_FRAMES TSRMLS_CC);
+    nr_php_backtrace_fd(fd, NR_PHP_FATAL_TRACE_MAX_FRAMES);
   } else {
     nr_write(fd,
              NR_PSTR("PHP execution trace not available: reading it failed\n"));
