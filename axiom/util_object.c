@@ -23,7 +23,7 @@
 #if defined(__GLIBC__)
 #if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
 #if defined(__x86_64__)
-__asm__(".symver sscanf,sscanf@GLIBC_2.7");
+__asm__(".symver sscanf,sscanf@GLIBC_2.2.5");
 __asm__(".symver strtoll,strtoll@GLIBC_2.2.5");
 __asm__(".symver strtol,strtol@GLIBC_2.2.5");
 #elif defined(__aarch64__)
