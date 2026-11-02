@@ -35,8 +35,8 @@ struct _nr_regex_substrings_t {
   char* subject;     /* a copy of the subject that was matched */
   int capture_count; /* the number of subpatterns that were captured */
   pcre2_match_data* match_data; /* the match data block; owns ovector */
-  PCRE2_SIZE* ovector; /* the ovector array returned by PCRE2 */
-  int ovector_size;    /* the number of elements in ovector */
+  PCRE2_SIZE* ovector;          /* the ovector array returned by PCRE2 */
+  int ovector_size;             /* the number of elements in ovector */
 };
 
 /*

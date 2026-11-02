@@ -39,7 +39,7 @@ typedef struct _nr_regex_substrings_t nr_regex_substrings_t;
  *
  * Params  : 1. A PCRE pattern.
  *           2. Any options that should be applied to the regular expression.
- *           3. Non-zero if extra time should be spent studying the regular
+ *           3. Non-zero if extra time should be spent jit compiling the regular
  *              expression. In general, this should only be enabled for regular
  *              expressions that are going to be used more than once.
  *
@@ -47,7 +47,7 @@ typedef struct _nr_regex_substrings_t nr_regex_substrings_t;
  */
 extern nr_regex_t* nr_regex_create(const char* pattern,
                                    int options,
-                                   int do_study);
+                                   int jit_compile);
 
 /*
  * Pupose : Destroy a regular expression.
