@@ -25,15 +25,26 @@
 
 #include "util_syscalls.h"
 
-// #if defined(__GLIBC__)
-// #if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
-// #if defined(__x86_64__)
-// __asm__(".symver stat,stat@GLIBC_2.2.5");
-// #elif defined(__aarch64__)
-// __asm__(".symver stat,stat@GLIBC_2.17");
-// #endif
-// #endif
-// #endif
+#if defined(__GLIBC__)
+#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
+/*
+ * stat() was not exported by libc.so before glibc 2.33; it was an inline
+ * wrapper around __xstat(). To keep running on older glibc, call __xstat()
+ * directly, pinned to the version that exists on every supported glibc.
+ * _STAT_VER_LINUX is 1 on x86_64 and 0 on aarch64.
+ */
+#if defined(__x86_64__)
+#define NR_XSTAT_VER 1
+__asm__(".symver __xstat,__xstat@GLIBC_2.2.5");
+#elif defined(__aarch64__)
+#define NR_XSTAT_VER 0
+__asm__(".symver __xstat,__xstat@GLIBC_2.17");
+#endif
+#ifdef NR_XSTAT_VER
+extern int __xstat(int ver, const char* path, struct stat* buf);
+#endif
+#endif
+#endif
 
 int nr_accept(int sock, struct sockaddr* address, socklen_t* address_len_p) {
   return (accept)(sock, address, address_len_p);
@@ -192,7 +203,11 @@ int nr_socket(int dmn, int stp, int prt) {
 }
 
 int nr_stat(const char* path, struct stat* statbuf) {
+#ifdef NR_XSTAT_VER
+  return __xstat(NR_XSTAT_VER, path, statbuf);
+#else
   return (stat)(path, statbuf);
+#endif
 }
 
 int nr_unlink(const char* name) {
