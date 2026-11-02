@@ -31,7 +31,7 @@ static inline void nr_regex_handle_option(uint32_t* pcre_option_set,
   }
 }
 
-nr_regex_t* nr_regex_create(const char* pattern, int options, int do_study) {
+nr_regex_t* nr_regex_create(const char* pattern, int options, int jit_compile) {
   int err_code = 0;
   PCRE2_SIZE erroffset = 0;
   uint32_t pcre_options = 0;
@@ -52,8 +52,7 @@ nr_regex_t* nr_regex_create(const char* pattern, int options, int do_study) {
                          NR_REGEX_CASELESS);
   nr_regex_handle_option(&pcre_options, options, PCRE2_DOLLAR_ENDONLY,
                          NR_REGEX_DOLLAR_ENDONLY);
-  nr_regex_handle_option(&pcre_options, options, PCRE2_DOTALL,
-                         NR_REGEX_DOTALL);
+  nr_regex_handle_option(&pcre_options, options, PCRE2_DOTALL, NR_REGEX_DOTALL);
   nr_regex_handle_option(&pcre_options, options, PCRE2_MULTILINE,
                          NR_REGEX_MULTILINE);
 
@@ -74,16 +73,18 @@ nr_regex_t* nr_regex_create(const char* pattern, int options, int do_study) {
   }
 
   /*
-   * Study it, if asked. PCRE2 has no separate study phase: the equivalent is
-   * to JIT compile the pattern. JIT is not available on every platform, and
-   * pcre2_match falls back to the interpreter if the pattern is not JIT
-   * compiled, so a failure here is not fatal.
+   * JIT compile the pattern, if asked.
+   * JIT is not available on every platform, and pcre2_match falls back to the
+   * interpreter if the pattern is not JIT compiled, so a failure here is not
+   * fatal.
    */
-  if (do_study) {
+  if (jit_compile) {
     err_code = pcre2_jit_compile(regex->code, PCRE2_JIT_COMPLETE);
     if (0 != err_code) {
-      nrl_verbosedebug(NRL_MISC, "%s: regex jit compilation error %d; using "
-                       "interpreter", __func__, err_code);
+      nrl_verbosedebug(NRL_MISC,
+                       "%s: regex jit compilation error %d; using "
+                       "interpreter",
+                       __func__, err_code);
     }
   }
 
@@ -175,10 +176,11 @@ nr_regex_substrings_t* nr_regex_match_capture(const nr_regex_t* regex,
     nr_regex_substrings_destroy(&ss);
     return NULL;
   } else if (0 == rc) {
-    nrl_verbosedebug(NRL_MISC,
-                     "%s: pcre2_match returned 0 (too many matches); expected >0 "
-                     "or PCRE2_ERROR_NOMATCH",
-                     __func__);
+    nrl_verbosedebug(
+        NRL_MISC,
+        "%s: pcre2_match returned 0 (too many matches); expected >0 "
+        "or PCRE2_ERROR_NOMATCH",
+        __func__);
 
     /*
      * We want this case to blow up: although we know the regular expression
@@ -213,8 +215,7 @@ int nr_regex_capture_count(const nr_regex_t* regex) {
   return (int)count;
 }
 
-nr_regex_substrings_t* nr_regex_substrings_create(pcre2_code* code,
-                                                  int count) {
+nr_regex_substrings_t* nr_regex_substrings_create(pcre2_code* code, int count) {
   nr_regex_substrings_t* ss;
 
   if (count < 0 || NULL == code) {
@@ -310,10 +311,6 @@ nr_status_t nr_regex_substrings_get_offsets(const nr_regex_substrings_t* ss,
 const char* nr_regex_pcre_version(void) {
   static char version[32];
 
-  /*
-   * The buffer is large enough for any PCRE2 version string, and every call
-   * writes the same contents, so it is safe to share.
-   */
   if (pcre2_config(PCRE2_CONFIG_VERSION, version) < 0) {
     return "unknown";
   }
