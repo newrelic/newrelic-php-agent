@@ -26,11 +26,11 @@
 #if defined(__x86_64__)
 __asm__(".symver strtoimax,strtoimax@GLIBC_2.2.5");
 __asm__(".symver strtol,strtol@GLIBC_2.2.5");
-__asm__(".symver strtoul,strtol@GLIBC_2.2.5");
+__asm__(".symver strtoul,strtoul@GLIBC_2.2.5");
 #elif defined(__aarch64__)
 __asm__(".symver strtoimax,strtoimax@GLIBC_2.17");
 __asm__(".symver strtol,strtol@GLIBC_2.17");
-__asm__(".symver strtoul,strtol@GLIBC_2.17");
+__asm__(".symver strtoul,strtoul@GLIBC_2.17");
 #endif
 #endif
 #endif
