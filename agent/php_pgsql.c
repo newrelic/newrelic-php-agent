@@ -115,7 +115,7 @@ void nr_php_pgsql_default_statements_destroy(void) {
  *
  * Returns : The statements, or NULL.
  */
-static nr_php_pgsql_statements_t* nr_php_pgsql_default_statements(int create) {
+static nr_php_pgsql_statements_t* nr_php_pgsql_default_statements(bool create) {
   if ((NULL == NRPRG_SHARED(pgsql_default_statements)) && create) {
     NRPRG_SHARED(pgsql_default_statements) = nr_php_pgsql_statements_create();
   }
@@ -350,7 +350,7 @@ static const char* nr_php_pgsql_statement_key(const char* name,
  */
 static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
     const zval* pgsql_conn,
-    int create) {
+    bool create) {
   nr_php_pgsql_statements_t* statements;
 
   if (NULL == NRPRG_SHARED(pgsql_statements)) {
@@ -466,7 +466,7 @@ void nr_php_pgsql_statement_save(const zval* pgsql_conn,
     return;
   }
 
-  statements = nr_php_pgsql_statements_find(pgsql_conn, 1);
+  statements = nr_php_pgsql_statements_find(pgsql_conn, true);
   if (NULL == statements) {
     return;
   }
@@ -497,7 +497,7 @@ const char* nr_php_pgsql_statement_find(const zval* pgsql_conn,
   nr_php_pgsql_statement_t* statement;
   nr_php_pgsql_statements_t* statements;
 
-  statements = nr_php_pgsql_statements_find(pgsql_conn, 0);
+  statements = nr_php_pgsql_statements_find(pgsql_conn, false);
   if (NULL == statements) {
     return NULL;
   }
