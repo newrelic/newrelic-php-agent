@@ -740,8 +740,8 @@ static void test_silence_user_error_handler(void) {
       "restore_error_handler();"
       "$calls = 0;");
   state = nr_php_silence_user_error_handler();
-  tlib_pass_if_int_equal("no handler is set, so nothing was silenced", 0,
-                         state.active);
+  tlib_pass_if_bool_equal("no handler is set, so nothing was silenced", false,
+                          state.active);
   tlib_php_request_eval(
       "set_error_handler(function () use (&$calls) { $calls++; return true; },"
       " E_USER_NOTICE);");
