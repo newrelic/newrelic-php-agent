@@ -1295,13 +1295,12 @@ NR_INNER_WRAPPER(mysqli_execute_query) {
   nr_segment_t* segment = NULL;
 
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "os|a!",
-                                  &mysqli_obj, &sqlstr, &sqlstrlen, &params)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os|a!", &mysqli_obj, &sqlstr, &sqlstrlen,
+                                  &params)) {
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "s|a!", &sqlstr,
-                                    &sqlstrlen, &params)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s|a!", &sqlstr, &sqlstrlen, &params)) {
       sqlstr = "(unknown sql)";
       sqlstrlen = nr_strlen(sqlstr);
       params = NULL;
@@ -1322,17 +1321,17 @@ NR_INNER_WRAPPER(mysqli_execute_query) {
      * Set the stop time now so that we don't include the explain plan time.
      */
     segment->stop_time = nr_txn_now_rel(NRPRG(txn));
-    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj TSRMLS_CC);
+    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj);
 
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
-        && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
+        && nr_php_mysqli_zval_is_link(mysqli_obj)) {
       plan = nr_php_explain_mysqli_query_params(
           NRPRG(txn), mysqli_obj, sqlstr, sqlstrlen, params,
-          segment->start_time, segment->stop_time TSRMLS_CC);
+          segment->start_time, segment->stop_time);
     }
 
     nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
-                               NR_DATASTORE_MYSQL, instance TSRMLS_CC);
+                               NR_DATASTORE_MYSQL, instance);
 
     nr_explain_plan_destroy(&plan);
   }
@@ -1446,11 +1445,11 @@ static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
  */
 static void nr_php_mysqli_statement_save(const zval* stmt,
                                          const char* sql,
-                                         nr_string_len_t sql_len TSRMLS_DC) {
+                                         nr_string_len_t sql_len) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_mysqli_statement_sql_set(stmt, sql, sql_len);
 #else
-  nr_php_prepared_statement_save(stmt, "mysqli", sql, sql_len TSRMLS_CC);
+  nr_php_prepared_statement_save(stmt, "mysqli", sql, sql_len);
 #endif
 }
 
@@ -1462,13 +1461,13 @@ static void nr_php_mysqli_statement_save(const zval* stmt,
  * Returns : The SQL, which stays owned by where it is saved, or
  *           NR_PHP_PREPARED_STATEMENT_UNKNOWN if none was saved.
  */
-static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
+static const char* nr_php_mysqli_statement_find(const zval* stmt) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   const char* sql = nr_php_mysqli_statement_sql_get(stmt);
 
   return sql ? sql : NR_PHP_PREPARED_STATEMENT_UNKNOWN;
 #else
-  return nr_php_prepared_statement_find(stmt, "mysqli" TSRMLS_CC);
+  return nr_php_prepared_statement_find(stmt, "mysqli");
 #endif
 }
 
@@ -1480,8 +1479,7 @@ static const char* nr_php_mysqli_statement_find(const zval* stmt TSRMLS_DC) {
  * Params  : 1. The mysqli_stmt object.
  *           2. The link it was prepared on.
  */
-static void nr_php_mysqli_statement_link_save(const zval* stmt,
-                                              zval* link TSRMLS_DC) {
+static void nr_php_mysqli_statement_link_save(const zval* stmt, zval* link) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_mysqli_statement_link_set(stmt, link);
 #else
@@ -1617,14 +1615,14 @@ NR_INNER_WRAPPER(mysqli_stmt_bind_param) {
    * transaction, so the entry is made when the statement has a link and SQL
    * saved.
    */
-  if (!nr_php_mysqli_query_exists(Z_OBJ_HANDLE_P(mysqli_stmt_obj) TSRMLS_CC)) {
+  if (!nr_php_mysqli_query_exists(Z_OBJ_HANDLE_P(mysqli_stmt_obj))) {
     nr_mysqli_metadata_link_handle_t link_handle;
 
     if ((NULL != nr_php_mysqli_statement_sql_get(mysqli_stmt_obj))
         && (NR_SUCCESS
             == nr_php_mysqli_statement_link_get(mysqli_stmt_obj,
                                                 &link_handle))) {
-      nr_php_mysqli_query_ensure(Z_OBJ_HANDLE_P(mysqli_stmt_obj) TSRMLS_CC);
+      nr_php_mysqli_query_ensure(Z_OBJ_HANDLE_P(mysqli_stmt_obj));
     }
   }
 #endif
@@ -1687,7 +1685,7 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
         && !nr_php_is_zval_null(return_value)) {
       plan = nr_php_explain_mysqli_stmt(
           NRPRG(txn), stmt_obj, Z_OBJ_HANDLE_P(stmt_obj), params,
-          segment->start_time, segment->stop_time TSRMLS_CC);
+          segment->start_time, segment->stop_time);
     }
 
     /*
@@ -1697,7 +1695,7 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
      * prepares the statement again replaces the SQL in the table and frees the
      * string that was there before.
      */
-    sqlstr = nr_php_mysqli_statement_find(stmt_obj TSRMLS_CC);
+    sqlstr = nr_php_mysqli_statement_find(stmt_obj);
     sqlstrlen = nr_strlen(sqlstr);
 
     nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
@@ -1742,10 +1740,9 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
    * statements of the transaction.
    */
   if (0 == nr_strcmp(extension, "mysqli")) {
-    nr_php_mysqli_statement_save(return_value, sqlstr, sqlstrlen TSRMLS_CC);
+    nr_php_mysqli_statement_save(return_value, sqlstr, sqlstrlen);
   } else {
-    nr_php_prepared_statement_save(return_value, extension, sqlstr,
-                                   sqlstrlen TSRMLS_CC);
+    nr_php_prepared_statement_save(return_value, extension, sqlstr, sqlstrlen);
   }
 
   /* Record the current query link and SQL string if the right conditions exist
@@ -1759,7 +1756,7 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
       && nr_php_mysqli_zval_is_stmt(return_value)
       && nr_php_mysqli_zval_is_link(conn_obj)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value), conn_obj);
-    nr_php_mysqli_statement_link_save(return_value, conn_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(return_value, conn_obj);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
@@ -1852,9 +1849,9 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
     nr_php_mysqli_statement_save(
         this_obj,
         nr_php_mysqli_stmt_construct_prepared(this_obj) ? sqlstr : NULL,
-        sqlstrlen TSRMLS_CC);
+        sqlstrlen);
 #else
-    nr_php_mysqli_statement_save(this_obj, sqlstr, sqlstrlen TSRMLS_CC);
+    nr_php_mysqli_statement_save(this_obj, sqlstr, sqlstrlen);
 #endif
   }
 
@@ -1864,7 +1861,7 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
                                  mysqli_obj TSRMLS_CC);
-    nr_php_mysqli_statement_link_save(this_obj, mysqli_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(this_obj, mysqli_obj);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
@@ -1930,7 +1927,7 @@ NR_INNER_WRAPPER(mysqli_stmt_init) {
   if (nr_php_mysqli_zval_is_stmt(return_value TSRMLS_CC)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
                                  mysqli_obj TSRMLS_CC);
-    nr_php_mysqli_statement_link_save(return_value, mysqli_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(return_value, mysqli_obj);
   }
 
   if (zcaught) {
@@ -1972,7 +1969,7 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
    */
   nr_php_mysqli_statement_save(
       mysqli_stmt_obj, (IS_TRUE == Z_TYPE_P(return_value)) ? sqlstr : NULL,
-      sqlstrlen TSRMLS_CC);
+      sqlstrlen);
 
   /*
    * The statement was made by stmt_init() and is prepared now: it belongs to
@@ -1982,7 +1979,7 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
     nr_php_mysqli_statement_link_refresh(mysqli_stmt_obj);
   }
 #else
-  nr_php_mysqli_statement_save(mysqli_stmt_obj, sqlstr, sqlstrlen TSRMLS_CC);
+  nr_php_mysqli_statement_save(mysqli_stmt_obj, sqlstr, sqlstrlen);
 #endif
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))

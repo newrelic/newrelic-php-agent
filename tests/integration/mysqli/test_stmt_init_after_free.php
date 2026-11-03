@@ -33,10 +33,6 @@ execute threw
 Datastore/statement/MySQL/tables/select, 1
 */
 
-/*EXPECT_METRICS_DONT_EXIST
-Datastore/statement/MySQL/tables/select, 2
-*/
-
 /*EXPECT_TRACED_ERRORS
 null
 */

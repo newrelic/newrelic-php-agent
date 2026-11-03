@@ -35,7 +35,7 @@ typedef enum _nr_socket_type_t {
 nrapplist_t* nr_agent_applist = 0;
 
 static nrthread_mutex_t nr_agent_daemon_mutex = NRTHREAD_MUTEX_INITIALIZER;
-
+static nrt_thread_local bool nr_agent_daemon_mutex_held_by_self = false;
 static int nr_agent_daemon_fd = -1;
 
 static struct sockaddr_in nr_agent_daemon_inaddr;
@@ -561,7 +561,33 @@ static int nr_get_daemon_fd_internal(int log_warning_on_connect_failure) {
   return -1;
 }
 
-int nr_get_daemon_fd(void) {
+nr_status_t nr_agent_get_daemon_fd_locked(int* fdp) {
+  int fd;
+
+  if (!nr_agent_daemon_mutex_held_by_self) {
+    nrl_error(NRL_DAEMON,
+              "nr_agent_get_daemon_fd_locked called without holding "
+              "nr_agent_daemon_mutex");
+    return NR_FAILURE;
+  }
+  if (NULL == fdp) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * The caller is expected to have already probed the connection (which logs
+   * connect failures), so don't warn again here.
+   */
+  fd = nr_get_daemon_fd_internal(0);
+  if (-1 == fd) {
+    return NR_FAILURE;
+  }
+
+  *fdp = fd;
+  return NR_SUCCESS;
+}
+
+nr_status_t nr_agent_probe_daemon_connection(void) {
   int fd;
 
   nrt_mutex_lock(&nr_agent_daemon_mutex);
@@ -585,7 +611,7 @@ int nr_get_daemon_fd(void) {
     }
   }
 
-  return fd;
+  return -1 == fd ? NR_FAILURE : NR_SUCCESS;
 }
 
 int nr_agent_try_daemon_connect(int time_limit_ms) {
@@ -626,9 +652,7 @@ int nr_agent_try_daemon_connect(int time_limit_ms) {
   return did_connect;
 }
 
-void nr_set_daemon_fd(int fd) {
-  nrt_mutex_lock(&nr_agent_daemon_mutex);
-
+static void nr_set_daemon_fd_locked(int fd) {
   if (-1 != nr_agent_daemon_fd) {
     nrl_debug(NRL_DAEMON, "closed daemon connection fd=%d", nr_agent_daemon_fd);
     nr_close(nr_agent_daemon_fd);
@@ -642,7 +666,11 @@ void nr_set_daemon_fd(int fd) {
   if (-1 != nr_agent_daemon_fd) {
     nr_agent_connection_state = NR_AGENT_CONNECTION_STATE_CONNECTED;
   }
+}
 
+void nr_set_daemon_fd(int fd) {
+  nrt_mutex_lock(&nr_agent_daemon_mutex);
+  nr_set_daemon_fd_locked(fd);
   nrt_mutex_unlock(&nr_agent_daemon_mutex);
 }
 
@@ -650,10 +678,26 @@ void nr_agent_close_daemon_connection(void) {
   nr_set_daemon_fd(-1);
 }
 
+nr_status_t nr_agent_close_daemon_connection_locked(void) {
+  if (!nr_agent_daemon_mutex_held_by_self) {
+    nrl_error(NRL_DAEMON,
+              "nr_agent_close_daemon_connection_locked called without "
+              "holding nr_agent_daemon_mutex");
+    return NR_FAILURE;
+  }
+  nr_set_daemon_fd_locked(-1);
+  return NR_SUCCESS;
+}
+
 nr_status_t nr_agent_lock_daemon_mutex(void) {
-  return nrt_mutex_lock(&nr_agent_daemon_mutex);
+  nr_status_t st = nrt_mutex_lock(&nr_agent_daemon_mutex);
+  if (NR_SUCCESS == st) {
+    nr_agent_daemon_mutex_held_by_self = true;
+  }
+  return st;
 }
 
 nr_status_t nr_agent_unlock_daemon_mutex(void) {
+  nr_agent_daemon_mutex_held_by_self = false;
   return nrt_mutex_unlock(&nr_agent_daemon_mutex);
 }
