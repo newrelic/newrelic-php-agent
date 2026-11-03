@@ -13,6 +13,7 @@
  * PHP specific.
  */
 
+#include <signal.h>
 #include <stdbool.h>
 
 #ifndef PHP_AGENT_HDR
@@ -101,9 +102,35 @@ extern zval* nr_php_backtrace(TSRMLS_D);
  * Purpose : Write a dump of the current VM position to a file descriptor.
  *
  * Params  : 1. The destination file descriptor.
- *           2. The maximum number of execution frames to write.
+ *           2. The maximum number of execution frames to write, or zero or
+ *              less for no limit. A line says when frames were left out.
  */
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
+
+/*
+ * Purpose : Write the PHP stack of the current thread to fd, for the fatal
+ *           signal handler, unless it cannot be read: a thread that has no PHP
+ *           state (thread-safe PHP) gets a line that says so, and a read that
+ *           faults is caught and gets a line that says that it failed.
+ *
+ * Params  : 1. The destination file descriptor.
+ *
+ * Returns : Nothing. The caller reraises the signal it is handling.
+ */
+extern void nr_php_guarded_backtrace_fd(int fd);
+
+/*
+ * Purpose : Tell a fault from a signal that was sent. The fatal signal handler
+ *           uses it while the PHP stack is read, to jump back only for a fault
+ *           of the read.
+ *
+ * Params  : 1. The signal number.
+ *           2. The details of the signal (si_code); NULL is taken for a fault.
+ *
+ * Returns : True for a SIGSEGV or SIGBUS that the kernel raised, false for any
+ *           other signal and for one that was sent (kill(), raise(), ...).
+ */
+extern bool nr_php_signal_is_fault(int sig, const siginfo_t* info);
 
 /*
  * Purpose : Same as nr_php_backtrace_to_json but designed as a callback
