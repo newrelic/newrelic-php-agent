@@ -486,10 +486,20 @@ typedef struct _shared_globals_t {
    * The SQL of each prepared statement of each pgsql connection object
    * (PHP 8.1+), by statement name, kept for as long as the connection object
    * lives. A statement can be prepared in one transaction and executed in a
-   * later one. It follows pgsql_instances: a connect replaces the entry and
-   * the last connection is the one a call with no connection uses.
+   * later one. Unlike pgsql_instances, a connect keeps an existing entry; it
+   * marks the connection as the last one, which a call with no connection
+   * uses.
    */
   nr_php_objtable_t* pgsql_statements;
+
+  /*
+   * The statements (PHP 8.1+) of a call with no connection when no connection
+   * was marked as the last one: the connect happened while the agent was not
+   * recording. It is dropped when a connect marks a connection as the last
+   * one and when the default link is closed. The type is nr_php_pgsql_
+   * statements_t, which php_pgsql.c defines.
+   */
+  void* pgsql_default_statements;
 
   /*
    * The datastore instance of each Predis node connection object (PHP 8.0+),

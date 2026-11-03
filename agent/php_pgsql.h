@@ -60,6 +60,13 @@ extern void nr_php_pgsql_instance_destroy(void* instance);
 extern void nr_php_pgsql_statements_destroy(void* statements);
 
 /*
+ * Purpose : Destroy the statements kept for calls that name no connection when
+ *           the agent did not see the connect (see
+ *           shared_globals_t.pgsql_default_statements).
+ */
+extern void nr_php_pgsql_default_statements_destroy(void);
+
+/*
  * Purpose : Save the SQL of a prepared statement of a connection, replacing
  *           the SQL saved under the same name.
  *

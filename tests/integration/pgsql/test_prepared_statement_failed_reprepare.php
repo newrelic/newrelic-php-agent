@@ -11,9 +11,6 @@ A pg_prepare() that fails because the statement name is taken SHALL NOT change t
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (PHP_VERSION_ID < 80100) {
-  die("skip: the SQL of a statement is kept with the connection object from PHP 8.1\n");
-}
 */
 
 /*INI

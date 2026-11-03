@@ -15,6 +15,7 @@
 #include "php_wrapper.h"
 #include "php_mysqli.h"
 #include "php_pdo.h"
+#include "php_pgsql.h"
 #include "util_logging.h"
 #include "lib_guzzle4.h"
 
@@ -142,6 +143,7 @@ int nr_php_post_deactivate(void) {
    */
   nr_php_objtable_destroy(&NRPRG_SHARED(pgsql_instances));
   nr_php_objtable_destroy(&NRPRG_SHARED(pgsql_statements));
+  nr_php_pgsql_default_statements_destroy();
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_objtable_destroy(&NRPRG_SHARED(predis_instances));

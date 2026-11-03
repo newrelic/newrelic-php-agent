@@ -2144,6 +2144,9 @@ NR_INNER_WRAPPER(pg_execute) {
   int rv;
   int zcaught = 0;
   nr_segment_t* segment = NULL;
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  char* query_before_call = NULL;
+#endif
 
   rv = FAILURE;
   argc = ZEND_NUM_ARGS();
@@ -2168,6 +2171,22 @@ NR_INNER_WRAPPER(pg_execute) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * A copy of the SQL as it is before the call, for when the call removes the
+   * statement: an error handler that closes the connection while pg_execute()
+   * warns deletes the statements of the connection.
+   */
+  if (SUCCESS == rv) {
+    const char* saved
+        = nr_php_pgsql_statement_find(conn, stmtname, stmtname_len);
+
+    if (saved) {
+      query_before_call = nr_strdup(saved);
+    }
+  }
+#endif
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
@@ -2191,6 +2210,9 @@ NR_INNER_WRAPPER(pg_execute) {
      */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
     query = nr_php_pgsql_statement_find(conn, stmtname, stmtname_len);
+    if (NULL == query) {
+      query = query_before_call;
+    }
 #else
     key = nr_php_prepared_statement_make_pgsql_key(conn, stmtname,
                                                    stmtname_len);
@@ -2207,6 +2229,10 @@ NR_INNER_WRAPPER(pg_execute) {
 
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  nr_free(query_before_call);
+#endif
 
   if (zcaught) {
     zend_bailout();
@@ -2263,7 +2289,10 @@ NR_INNER_WRAPPER(pg_prepare) {
     nr_php_pgsql_statement_save(conn, stmtname, stmtname_len, query, query_len);
   }
 #else
-  if ((SUCCESS == rv) && (query_len > 0)) {
+  /* Before PHP 8.1 a successful prepare returns a resource, a failed one false.
+   */
+  if ((SUCCESS == rv) && (query_len > 0)
+      && (IS_RESOURCE == Z_TYPE_P(return_value))) {
     char* key = NULL;
 
     /*

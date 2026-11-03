@@ -96,6 +96,32 @@ void nr_php_pgsql_statements_destroy(void* statements) {
   nr_hashmap_destroy(&s->names);
   nr_free(s);
 }
+
+void nr_php_pgsql_default_statements_destroy(void) {
+  if (NRPRG_SHARED(pgsql_default_statements)) {
+    nr_php_pgsql_statements_destroy(NRPRG_SHARED(pgsql_default_statements));
+    NRPRG_SHARED(pgsql_default_statements) = NULL;
+  }
+}
+
+/*
+ * Purpose : Find the statements of a call that names no connection, when no
+ *           connection is marked as the last one. The connect happened while
+ *           the agent was not recording, so the agent does not know the
+ *           connection object. Before PHP 8.1 every such call shared one key
+ *           in the same way.
+ *
+ * Params  : 1. Whether to make the statements if there are none.
+ *
+ * Returns : The statements, or NULL.
+ */
+static nr_php_pgsql_statements_t* nr_php_pgsql_default_statements(int create) {
+  if ((NULL == NRPRG_SHARED(pgsql_default_statements)) && create) {
+    NRPRG_SHARED(pgsql_default_statements) = nr_php_pgsql_statements_create();
+  }
+
+  return NRPRG_SHARED(pgsql_default_statements);
+}
 #endif
 
 void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
@@ -135,6 +161,9 @@ void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
       }
       nr_php_objtable_mark_last(NRPRG_SHARED(pgsql_statements), pgsql_conn);
     }
+
+    /* The connection is known now: calls with no connection use it. */
+    nr_php_pgsql_default_statements_destroy();
     return;
   }
 
@@ -223,7 +252,16 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
       && nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances))) {
     nr_php_objtable_clear_last(NRPRG_SHARED(pgsql_instances));
     nr_php_objtable_clear_last(NRPRG_SHARED(pgsql_statements));
+    nr_php_pgsql_default_statements_destroy();
     return;
+  }
+
+  /*
+   * The connection the agent did not see connect: PHP releases its default
+   * link, so the statements saved for it go.
+   */
+  if (NULL == pgsql_conn) {
+    nr_php_pgsql_default_statements_destroy();
   }
 #endif
 
@@ -301,12 +339,14 @@ static const char* nr_php_pgsql_statement_key(const char* name,
  * Purpose : Find the statements of a connection.
  *
  * Params  : 1. The connection object, or NULL for the connection a call with
- *              no connection uses (the last one).
+ *              no connection uses (the last one, or the statements of a
+ *              connection the agent did not see connect).
  *           2. Whether to make the statements, if the agent has none for the
  *              connection. A connection the agent did not see connect has
  *              none.
  *
- * Returns : The statements, which the table of statements owns, or NULL.
+ * Returns : The statements, which the table of statements or the shared
+ *           globals own, or NULL.
  */
 static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
     const zval* pgsql_conn,
@@ -319,7 +359,8 @@ static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
 
   /* With no connection given, PHP uses the one connected last. */
   if (NULL == pgsql_conn) {
-    return nr_php_objtable_get_last(NRPRG_SHARED(pgsql_statements));
+    statements = nr_php_objtable_get_last(NRPRG_SHARED(pgsql_statements));
+    return statements ? statements : nr_php_pgsql_default_statements(create);
   }
 
   if (!nr_php_is_zval_valid_object(pgsql_conn)) {
