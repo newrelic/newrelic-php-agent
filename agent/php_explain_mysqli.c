@@ -77,11 +77,13 @@ static nr_explain_plan_t* nr_php_explain_mysqli_fetch_plan(
  * Purpose : Helper function to duplicate a MySQLi link and issue an EXPLAIN
  *           query for the given SQL.
  *
- * Params  : 1. The link to duplicate.
- *           2. The handle of the MySQLi statement, or 0 if there was no
+ * Params  : 1. The handle of the link to duplicate.
+ *           2. The statement object the application prepared, or NULL if
+ *              there was none.
+ *           3. The handle of the MySQLi statement, or 0 if there was no
  *              statement.
- *           3. The SQL to explain.
- *           4. Params to be bound in execute
+ *           4. The SQL to explain.
+ *           5. Params to be bound in execute
  *
  * Returns : A newly allocated explain plan, or NULL on error.
  */
@@ -185,26 +187,27 @@ static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
  *           whose mysqli may use libmysqlclient instead, with a different
  *           structure behind the same pointers.
  *
- * Returns : 1 if mysqli requires mysqlnd, 0 if not or if mysqli is not loaded.
+ * Returns : true if mysqli requires mysqlnd, false if not or if mysqli is not
+ *           loaded.
  */
-int nr_php_explain_mysqli_uses_mysqlnd(void) {
+bool nr_php_explain_mysqli_uses_mysqlnd(void) {
   const zend_module_entry* mysqli;
   const zend_module_dep* dep;
 
   mysqli = (const zend_module_entry*)zend_hash_str_find_ptr(
       &module_registry, "mysqli", sizeof("mysqli") - 1);
   if ((NULL == mysqli) || (NULL == mysqli->deps)) {
-    return 0;
+    return false;
   }
 
   for (dep = mysqli->deps; dep->name; dep++) {
     if ((MODULE_DEP_REQUIRED == dep->type)
         && (0 == nr_strcmp(dep->name, "mysqlnd"))) {
-      return 1;
+      return true;
     }
   }
 
-  return 0;
+  return false;
 }
 
 /*

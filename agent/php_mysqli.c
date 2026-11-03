@@ -360,7 +360,7 @@ static zval* nr_php_mysqli_link_duplicate_metadata(
   return dup;
 }
 
-zval* nr_php_mysqli_link_duplicate(zval* orig) {
+zval* nr_php_mysqli_link_duplicate(const zval* orig) {
   nr_mysqli_metadata_link_t metadata;
 
   if (!nr_php_mysqli_zval_is_link(orig)) {
@@ -421,11 +421,11 @@ char* nr_php_mysqli_query_get_query(nr_php_object_handle_t handle TSRMLS_DC) {
   return nr_strndup(Z_STRVAL_P(query), Z_STRLEN_P(query));
 }
 
-int nr_php_mysqli_query_exists(nr_php_object_handle_t handle) {
+bool nr_php_mysqli_query_exists(nr_php_object_handle_t handle) {
   return NULL != nr_php_mysqli_query_find(handle);
 }
 
-int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle) {
+bool nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle) {
   const zval* metadata = nr_php_mysqli_query_find(handle);
 
   return metadata
@@ -1253,7 +1253,7 @@ const char* nr_php_mysqli_statement_sql_get(const zval* stmt) {
   return statement ? statement->sql : NULL;
 }
 
-void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link) {
+void nr_php_mysqli_statement_link_set(const zval* stmt, const zval* link) {
   nr_mysqli_metadata_link_t metadata;
   nr_php_mysqli_statement_t* statement;
 
