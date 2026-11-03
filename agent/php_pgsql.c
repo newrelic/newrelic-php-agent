@@ -432,7 +432,7 @@ static void nr_php_pgsql_least_used_iterator(void* value,
  */
 static void nr_php_pgsql_statements_make_room(
     nr_php_pgsql_statements_t* statements) {
-  nr_php_pgsql_least_used_t least = {NULL, 0, 0};
+  nr_php_pgsql_least_used_t least = {.key = NULL, .key_len = 0, .used = 0};
   char* key;
 
   if (nr_hashmap_count(statements->names) < NR_PHP_PGSQL_MAX_STATEMENTS) {
