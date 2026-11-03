@@ -344,9 +344,11 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   /*
    * The application's error handler is not called while the explain connection
    * runs. A warning from that connection, such as a refused login, would call
-   * it, and a handler can close the application's link: the data saved for the
-   * link, which the explain reads through pointers while it calls PHP, would be
-   * freed. It also keeps the handler from seeing warnings that the
+   * it, and a handler can close the application's link. The data saved for the
+   * link is read through pointers across several calls into PHP (the options,
+   * the SSL settings, the connect and the database selection), so a handler
+   * that closed the link during any of them would free it: this guards against
+   * that. It also keeps the handler from seeing warnings that the
    * application's own calls did not cause.
    */
   user_error_handler = nr_php_silence_user_error_handler();

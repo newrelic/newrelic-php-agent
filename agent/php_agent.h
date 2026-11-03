@@ -500,7 +500,7 @@ extern void nr_php_restore_errors(int error_reporting TSRMLS_DC);
  * nr_php_restore_user_error_handler restores.
  */
 typedef struct {
-  int active;      /* whether a handler was set; if not, nothing was changed */
+  bool active;     /* whether a handler was set; if not, nothing was changed */
   int error_types; /* the error types the handler was registered for */
   size_t depth;    /* the number of handlers saved on PHP's stack */
 } nr_php_user_error_handler_state_t;
