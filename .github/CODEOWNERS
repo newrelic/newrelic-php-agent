@@ -1,0 +1,3 @@
+# The PHP agent team (phpc) owns this repository.
+# Rulesets on this repository require code owner review, so every change needs a phpc approval.
+* @newrelic/phpc
