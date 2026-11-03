@@ -11,9 +11,13 @@ on:
 jobs:
   trigger-test-suite:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
     steps:
       - name: Trigger Test Suite
+        env:
+          GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
+          TEST_SUITE_REPO: ${{ secrets.TEST_SUITE_REPO }}
+          TEST_SUITE_WORKFLOW: ${{ secrets.TEST_SUITE_WORKFLOW }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.number }}
         run: |
-          gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.TEST_SUITE_WORKFLOW }} -f agent_git_ref=${{ github.head_ref }} -f pr-number=${{ github.event.number }}
+          gh workflow run -R "$TEST_SUITE_REPO" "$TEST_SUITE_WORKFLOW" -f agent_git_ref="$HEAD_REF" -f pr-number="$PR_NUMBER"
