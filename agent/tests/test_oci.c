@@ -18,8 +18,8 @@ static void set_statement(const char* name,
   char* expr = nr_formatf("$%s", name);
   zval* stmt;
 
-  tlib_php_request_eval(code TSRMLS_CC);
-  stmt = tlib_php_request_eval_expr(expr TSRMLS_CC);
+  tlib_php_request_eval(code);
+  stmt = tlib_php_request_eval_expr(expr);
   nr_php_oci_statement_sql_set(stmt, sql, sql_len);
   nr_php_zval_free(&stmt);
   nr_free(code);
@@ -28,7 +28,7 @@ static void set_statement(const char* name,
 
 static const char* get_statement(const char* name) {
   char* expr = nr_formatf("$%s", name);
-  zval* stmt = tlib_php_request_eval_expr(expr TSRMLS_CC);
+  zval* stmt = tlib_php_request_eval_expr(expr);
   const char* sql = nr_php_oci_statement_sql_get(stmt);
 
   nr_php_zval_free(&stmt);
@@ -36,7 +36,7 @@ static const char* get_statement(const char* name) {
   return sql;
 }
 
-static void test_statement_sql(TSRMLS_D) {
+static void test_statement_sql(void) {
   zval* not_a_resource;
 
   tlib_php_request_start();
@@ -44,7 +44,7 @@ static void test_statement_sql(TSRMLS_D) {
   /*
    * Bad arguments.
    */
-  not_a_resource = tlib_php_request_eval_expr("'text'" TSRMLS_CC);
+  not_a_resource = tlib_php_request_eval_expr("'text'");
   nr_php_oci_statement_sql_set(NULL, "SELECT 1", 8);
   nr_php_oci_statement_sql_set(not_a_resource, "SELECT 1", 8);
   tlib_pass_if_null("a string has no SQL",
@@ -87,7 +87,7 @@ static void test_statement_sql(TSRMLS_D) {
   /*
    * A statement that is freed loses its entry when the next one is saved.
    */
-  tlib_php_request_eval("unset($a);" TSRMLS_CC);
+  tlib_php_request_eval("unset($a);");
   tlib_pass_if_size_t_equal("the entry stays until the next save", 3,
                             nr_php_oci_statements_count());
   set_statement("f", "SELECT 6 FROM dual", 18);
@@ -100,16 +100,16 @@ static void test_statement_sql(TSRMLS_D) {
    * The id of a freed resource is not given to a new resource, so a new
    * statement does not find the SQL of a freed one.
    */
-  tlib_php_request_eval("$g = fopen('php://memory', 'r');" TSRMLS_CC);
+  tlib_php_request_eval("$g = fopen('php://memory', 'r');");
   tlib_pass_if_null("a new statement has no SQL", get_statement("g"));
 
   tlib_php_request_end();
 }
 
 void test_main(void* p NRUNUSED) {
-  tlib_php_engine_create("" PTSRMLS_CC);
-  test_statement_sql(TSRMLS_C);
-  tlib_php_engine_destroy(TSRMLS_C);
+  tlib_php_engine_create("");
+  test_statement_sql();
+  tlib_php_engine_destroy();
 }
 
 tlib_parallel_info_t parallel_info
