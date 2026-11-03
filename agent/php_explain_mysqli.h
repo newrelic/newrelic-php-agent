@@ -45,7 +45,7 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
                                                       const char* sql,
                                                       int sql_len,
                                                       nrtime_t start,
-                                                      nrtime_t stop TSRMLS_DC);
+                                                      nrtime_t stop);
 
 /*
  * Purpose : Generate an explain plan for a MySQLi query that was run with
