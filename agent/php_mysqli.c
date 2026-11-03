@@ -1074,3 +1074,44 @@ void nr_php_mysqli_rshutdown() {
     nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
   }
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : Destroy the SQL kept for one statement object. This is the value
+ *           destructor of the table in shared_globals_t.mysqli_statement_sql.
+ *
+ * Params  : 1. The SQL, a string on the heap.
+ */
+static void nr_php_mysqli_statement_sql_destroy(void* sql) {
+  nr_free(sql);
+}
+
+void nr_php_mysqli_statement_sql_create_table(void) {
+  NRPRG_SHARED(mysqli_statement_sql)
+      = nr_php_objtable_create(nr_php_mysqli_statement_sql_destroy);
+}
+
+void nr_php_mysqli_statement_sql_set(const zval* stmt,
+                                     const char* sql,
+                                     nr_string_len_t sql_len) {
+  /*
+   * The table does not take the SQL copy when the object is NULL, so return
+   * before the copy is made.
+   */
+  if ((NULL == NRPRG_SHARED(mysqli_statement_sql)) || (NULL == stmt)) {
+    return;
+  }
+
+  if ((NULL == sql) || (0 == sql_len)) {
+    nr_php_objtable_del(NRPRG_SHARED(mysqli_statement_sql), stmt);
+    return;
+  }
+
+  nr_php_objtable_set(NRPRG_SHARED(mysqli_statement_sql), stmt,
+                      nr_strndup(sql, sql_len));
+}
+
+const char* nr_php_mysqli_statement_sql_get(const zval* stmt) {
+  return nr_php_objtable_get(NRPRG_SHARED(mysqli_statement_sql), stmt);
+}
+#endif
