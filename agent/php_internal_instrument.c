@@ -1479,7 +1479,8 @@ static const char* nr_php_mysqli_statement_find(const zval* stmt) {
  * Params  : 1. The mysqli_stmt object.
  *           2. The link it was prepared on.
  */
-static void nr_php_mysqli_statement_link_save(const zval* stmt, zval* link) {
+static void nr_php_mysqli_statement_link_save(const zval* stmt,
+                                              const zval* link) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_mysqli_statement_link_set(stmt, link);
 #else

@@ -908,7 +908,8 @@ static void test_explain_bound_count(void) {
  * A statement object whose mysqli data is built by hand, laid out as mysqlnd
  * lays it out, with param_count bound variables.
  */
-static zval* new_fake_bound_statement(unsigned int param_count, int with_bind) {
+static zval* new_fake_bound_statement(unsigned int param_count,
+                                      bool with_bind) {
   zval* stmt;
   mysqli_object* intern;
   MYSQLI_RESOURCE* resource = nr_zalloc(sizeof(MYSQLI_RESOURCE));
@@ -988,7 +989,7 @@ static void test_explain_bound_count_mocked(void) {
   tlib_fail_if_null("mysqli module", mysqli);
   original_deps = mysqli->deps;
 
-  stmt = new_fake_bound_statement(3, 1);
+  stmt = new_fake_bound_statement(3, true);
   tlib_pass_if_long_equal("mysqlnd: bound variables", 3,
                           nr_php_explain_mysqli_bound_count(stmt));
 
@@ -1010,12 +1011,12 @@ static void test_explain_bound_count_mocked(void) {
                           nr_php_explain_mysqli_bound_count(stmt));
   free_fake_bound_statement(&stmt);
 
-  stmt = new_fake_bound_statement(2, 0);
+  stmt = new_fake_bound_statement(2, false);
   tlib_pass_if_long_equal("nothing bound", 0,
                           nr_php_explain_mysqli_bound_count(stmt));
   free_fake_bound_statement(&stmt);
 
-  stmt = new_fake_bound_statement(0, 1);
+  stmt = new_fake_bound_statement(0, true);
   tlib_pass_if_long_equal("no parameters", 0,
                           nr_php_explain_mysqli_bound_count(stmt));
   free_fake_bound_statement(&stmt);

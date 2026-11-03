@@ -85,51 +85,7 @@ extern nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
  *
  * Returns : The new mysqli object, or NULL if an error occurred.
  */
-extern zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC);
-
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-/*
- * Purpose : Create the table that holds the SQL of each mysqli statement
- *           object. Call it once per request, before any statement exists;
- *           destroy it with nr_php_objtable_destroy() in post-deactivate.
- */
-extern void nr_php_mysqli_statement_sql_create_table(void);
-
-/*
- * Purpose : Save the SQL of a mysqli statement object, replacing the SQL
- *           saved for it earlier. The entry is dropped when the object is
- *           freed.
- *
- * Params  : 1. The mysqli_stmt object.
- *           2. The SQL. NULL or empty removes the entry.
- *           3. The length of the SQL.
- */
-extern void nr_php_mysqli_statement_sql_set(const zval* stmt,
-                                            const char* sql,
-                                            nr_string_len_t sql_len);
-
-/*
- * Purpose : Get the SQL saved for a mysqli statement object.
- *
- * Params  : 1. The mysqli_stmt object.
- *
- * Returns : The SQL, which stays owned by the table, or NULL if none was
- *           saved.
- */
-extern const char* nr_php_mysqli_statement_sql_get(const zval* stmt);
-#endif
-
-/*
- * Purpose : Duplicate a MySQLi link from the metadata saved for the handle of
- *           a link, without the link object.
- *
- * Params  : 1. The handle of the link.
- *
- * Returns : The new mysqli object, or NULL if the link has no complete
- *           metadata or an error occurred.
- */
-extern zval* nr_php_mysqli_link_duplicate_handle(
-    nr_mysqli_metadata_link_handle_t handle);
+extern zval* nr_php_mysqli_link_duplicate(const zval* orig);
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
@@ -171,7 +127,8 @@ extern const char* nr_php_mysqli_statement_sql_get(const zval* stmt);
  *           2. The link. If the agent has no complete metadata for it, a link
  *              saved earlier is forgotten.
  */
-extern void nr_php_mysqli_statement_link_set(const zval* stmt, zval* link);
+extern void nr_php_mysqli_statement_link_set(const zval* stmt,
+                                             const zval* link);
 
 /*
  * Purpose : Save again the connection and the database that the link of a
@@ -200,6 +157,18 @@ extern nr_status_t nr_php_mysqli_statement_link_get(
     const zval* stmt,
     nr_mysqli_metadata_link_handle_t* handle);
 #endif
+
+/*
+ * Purpose : Duplicate a MySQLi link from the metadata saved for the handle of
+ *           a link, without the link object.
+ *
+ * Params  : 1. The handle of the link.
+ *
+ * Returns : The new mysqli object, or NULL if the link has no complete
+ *           metadata or an error occurred.
+ */
+extern zval* nr_php_mysqli_link_duplicate_handle(
+    nr_mysqli_metadata_link_handle_t handle);
 
 /*
  * Purpose : Get the MySQLi link that was used to prepare a statement.
@@ -239,9 +208,9 @@ extern nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,
  *
  * Params  : 1. The object handle of the statement.
  *
- * Returns : Non-zero if the transaction has an entry, zero if not.
+ * Returns : true if the transaction has an entry, false if not.
  */
-extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle);
+extern bool nr_php_mysqli_query_exists(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Whether the transaction has bound parameters for a statement
@@ -249,9 +218,9 @@ extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle);
  *
  * Params  : 1. The object handle of the statement.
  *
- * Returns : Non-zero if parameters are saved for the statement, zero if not.
+ * Returns : true if parameters are saved for the statement, false if not.
  */
-extern int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle);
+extern bool nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Make sure the transaction has an entry for a statement object, so

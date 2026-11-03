@@ -10,6 +10,7 @@
 #ifndef PHP_EXPLAIN_MYSQLI_HDR
 #define PHP_EXPLAIN_MYSQLI_HDR
 
+#include "php_agent.h"
 #include "nr_explain.h"
 
 /*
@@ -103,9 +104,9 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_stmt(
  * Purpose : Tell whether the loaded mysqli extension is built on mysqlnd,
  *           from the module's dependencies at run time.
  *
- * Returns : 1 if it is, 0 if it is not or mysqli is not loaded.
+ * Returns : true if it is, false if it is not or mysqli is not loaded.
  */
-extern int nr_php_explain_mysqli_uses_mysqlnd(void);
+extern bool nr_php_explain_mysqli_uses_mysqlnd(void);
 
 /*
  * Purpose : The number of variables that bind_param() bound on a statement.
