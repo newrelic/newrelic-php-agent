@@ -136,7 +136,7 @@ static void test_validate(TSRMLS_D) {
  * is not used: the use of freed memory is detected when the test runs under
  * valgrind.
  */
-static void test_record_datastore_segment_txn_ends(TSRMLS_D) {
+static void test_record_datastore_segment_txn_ends(void) {
   zval* retval;
 
   tlib_php_request_start();
@@ -149,9 +149,9 @@ static void test_record_datastore_segment_txn_ends(TSRMLS_D) {
       "  return 'callback result';"
       "},"
       "array('product' => 'MySQL', 'collection' => 'users',"
-      "      'operation' => 'select'));" TSRMLS_CC);
+      "      'operation' => 'select'));");
 
-  retval = tlib_php_request_eval_expr("$result" TSRMLS_CC);
+  retval = tlib_php_request_eval_expr("$result");
   tlib_pass_if_zval_type_is("the callback result is returned", IS_STRING,
                             retval);
   nr_php_zval_free(&retval);
@@ -170,7 +170,7 @@ void test_main(void* p NRUNUSED) {
 
   test_create_instance_from_params(TSRMLS_C);
   test_validate(TSRMLS_C);
-  test_record_datastore_segment_txn_ends(TSRMLS_C);
+  test_record_datastore_segment_txn_ends();
 
   tlib_php_engine_destroy(TSRMLS_C);
 }

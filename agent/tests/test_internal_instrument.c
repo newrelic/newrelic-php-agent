@@ -118,7 +118,7 @@ static void old_handler_noop(INTERNAL_FUNCTION_PARAMETERS) {
 static void old_handler_ends_txn(INTERNAL_FUNCTION_PARAMETERS) {
   (void)execute_data;
   (void)return_value;
-  tlib_php_request_eval("newrelic_end_transaction();" TSRMLS_CC);
+  tlib_php_request_eval("newrelic_end_transaction();");
 }
 
 static void old_handler_restarts_txn(INTERNAL_FUNCTION_PARAMETERS) {
@@ -126,7 +126,7 @@ static void old_handler_restarts_txn(INTERNAL_FUNCTION_PARAMETERS) {
   (void)return_value;
   tlib_php_request_eval(
       "newrelic_end_transaction();"
-      "newrelic_start_transaction(ini_get('newrelic.appname'));" TSRMLS_CC);
+      "newrelic_start_transaction(ini_get('newrelic.appname'));");
 }
 
 static void old_handler_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
@@ -138,11 +138,11 @@ static void old_handler_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
 static void old_handler_ends_txn_and_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
   (void)execute_data;
   (void)return_value;
-  tlib_php_request_eval("newrelic_end_transaction();" TSRMLS_CC);
+  tlib_php_request_eval("newrelic_end_transaction();");
   zend_bailout();
 }
 
-static void test_call_old_handler_segment(TSRMLS_D) {
+static void test_call_old_handler_segment(void) {
   nr_segment_t* segment;
   int zcaught;
 
@@ -224,7 +224,7 @@ void test_main(void* p NRUNUSED) {
 
   test_cufa_direct(TSRMLS_C);
   test_cufa_indirect(TSRMLS_C);
-  test_call_old_handler_segment(TSRMLS_C);
+  test_call_old_handler_segment();
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
