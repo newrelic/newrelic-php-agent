@@ -133,7 +133,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
   query = nr_strndup(sql, sql_len);
   plan = nr_php_explain_mysqli_issue(
       (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), NULL, 0, query,
-      NULL TSRMLS_CC);
+      NULL);
   nr_free(query);
 
   return plan;
@@ -314,8 +314,7 @@ static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
   bind_args[0] = nr_php_zval_alloc();
   ZVAL_STRINGL(bind_args[0], format, count);
 
-  retval = nr_php_call_user_func(dest, "bind_param", count + 1,
-                                 bind_args TSRMLS_CC);
+  retval = nr_php_call_user_func(dest, "bind_param", count + 1, bind_args);
   if (nr_php_is_zval_true(retval)) {
     status = NR_SUCCESS;
   }
@@ -356,7 +355,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
   link = nr_php_mysqli_query_get_link(handle TSRMLS_CC);
   if (link) {
     link_handle = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
-    query = nr_php_mysqli_query_get_query(handle TSRMLS_CC);
+    query = nr_php_mysqli_query_get_query(handle);
   }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
@@ -382,7 +381,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
      * many as the statement has. A statement whose number of parameters cannot
      * be read is not opened either.
      */
-    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle TSRMLS_CC)) {
+    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle)) {
       long param_count = nr_php_explain_mysqli_stmt_param_count(stmt);
       long bound_count = 0;
 
@@ -408,9 +407,8 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
   }
 
   plan = nr_php_explain_mysqli_issue(
-      link_handle, stmt,
-      nr_php_mysqli_query_exists(handle TSRMLS_CC) ? handle : 0, query,
-      params TSRMLS_CC);
+      link_handle, stmt, nr_php_mysqli_query_exists(handle) ? handle : 0, query,
+      params);
   nr_free(query);
 
   return plan;
@@ -594,7 +592,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   error_reporting = nr_php_silence_errors(TSRMLS_C);
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
-  link_dup = nr_php_mysqli_link_duplicate_handle(link_handle TSRMLS_CC);
+  link_dup = nr_php_mysqli_link_duplicate_handle(link_handle);
   if (NULL == link_dup) {
     goto end;
   }

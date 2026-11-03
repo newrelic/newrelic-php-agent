@@ -310,7 +310,7 @@ nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
  *           guarded.
  */
 static zval* nr_php_mysqli_link_duplicate_metadata(
-    const nr_mysqli_metadata_link_t* metadata_ptr TSRMLS_DC) {
+    const nr_mysqli_metadata_link_t* metadata_ptr) {
   zval* dup = NULL;
   int i;
   nr_mysqli_metadata_link_t metadata = *metadata_ptr;
@@ -360,10 +360,10 @@ static zval* nr_php_mysqli_link_duplicate_metadata(
   return dup;
 }
 
-zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
+zval* nr_php_mysqli_link_duplicate(zval* orig) {
   nr_mysqli_metadata_link_t metadata;
 
-  if (!nr_php_mysqli_zval_is_link(orig TSRMLS_CC)) {
+  if (!nr_php_mysqli_zval_is_link(orig)) {
     return NULL;
   }
 
@@ -371,11 +371,11 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
     return NULL;
   }
 
-  return nr_php_mysqli_link_duplicate_metadata(&metadata TSRMLS_CC);
+  return nr_php_mysqli_link_duplicate_metadata(&metadata);
 }
 
 zval* nr_php_mysqli_link_duplicate_handle(
-    nr_mysqli_metadata_link_handle_t handle TSRMLS_DC) {
+    nr_mysqli_metadata_link_handle_t handle) {
   nr_mysqli_metadata_link_t metadata;
 
   if (NR_FAILURE
@@ -384,7 +384,7 @@ zval* nr_php_mysqli_link_duplicate_handle(
     return NULL;
   }
 
-  return nr_php_mysqli_link_duplicate_metadata(&metadata TSRMLS_CC);
+  return nr_php_mysqli_link_duplicate_metadata(&metadata);
 }
 
 zval* nr_php_mysqli_query_get_link(nr_php_object_handle_t handle TSRMLS_DC) {
@@ -421,22 +421,20 @@ char* nr_php_mysqli_query_get_query(nr_php_object_handle_t handle TSRMLS_DC) {
   return nr_strndup(Z_STRVAL_P(query), Z_STRLEN_P(query));
 }
 
-int nr_php_mysqli_query_exists(nr_php_object_handle_t handle TSRMLS_DC) {
-  return NULL != nr_php_mysqli_query_find(handle TSRMLS_CC);
+int nr_php_mysqli_query_exists(nr_php_object_handle_t handle) {
+  return NULL != nr_php_mysqli_query_find(handle);
 }
 
-int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle TSRMLS_DC) {
-  const zval* metadata = nr_php_mysqli_query_find(handle TSRMLS_CC);
+int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle) {
+  const zval* metadata = nr_php_mysqli_query_find(handle);
 
   return metadata
          && (NULL
              != nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "bind_format"));
 }
 
-nr_status_t nr_php_mysqli_query_ensure(
-    nr_php_object_handle_t handle TSRMLS_DC) {
-  return nr_php_mysqli_query_find_or_create(handle TSRMLS_CC) ? NR_SUCCESS
-                                                              : NR_FAILURE;
+nr_status_t nr_php_mysqli_query_ensure(nr_php_object_handle_t handle) {
+  return nr_php_mysqli_query_find_or_create(handle) ? NR_SUCCESS : NR_FAILURE;
 }
 
 nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,

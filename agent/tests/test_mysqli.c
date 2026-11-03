@@ -669,7 +669,7 @@ static void test_strip_persistent_prefix(void) {
 /*
  * A stdClass stands in for a mysqli_stmt: the table accepts any object.
  */
-static void test_statement_sql(TSRMLS_D) {
+static void test_statement_sql(void) {
   zval* first;
   zval* second;
   zval* not_object;
@@ -750,7 +750,7 @@ static void test_statement_sql(TSRMLS_D) {
  * A stdClass stands in for a mysqli_stmt, and a mysqli object that has not
  * connected for the link: the link needs the metadata of a connect.
  */
-static void test_statement_link(TSRMLS_D) {
+static void test_statement_link(void) {
   zval* link;
   zval* other;
   zval* stmt;
@@ -877,7 +877,7 @@ static void test_statement_link(TSRMLS_D) {
 #endif
 
 #ifdef NR_PHP_MYSQLI_MYSQLND
-static void test_explain_bound_count(TSRMLS_D) {
+static void test_explain_bound_count(void) {
   zval* stmt;
   zval* other;
 
@@ -974,7 +974,7 @@ static void test_explain_bind_type_letter(void) {
       "float", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_FLOAT));
 }
 
-static void test_explain_bound_count_mocked(TSRMLS_D) {
+static void test_explain_bound_count_mocked(void) {
   zval* stmt;
   zend_module_entry* mysqli;
   const zend_module_dep* original_deps;
@@ -1026,7 +1026,8 @@ static void test_explain_bound_count_mocked(TSRMLS_D) {
 
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
-  tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
+  tlib_php_engine_create(
+      "extension = mysqli\nmysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
 
   if (tlib_php_require_extension("mysqli" TSRMLS_CC)) {
     test_save_datastore_instance(TSRMLS_C);
@@ -1044,13 +1045,13 @@ void test_main(void* p NRUNUSED) {
 #endif
     test_option_to_string();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-    test_statement_sql(TSRMLS_C);
-    test_statement_link(TSRMLS_C);
+    test_statement_sql();
+    test_statement_link();
 #endif
 #ifdef NR_PHP_MYSQLI_MYSQLND
-    test_explain_bound_count(TSRMLS_C);
+    test_explain_bound_count();
     test_explain_bind_type_letter();
-    test_explain_bound_count_mocked(TSRMLS_C);
+    test_explain_bound_count_mocked();
 #endif
   }
 

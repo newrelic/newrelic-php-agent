@@ -97,7 +97,7 @@ extern zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC);
  *           metadata or an error occurred.
  */
 extern zval* nr_php_mysqli_link_duplicate_handle(
-    nr_mysqli_metadata_link_handle_t handle TSRMLS_DC);
+    nr_mysqli_metadata_link_handle_t handle);
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
@@ -209,7 +209,7 @@ extern nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,
  *
  * Returns : Non-zero if the transaction has an entry, zero if not.
  */
-extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle TSRMLS_DC);
+extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Whether the transaction has bound parameters for a statement
@@ -219,8 +219,7 @@ extern int nr_php_mysqli_query_exists(nr_php_object_handle_t handle TSRMLS_DC);
  *
  * Returns : Non-zero if parameters are saved for the statement, zero if not.
  */
-extern int nr_php_mysqli_query_has_bind(
-    nr_php_object_handle_t handle TSRMLS_DC);
+extern int nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Make sure the transaction has an entry for a statement object, so
@@ -232,8 +231,7 @@ extern int nr_php_mysqli_query_has_bind(
  * Returns : NR_SUCCESS if the transaction has an entry for the statement now,
  *           or NR_FAILURE if no entry could be made.
  */
-extern nr_status_t nr_php_mysqli_query_ensure(
-    nr_php_object_handle_t handle TSRMLS_DC);
+extern nr_status_t nr_php_mysqli_query_ensure(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Save the parameters bound to a MySQLi statement.
