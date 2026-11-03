@@ -407,7 +407,7 @@ void nr_php_restore_errors(int error_reporting TSRMLS_DC) {
   EG(error_reporting) = error_reporting;
 }
 
-nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(TSRMLS_D) {
+nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(void) {
   nr_php_user_error_handler_state_t state = {0, 0, 0};
 
   if (Z_TYPE(EG(user_error_handler)) == IS_UNDEF) {
@@ -429,7 +429,7 @@ nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(TSRMLS_D) {
 }
 
 void nr_php_restore_user_error_handler(
-    nr_php_user_error_handler_state_t state TSRMLS_DC) {
+    nr_php_user_error_handler_state_t state) {
   size_t depth;
 
   if (!state.active) {

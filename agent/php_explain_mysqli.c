@@ -349,7 +349,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
    * freed. It also keeps the handler from seeing warnings that the
    * application's own calls did not cause.
    */
-  user_error_handler = nr_php_silence_user_error_handler(TSRMLS_C);
+  user_error_handler = nr_php_silence_user_error_handler();
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
   link_dup = nr_php_mysqli_link_duplicate(link TSRMLS_CC);
@@ -393,7 +393,7 @@ end:
   nr_php_zval_free(&link_dup);
   nr_php_zval_free(&stmt);
 
-  nr_php_restore_user_error_handler(user_error_handler TSRMLS_CC);
+  nr_php_restore_user_error_handler(user_error_handler);
   nr_php_restore_errors(error_reporting TSRMLS_CC);
   NRTXNGLOBAL(generating_explain_plan) = 0;
 

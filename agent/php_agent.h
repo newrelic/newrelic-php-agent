@@ -521,7 +521,7 @@ typedef struct {
  * Returns : The state to give to nr_php_restore_user_error_handler.
  */
 extern nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(
-    TSRMLS_D);
+    void);
 
 /*
  * Purpose : Restore the state returned by nr_php_silence_user_error_handler.
@@ -534,7 +534,7 @@ extern nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(
  *           returns to it: PHP saved the silenced value for it on its stack.
  */
 extern void nr_php_restore_user_error_handler(
-    nr_php_user_error_handler_state_t state TSRMLS_DC);
+    nr_php_user_error_handler_state_t state);
 
 /*
  * Purpose : Acquire a named constant from PHP.
