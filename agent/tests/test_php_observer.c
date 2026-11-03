@@ -115,8 +115,7 @@ static void test_register_handlers_per_request_disabled(void) {
   tlib_php_engine_destroy();
 }
 
-static nr_status_t mock_cmd_appinfo_unknown(int daemon_fd NRUNUSED,
-                                            nrapp_t* app) {
+static nr_status_t mock_cmd_appinfo_unknown(nrapp_t* app) {
   app->state = NR_APP_UNKNOWN;
   return NR_SUCCESS;
 }
