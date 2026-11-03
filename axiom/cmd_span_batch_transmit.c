@@ -60,24 +60,22 @@ static nr_flatbuffer_t* nr_span_batch_encode(
 }
 
 nr_status_t (*nr_cmd_span_batch_hook)(
-    int daemon_fd,
     const char* agent_run_id,
     const nr_span_encoding_result_t* encoded_batch)
     = NULL;
 
 nr_status_t nr_cmd_span_batch_tx(
-    int daemon_fd,
     const char* agent_run_id,
     const nr_span_encoding_result_t* encoded_batch) {
   nr_flatbuffer_t* msg;
   size_t msglen;
-  nr_status_t st;
+  nr_status_t st = NR_FAILURE;
 
   if (nr_cmd_span_batch_hook) {
-    return nr_cmd_span_batch_hook(daemon_fd, agent_run_id, encoded_batch);
+    return nr_cmd_span_batch_hook(agent_run_id, encoded_batch);
   }
 
-  if (daemon_fd < 0 || NULL == agent_run_id || NULL == encoded_batch) {
+  if (NULL == agent_run_id || NULL == encoded_batch) {
     return NR_FAILURE;
   }
 
@@ -95,23 +93,18 @@ nr_status_t nr_cmd_span_batch_tx(
     return NR_FAILURE;
   }
 
-  nr_agent_lock_daemon_mutex();
-  {
-    nrtime_t deadline;
-
-    deadline = nr_get_time()
-               + (NR_SPAN_BATCH_SEND_TIMEOUT_MSEC * NR_TIME_DIVISOR_MS);
+  NR_AGENT_WITH_DAEMON_FD("SPAN_BATCH", st, {
+    nrtime_t deadline
+        = nr_get_time()
+          + (NR_SPAN_BATCH_SEND_TIMEOUT_MSEC * NR_TIME_DIVISOR_MS);
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(msg), msglen,
                           deadline);
-  }
-  nr_agent_unlock_daemon_mutex();
+    if (NR_SUCCESS != st) {
+      nrl_error(NRL_DAEMON, "SPAN_BATCH failure: len=%zu errno=%s", msglen,
+                nr_errno(errno));
+    }
+  });
   nr_flatbuffers_destroy(&msg);
-
-  if (NR_SUCCESS != st) {
-    nrl_error(NRL_DAEMON, "SPAN_BATCH failure: len=%zu errno=%s", msglen,
-              nr_errno(errno));
-    nr_agent_close_daemon_connection();
-  }
 
   return st;
 }

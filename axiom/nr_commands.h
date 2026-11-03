@@ -22,8 +22,7 @@
  *           immediately, otherwise the daemon will wake the connector thread
  *           in order to query RPM about the app.
  *
- * Params  : 1. Daemon file descriptor to send cmd to.
- *           2. The partially populated application.
+ * Params  : 1. The partially populated application.
  *
  * Returns : NR_SUCCESS or NR_FAILURE. Note that even if the daemon was not
  *           able to populate the structure on account of it not knowing about
@@ -33,15 +32,14 @@
  * Locking : The application must be locked prior to calling this function
  *           and will remain locked on exit.
  */
-extern nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app);
+extern nr_status_t nr_cmd_appinfo_tx(nrapp_t* app);
 
 /*
  * Purpose : Given a batch of 8T-encoded span events, send the batch to the
  *           daemon.
  *
- * Params  : 1. Daemon file descriptor to send cmd to.
- *           2. The connected application.
- *           3. The encoded batch.
+ * Params  : 1. The connected application.
+ *           2. The encoded batch.
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  *
@@ -49,7 +47,6 @@ extern nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app);
  *           daemon lock when necessary.
  */
 extern nr_status_t nr_cmd_span_batch_tx(
-    int daemon_fd,
     const char* agent_run_id,
     const nr_span_encoding_result_t* encoded_batch);
 
@@ -62,8 +59,7 @@ extern nr_status_t nr_cmd_span_batch_tx(
  *           at the logical end of a transaction - it can be forced to end by
  *           an API call, for example.
  *
- * Params  : 1. Daemon file descriptor to send cmd to.
- *           2. The transaction to send.
+ * Params  : 1. The transaction to send.
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  *
@@ -71,19 +67,18 @@ extern nr_status_t nr_cmd_span_batch_tx(
  *           as only one thread in an agent can be dealing with a transaction
  *           at a time. Therefore, the transaction structure has no locking.
  */
-extern nr_status_t nr_cmd_txndata_tx(int daemon_fd, const nrtxn_t* txn);
+extern nr_status_t nr_cmd_txndata_tx(const nrtxn_t* txn);
 
 /* Hook for stubbing APPINFO messages during testing. */
-extern nr_status_t (*nr_cmd_appinfo_hook)(int daemon_fd, nrapp_t* app);
+extern nr_status_t (*nr_cmd_appinfo_hook)(nrapp_t* app);
 
 /* Hook for stubbing SpanBatch messages during testing. */
 extern nr_status_t (*nr_cmd_span_batch_hook)(
-    int daemon_fd,
     const char* agent_run_id,
     const nr_span_encoding_result_t* encoded_batch);
 
 /* Hook for stubbing TXNDATA messages during testing. */
-extern nr_status_t (*nr_cmd_txndata_hook)(int daemon_fd, const nrtxn_t* txn);
+extern nr_status_t (*nr_cmd_txndata_hook)(const nrtxn_t* txn);
 
 extern uint64_t nr_cmd_appinfo_timeout_us;
 
