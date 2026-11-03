@@ -16,13 +16,6 @@ if (PHP_VERSION_ID < 80100) {
 }
 */
 
-/*INI
-error_reporting = E_ALL & ~E_DEPRECATED
-newrelic.datastore_tracer.database_name_reporting.enabled = 0
-newrelic.datastore_tracer.instance_reporting.enabled = 1
-newrelic.transaction_tracer.record_sql = obfuscated
-*/
-
 /*EXPECT
 in __toString
 executed

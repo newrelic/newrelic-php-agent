@@ -14,12 +14,6 @@ of a failing pg_query() reported.
 require("skipif.inc");
 */
 
-/*INI
-error_reporting = E_ALL & ~E_DEPRECATED
-newrelic.datastore_tracer.database_name_reporting.enabled = 0
-newrelic.transaction_tracer.record_sql = obfuscated
-*/
-
 /*EXPECT
 handler returned
 query failed

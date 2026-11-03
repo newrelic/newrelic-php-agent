@@ -17,10 +17,8 @@ if (PHP_VERSION_ID < 80100) {
 */
 
 /*INI
-error_reporting = E_ALL & ~E_DEPRECATED
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.transaction_tracer.record_sql = obfuscated
 ;comment=Set explain_threshold to 0 to ensure that the slow query is recorded.
 newrelic.transaction_tracer.explain_threshold = 0
 */

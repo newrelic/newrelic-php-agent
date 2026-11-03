@@ -17,7 +17,6 @@ if (!function_exists('pg_exec')) {
 */
 
 /*INI
-error_reporting = E_ALL & ~E_DEPRECATED
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.stack_trace_threshold = 0
@@ -56,9 +55,6 @@ ok - pg_exec successful
   ]
 ]
 */
-
-
-
 
 /*EXPECT_SLOW_SQLS
 [

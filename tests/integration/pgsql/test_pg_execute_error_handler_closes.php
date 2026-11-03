@@ -13,13 +13,6 @@ An error handler that closes the connection while pg_execute() is failing SHALL 
 require("skipif.inc");
 */
 
-/*INI
-error_reporting = E_ALL & ~E_DEPRECATED
-newrelic.datastore_tracer.database_name_reporting.enabled = 0
-newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.transaction_tracer.record_sql = obfuscated
-*/
-
 /*EXPECT
 handler closed the connection
 execute failed
