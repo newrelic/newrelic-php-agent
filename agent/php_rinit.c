@@ -162,6 +162,8 @@ PHP_RINIT_FUNCTION(newrelic) {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   NRPRG_SHARED(pgsql_instances)
       = nr_php_objtable_create(nr_php_pgsql_instance_destroy);
+  NRPRG_SHARED(pgsql_statements)
+      = nr_php_objtable_create(nr_php_pgsql_statements_destroy);
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   NRPRG_SHARED(predis_instances)

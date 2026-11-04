@@ -324,6 +324,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     const char* sql,
     zval* params TSRMLS_DC) {
   int error_reporting;
+  nr_php_user_error_handler_state_t user_error_handler;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
   zval* stmt = NULL;
@@ -339,6 +340,18 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   }
 
   error_reporting = nr_php_silence_errors(TSRMLS_C);
+
+  /*
+   * The application's error handler is not called while the explain connection
+   * runs. A warning from that connection, such as a refused login, would call
+   * it, and a handler can close the application's link. The data saved for the
+   * link is read through pointers across several calls into PHP (the options,
+   * the SSL settings, the connect and the database selection), so a handler
+   * that closed the link during any of them would free it: this guards against
+   * that. It also keeps the handler from seeing warnings that the
+   * application's own calls did not cause.
+   */
+  user_error_handler = nr_php_silence_user_error_handler();
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
   link_dup = nr_php_mysqli_link_duplicate(link TSRMLS_CC);
@@ -382,6 +395,7 @@ end:
   nr_php_zval_free(&link_dup);
   nr_php_zval_free(&stmt);
 
+  nr_php_restore_user_error_handler(user_error_handler);
   nr_php_restore_errors(error_reporting TSRMLS_CC);
   NRTXNGLOBAL(generating_explain_plan) = 0;
 
