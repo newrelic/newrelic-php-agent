@@ -31,6 +31,22 @@ typedef struct _nr_php_curl_multi_md_t {
                              transaction restarts in between multi_execs */
 } nr_php_curl_multi_md_t;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+/*
+ * Purpose : Create the keys of the curl metadata maps. PHP reuses the id of a
+ *           freed object, so the maps are keyed by a number that the agent
+ *           gives to each curl object when it first sees it, and that goes
+ *           away with the object. Call it once per request, in RINIT.
+ */
+extern void nr_php_curl_metadata_keys_create(void);
+
+/*
+ * Purpose : Destroy the keys of the curl metadata maps. Only call this in
+ *           post-deactivate, after the engine has freed its objects.
+ */
+extern void nr_php_curl_metadata_keys_destroy(void);
+#endif
+
 /*
  * Purpose : Retrieves a pointer to the nr_php_curl_md_t struct associated with
  *           the given curl handle

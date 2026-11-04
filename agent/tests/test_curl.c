@@ -451,6 +451,146 @@ static void test_curl_multi_close(void) {
 }
 #endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8 */
+/*
+ * PHP gives the id of a freed object to the next object that is created. Each
+ * curl handle is its own handle all the same: it has its own metadata and its
+ * own multi segment.
+ */
+static void test_curl_multi_exec_recycled_ids(void) {
+  zval* mh;
+  nr_segment_t* segment;
+  nr_segment_t* segments[4] = {0};
+  char* contexts[4] = {0};
+  size_t ended_before;
+  int i;
+  int j;
+
+  tlib_php_request_start();
+  ended_before = NRPRG(txn)->segment_count;
+
+  for (i = 0; i < 4; i++) {
+    mh = nr_php_call(NULL, "curl_multi_init");
+
+    nr_php_curl_multi_exec_pre(mh);
+    nr_php_curl_multi_exec_post(mh);
+    nr_php_curl_multi_exec_finalize(mh);
+
+    segment = nr_php_curl_multi_md_get_segment(mh);
+    tlib_pass_if_not_null("every new multi handle gets a multi segment",
+                          segment);
+    segments[i] = segment;
+    contexts[i] = nr_strdup(nr_php_curl_multi_md_get_async_context(mh));
+
+    /* The handle is freed, and the next one is given its id. */
+    nr_php_zval_free(&mh);
+  }
+
+  for (i = 0; i < 4; i++) {
+    for (j = i + 1; j < 4; j++) {
+      tlib_pass_if_true("a multi handle does not share its multi segment",
+                        segments[i] != segments[j], "i=%d j=%d", i, j);
+      tlib_pass_if_true("a multi handle has an async context of its own",
+                        0 != nr_strcmp(contexts[i], contexts[j]),
+                        "i=%d j=%d %s %s", i, j, contexts[i], contexts[j]);
+    }
+  }
+
+  for (i = 0; i < 4; i++) {
+    nr_free(contexts[i]);
+  }
+
+  /*
+   * The multi segment of a freed handle ends the next time the agent looks at
+   * curl metadata: the first three, and not the segment of the last handle.
+   */
+  tlib_pass_if_size_t_equal("the multi segments of the freed handles end",
+                            ended_before + 3, NRPRG(txn)->segment_count);
+
+  tlib_php_request_end();
+}
+
+static void test_curl_recycled_id_metadata(void) {
+  zval* ch;
+  const nr_php_curl_md_t* metadata;
+
+  tlib_php_request_start();
+
+  ch = nr_php_call(NULL, "curl_init");
+  nr_php_curl_md_set_method(ch, "POST");
+  nr_php_zval_free(&ch);
+
+  /* The new handle is given the id of the freed one. */
+  ch = nr_php_call(NULL, "curl_init");
+  metadata = nr_php_curl_md_get(ch);
+  tlib_pass_if_not_null("the new handle has metadata", metadata);
+  tlib_pass_if_null("the new handle does not inherit the request method",
+                    metadata->method);
+
+  nr_php_zval_free(&ch);
+  tlib_php_request_end();
+}
+
+static void test_curl_multi_exec_freed_handle(void) {
+  zval* mh;
+  zval* other;
+  size_t ended_before;
+
+  tlib_php_request_start();
+
+  mh = nr_php_call(NULL, "curl_multi_init");
+  nr_php_curl_multi_exec_pre(mh);
+  ended_before = NRPRG(txn)->segment_count;
+
+  /*
+   * The handle is freed while its multi segment is open. The segment ends the
+   * next time the agent looks at curl metadata.
+   */
+  nr_php_zval_free(&mh);
+  tlib_pass_if_size_t_equal("nothing is ended when the handle is freed",
+                            ended_before, NRPRG(txn)->segment_count);
+
+  other = nr_php_call(NULL, "curl_init");
+  nr_php_curl_md_set_method(other, "GET");
+  tlib_pass_if_size_t_equal("the multi segment of the freed handle is ended",
+                            ended_before + 1, NRPRG(txn)->segment_count);
+
+  nr_php_zval_free(&other);
+  tlib_php_request_end();
+}
+
+static void test_curl_metadata_of_freed_handles(void) {
+  zval* mh;
+  zval* ch;
+  int i;
+
+  tlib_php_request_start();
+
+  for (i = 0; i < 300; i++) {
+    mh = nr_php_call(NULL, "curl_multi_init");
+    nr_php_curl_multi_exec_pre(mh);
+    ch = nr_php_call(NULL, "curl_init");
+    nr_php_curl_md_set_method(ch, "GET");
+    nr_php_zval_free(&ch);
+    nr_php_zval_free(&mh);
+  }
+
+  /* Let the agent look at the metadata once more. */
+  ch = nr_php_call(NULL, "curl_init");
+  nr_php_curl_md_set_method(ch, "GET");
+
+  tlib_pass_if_true("the metadata of freed handles does not pile up",
+                    nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata)) <= 2
+                        && nr_hashmap_count(NRTXNGLOBAL(curl_metadata)) <= 2,
+                    "multi=%zu single=%zu",
+                    nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata)),
+                    nr_hashmap_count(NRTXNGLOBAL(curl_metadata)));
+
+  nr_php_zval_free(&ch);
+  tlib_php_request_end();
+}
+#endif
+
 static void test_curl_exec_reused_handle(void) {
   zval* ch;
   zval* zurl;
@@ -505,6 +645,12 @@ void test_main(void* p NRUNUSED) {
     test_curl_exec(TSRMLS_C);
     test_curl_multi_exec_reused_handle();
     test_curl_exec_reused_handle();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8 */
+    test_curl_multi_exec_recycled_ids();
+    test_curl_recycled_id_metadata();
+    test_curl_multi_exec_freed_handle();
+    test_curl_metadata_of_freed_handles();
+#endif
     test_curl_multi_exec_keeps_async_context();
     test_curl_multi_exec_many_bursts();
     test_curl_multi_exec_duration_kept();

@@ -8,6 +8,7 @@
  * each request.
  */
 #include "php_agent.h"
+#include "php_curl_md.h"
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
@@ -156,6 +157,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   nr_php_mysqli_links_create();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_mysqli_statement_sql_create_table();
+  nr_php_curl_metadata_keys_create();
 #endif
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
