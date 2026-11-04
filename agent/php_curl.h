@@ -153,4 +153,20 @@ extern void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC);
  */
 extern void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC);
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+/*
+ * Purpose : End the multi segment of a curl multi resource that is being
+ *           closed.
+ *
+ *           A multi segment stays open between runs of transfers and ends
+ *           with the transaction. Resource ids are not reused on PHP 7, so
+ *           the closed resource never runs again, and a loop that makes a
+ *           new multi resource for each run would leave a multi segment open
+ *           for each of them until the transaction ends.
+ *
+ * Params  : 1. The curl multi resource.
+ */
+extern void nr_php_curl_multi_close(zval* curlres);
+#endif
+
 #endif /* PHP_CURL_HDR */

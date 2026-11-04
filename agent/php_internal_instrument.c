@@ -2945,7 +2945,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
       /*
        * End and discard the segment when curl handle is removed.
        */
-      segment = nr_php_curl_md_get_segment(curlres TSRMLS_CC);
+      segment = nr_php_curl_md_take_segment(curlres);
       if (NULL != segment) {
         nr_segment_discard(&segment);
       }
@@ -3290,6 +3290,25 @@ NR_INNER_WRAPPER(file_get_contents) {
 leave:
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
+
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+/*
+ * Handle curl_multi_close
+ *
+ * bool curl_multi_close ( resource $mh )
+ */
+NR_INNER_WRAPPER(curl_multi_close) {
+  zval* multires = NULL;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "r",
+                                  &multires)) {
+    nr_php_curl_multi_close(multires);
+  }
+
+  nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+#endif
 
 /*
  * Handle curl_multi_exec.
@@ -3956,6 +3975,9 @@ NR_OUTER_WRAPPER(curl_setopt_array)
 NR_OUTER_WRAPPER(curl_init)
 NR_OUTER_WRAPPER(curl_multi_add_handle)
 NR_OUTER_WRAPPER(curl_multi_remove_handle)
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+NR_OUTER_WRAPPER(curl_multi_close)
+#endif
 
 NR_OUTER_WRAPPER(call_user_func_array)
 
@@ -4810,6 +4832,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       curl_multi_add_handle, 0, 0)
   NR_INTERNAL_WRAPREC("curl_multi_remove_handle", curl_multi_remove_handle,
                       curl_multi_remove_handle, 0, 0)
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+  NR_INTERNAL_WRAPREC("curl_multi_close", curl_multi_close, curl_multi_close, 0,
+                      0)
+#endif
 
   /*
    * call_user_func_array is disabled by default:  It is only used for

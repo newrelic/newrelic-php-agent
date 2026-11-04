@@ -5,6 +5,7 @@
 
 #include "php_agent.h"
 #include "php_curl_md.h"
+#include "php_objtable.h"
 #include "util_logging.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
@@ -90,14 +91,181 @@ static void ensure_curl_multi_metadata_hashmap(TSRMLS_D)
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+/*
+ * The value kept in the weak table for each curl object: the key of the
+ * object in the metadata maps.
+ */
+typedef struct {
+  struct _nr_php_curl_metadata_keys_t* keys;
+  uint64_t key;
+} nr_php_curl_key_t;
+
+struct _nr_php_curl_metadata_keys_t {
+  nr_php_objtable_t* table; /* The key of each curl object */
+  uint64_t last_key;        /* The last key that was given out */
+  nr_vector_t freed;        /* The keys of the objects that were freed since
+                               the metadata was last looked at */
+  bool closing;             /* Set while the table is destroyed */
+  nrtime_t txn_start_time;  /* The transaction that multi_count is for */
+  size_t multi_count;       /* The multi handles of that transaction */
+};
+
+/*
+ * The destructor runs inside the free of the object. It only frees memory and
+ * remembers the key: the metadata is cleaned up the next time the agent looks
+ * at it, and no call into PHP is made here.
+ */
+static void nr_php_curl_key_dtor(void* value) {
+  nr_php_curl_key_t* key = (nr_php_curl_key_t*)value;
+
+  if (NULL == key) {
+    return;
+  }
+
+  if (!key->keys->closing) {
+    nr_vector_push_back(&key->keys->freed, (void*)(uintptr_t)key->key);
+  }
+
+  nr_free(key);
+}
+
+void nr_php_curl_metadata_keys_create(void) {
+  struct _nr_php_curl_metadata_keys_t* keys
+      = nr_zalloc(sizeof(struct _nr_php_curl_metadata_keys_t));
+
+  keys->table = nr_php_objtable_create(nr_php_curl_key_dtor);
+  nr_vector_init(&keys->freed, 8, NULL, NULL);
+  NRPRG_SHARED(curl_metadata_keys) = keys;
+}
+
+void nr_php_curl_metadata_keys_destroy(void) {
+  struct _nr_php_curl_metadata_keys_t* keys = NRPRG_SHARED(curl_metadata_keys);
+
+  if (NULL == keys) {
+    return;
+  }
+
+  keys->closing = true;
+  nr_php_objtable_destroy(&keys->table);
+  nr_vector_deinit(&keys->freed);
+  nr_free(keys);
+  NRPRG_SHARED(curl_metadata_keys) = NULL;
+}
+#endif
+
+/*
+ * Purpose : Get the key of a curl handle in the metadata maps.
+ *
+ * Returns : The key, or 0 if the zval is not a curl handle.
+ */
+static uint64_t nr_php_curl_metadata_key(const zval* handle) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  struct _nr_php_curl_metadata_keys_t* keys = NRPRG_SHARED(curl_metadata_keys);
+  nr_php_curl_key_t* key;
+  uint64_t value;
+
+  if (0 == nr_php_zval_object_id(handle)) {
+    return 0;
+  }
+
+  if (NULL == keys) {
+    return (uint64_t)nr_php_zval_object_id(handle);
+  }
+
+  key = (nr_php_curl_key_t*)nr_php_objtable_get(keys->table, handle);
+  if (NULL == key) {
+    key = nr_zalloc(sizeof(nr_php_curl_key_t));
+    key->keys = keys;
+    key->key = ++keys->last_key;
+    value = key->key;
+    nr_php_objtable_set(keys->table, handle, key);
+    return value;
+  }
+
+  return key->key;
+#else
+  return (uint64_t)nr_php_zval_resource_id(handle);
+#endif
+}
+
+/*
+ * Purpose : Get the number of the next multi handle of the transaction, which
+ *           makes the name of its async context.
+ */
+static size_t nr_php_curl_next_multi_index(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  struct _nr_php_curl_metadata_keys_t* keys = NRPRG_SHARED(curl_metadata_keys);
+
+  if (keys && NRPRG(txn)) {
+    /* The metadata of the earlier transaction is gone: count again. */
+    if (keys->txn_start_time != nr_txn_start_time(NRPRG(txn))) {
+      keys->txn_start_time = nr_txn_start_time(NRPRG(txn));
+      keys->multi_count = 0;
+    }
+    return ++keys->multi_count;
+  }
+#endif
+  return nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata));
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+/*
+ * Purpose : Clean up the metadata of the curl handles that were freed. A
+ *           multi segment that is still open is ended, and the entries go, so
+ *           that the metadata of a loop that makes a new handle for each run
+ *           does not pile up.
+ */
+static void nr_php_curl_drain_freed_keys(void) {
+  struct _nr_php_curl_metadata_keys_t* keys = NRPRG_SHARED(curl_metadata_keys);
+
+  while (keys && (nr_vector_size(&keys->freed) > 0)) {
+    void* removed = NULL;
+    uint64_t key;
+    nr_php_curl_multi_md_t* multi_metadata = NULL;
+
+    nr_vector_remove(&keys->freed, nr_vector_size(&keys->freed) - 1, &removed);
+    key = (uint64_t)(uintptr_t)removed;
+
+    if (NRTXNGLOBAL(curl_multi_metadata)) {
+      multi_metadata
+          = nr_hashmap_index_get(NRTXNGLOBAL(curl_multi_metadata), key);
+    }
+    if (multi_metadata) {
+      nr_segment_t* segment = multi_metadata->segment;
+
+      if (segment && NRPRG(txn)
+          && (nr_txn_start_time(NRPRG(txn))
+              == multi_metadata->txn_start_time)) {
+        /*
+         * Ending a segment makes the async context of its parent the current
+         * one. The context that is current now belongs to the caller.
+         */
+        int old_context = NRTXN(current_async_context);
+
+        nr_segment_end(&segment);
+        NRTXN(current_async_context) = old_context;
+      }
+      /* Releases the handles that were added to the multi handle. */
+      nr_hashmap_index_delete(NRTXNGLOBAL(curl_multi_metadata), key);
+    }
+
+    if (NRTXNGLOBAL(curl_metadata)) {
+      nr_hashmap_index_delete(NRTXNGLOBAL(curl_metadata), key);
+    }
+  }
+}
+#endif
+
 static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 {
     nr_php_curl_md_t* metadata = NULL;
+    uint64_t id;
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-    uint64_t id = (uint64_t)nr_php_zval_object_id(ch);
-#else
-    uint64_t id = (uint64_t)nr_php_zval_resource_id(ch);
+    nr_php_curl_drain_freed_keys();
 #endif
+    id = nr_php_curl_metadata_key(ch);
     if (0 == id) {
         return NULL;
     }
@@ -117,11 +285,12 @@ static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
 {
     nr_php_curl_multi_md_t* multi_metadata;
     size_t async_index;
+    uint64_t id;
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-    uint64_t id = (uint64_t)nr_php_zval_object_id(mh);
-#else
-    uint64_t id = (uint64_t)nr_php_zval_resource_id(mh);
+    nr_php_curl_drain_freed_keys();
 #endif
+    id = nr_php_curl_metadata_key(mh);
     if (0 == id) {
         return NULL;
     }
@@ -134,7 +303,7 @@ static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
       multi_metadata = nr_zalloc(sizeof(nr_php_curl_multi_md_t));
       nr_hashmap_index_set(NRTXNGLOBAL(curl_multi_metadata), id,
                            multi_metadata);
-      async_index = nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata));
+      async_index = nr_php_curl_next_multi_index();
       if (!nr_php_curl_multi_md_init(multi_metadata, async_index)) {
         nr_free(multi_metadata);
       }
@@ -316,6 +485,54 @@ nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC) {
   }
 
   return metadata->segment;
+}
+
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+nr_segment_t* nr_php_curl_multi_md_take_segment(const zval* mh) {
+  nr_php_curl_multi_md_t* multi_metadata;
+  nr_segment_t* segment;
+
+  if (!check_curl_handle(mh)) {
+    return NULL;
+  }
+
+  multi_metadata = get_curl_multi_metadata(mh);
+  if (nrunlikely(NULL == multi_metadata)) {
+    return NULL;
+  }
+
+  segment = multi_metadata->segment;
+  multi_metadata->segment = NULL;
+
+  if (nr_txn_start_time(NRPRG(txn)) != multi_metadata->txn_start_time) {
+    return NULL;
+  }
+
+  return segment;
+}
+#endif
+
+nr_segment_t* nr_php_curl_md_take_segment(const zval* ch) {
+  nr_php_curl_md_t* metadata;
+  nr_segment_t* segment;
+
+  if (!check_curl_handle(ch)) {
+    return NULL;
+  }
+
+  metadata = get_curl_metadata(ch);
+  if (nrunlikely(NULL == metadata)) {
+    return NULL;
+  }
+
+  segment = metadata->segment;
+  metadata->segment = NULL;
+
+  if (nr_txn_start_time(NRPRG(txn)) != metadata->txn_start_time) {
+    return NULL;
+  }
+
+  return segment;
 }
 
 void nr_curl_rshutdown(TSRMLS_D) {

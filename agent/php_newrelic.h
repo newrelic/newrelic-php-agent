@@ -519,6 +519,15 @@ typedef struct _shared_globals_t {
   nr_php_objtable_t* mysqli_statement_sql;
 
   /*
+   * The keys of the curl metadata maps (PHP 8.0+): a key for each curl handle
+   * object, for the life of the object. PHP gives the id of a freed object to
+   * the next object, so the id cannot be the key. Also the keys of the freed
+   * objects, and the count of the multi handles of the transaction. It lives
+   * for the request, because objects are freed between transactions.
+   */
+  struct _nr_php_curl_metadata_keys_t* curl_metadata_keys;
+
+  /*
    * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
    * request. The explain connection needs it in a later transaction. An entry
    * is removed when its link is freed: mysqli_link_handles holds one value per
