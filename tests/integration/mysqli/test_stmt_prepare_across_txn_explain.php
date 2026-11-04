@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-A statement prepared with mysqli::prepare() in one transaction SHALL be reported with its SQL when it is executed in the next transaction: the statement metric, the slow SQL and the span db.statement, with the transaction tracer explain setting enabled.
+A statement prepared with mysqli::prepare() in one transaction SHALL be reported with its SQL when it is executed in the next transaction: the statement metric, the slow SQL with its explain plan and the span db.statement, with the transaction tracer explain setting enabled.
 */
 
 /*SKIPIF
@@ -51,6 +51,7 @@ Datastore/operation/MySQL/other
       "?? min time",
       "?? max time",
       {
+        "explain_plan": "??",
         "backtrace": "??"
       }
     ]
