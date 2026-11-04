@@ -78,6 +78,45 @@ static void test_curl_metadata_segment(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_curl_metadata_take_segment(void) {
+  const nr_php_curl_md_t* metadata;
+  zval* ch;
+  nr_segment_t* segment;
+
+  tlib_php_request_start();
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
+  tlib_pass_if_null("nr_php_curl_md_take_segment is null safe",
+                    nr_php_curl_md_take_segment(NULL));
+
+  ch = nr_php_call(NULL, "curl_init");
+  metadata = nr_php_curl_md_get(ch);
+
+  tlib_pass_if_null("nothing to take before a segment is set",
+                    nr_php_curl_md_take_segment(ch));
+
+  nr_php_curl_md_set_segment(ch, segment);
+  tlib_pass_if_ptr_equal("nr_php_curl_md_take_segment returns the segment",
+                         segment, nr_php_curl_md_take_segment(ch));
+  tlib_pass_if_null("nr_php_curl_md_take_segment clears the segment",
+                    metadata->segment);
+  tlib_pass_if_null("the segment can be taken only once",
+                    nr_php_curl_md_take_segment(ch));
+
+  /* A segment of an earlier transaction is cleared and not returned. */
+  nr_php_curl_md_set_segment(ch, segment);
+  NRTXN(abs_start_time) = 200;
+  tlib_pass_if_null(
+      "nr_php_curl_md_take_segment returns NULL when txn has changed",
+      nr_php_curl_md_take_segment(ch));
+  tlib_pass_if_null("the segment of the earlier transaction is cleared",
+                    metadata->segment);
+
+  nr_php_zval_free(&ch);
+  tlib_php_request_end();
+}
+
 static void test_curl_metadata_method(TSRMLS_D) {
   const nr_php_curl_md_t* metadata;
   zval* ch;
@@ -462,6 +501,7 @@ void test_main(void* p NRUNUSED) {
   if (tlib_php_require_extension("curl" TSRMLS_CC)) {
     test_curl_metadata_get(TSRMLS_C);
     test_curl_metadata_segment(TSRMLS_C);
+    test_curl_metadata_take_segment();
     test_curl_metadata_method(TSRMLS_C);
     test_curl_metadata_response_header(TSRMLS_C);
     test_curl_metadata_outbound_headers(TSRMLS_C);

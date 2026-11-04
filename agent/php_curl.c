@@ -659,6 +659,13 @@ void nr_php_curl_exec_pre(zval* curlres,
   int old_context = 0;
 
   /*
+   * The metadata refers to the segment of the request the handle made last,
+   * which has ended. A request that is not instrumented, such as a file://
+   * URL, must not find it again.
+   */
+  (void)nr_php_curl_md_take_segment(curlres);
+
+  /*
    * This is a special case where we don't want the context of the newly
    * created segment to be set on the txn because this segment is tracked
    * separately based off of the curlres. We need to save the actual context
@@ -692,12 +699,22 @@ void nr_php_curl_exec_pre(zval* curlres,
 void nr_php_curl_exec_post(zval* curlres, bool duration_from_handle TSRMLS_DC) {
   nr_segment_external_params_t external_params = {.library = "curl"};
   nr_segment_t* segment = NULL;
+  int old_context = 0;
 
-  segment = nr_php_curl_md_get_segment(curlres TSRMLS_CC);
+  segment = nr_php_curl_md_take_segment(curlres);
 
   if (!segment) {
     return;
   }
+
+  /*
+   * Ending a segment makes the async context of its parent the current one.
+   * The parent of a transfer of a multi handle is the multi segment, which has
+   * a context of its own, and nothing ends it afterwards until the
+   * transaction ends: the code that runs after the transfers must stay in the
+   * context it ran in. Save the actual context so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
     nrl_verbosedebug(
@@ -719,6 +736,8 @@ void nr_php_curl_exec_post(zval* curlres, bool duration_from_handle TSRMLS_DC) {
   }
 
   nr_segment_external_end(&segment, &external_params);
+
+  NRTXN(current_async_context) = old_context;
 
   nr_free(external_params.uri);
   nr_free(external_params.procedure);
@@ -838,12 +857,19 @@ void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC) {
   }
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+void nr_php_curl_multi_close(zval* curlres) {
+  nr_segment_t* segment = nr_php_curl_multi_md_take_segment(curlres);
+
+  nr_segment_end(&segment);
+}
+#endif
+
 void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC) {
   size_t pos;
   zval* handle = NULL;
   void* removed_handle = NULL;
   nr_vector_t* handles = NULL;
-  nr_segment_t* segment = NULL;
 
   handles = nr_php_curl_multi_md_get_handles(curlres TSRMLS_CC);
 
@@ -859,6 +885,10 @@ void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC) {
     }
   }
 
-  segment = nr_php_curl_multi_md_get_segment(curlres TSRMLS_CC);
-  nr_segment_end(&segment);
+  /*
+   * The multi segment is not ended here. The handle can run more transfers
+   * later, which join the same segment, and ending it again for each run
+   * would put it in the segment heap again every time. The cleanup at the end
+   * of the transaction ends it once.
+   */
 }
