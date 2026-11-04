@@ -511,6 +511,14 @@ typedef struct _shared_globals_t {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /*
+   * The SQL of each mysqli statement object (PHP 8.0+), kept for as long as
+   * the object lives. A statement prepared in one transaction can be executed
+   * in a later one, for example when it is prepared at FrankenPHP worker
+   * start.
+   */
+  nr_php_objtable_t* mysqli_statement_sql;
+
+  /*
    * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
    * request. The explain connection needs it in a later transaction. An entry
    * is removed when its link is freed: mysqli_link_handles holds one value per
