@@ -60,6 +60,16 @@ typedef struct _nr_mysqli_metadata_link_t {
    * the user and must not be used to open a connection.
    */
   int complete;
+
+  /*
+   * Identifies the connection the link has now. It is set by
+   * nr_mysqli_metadata_set_connect() and nr_mysqli_metadata_set_user(), and
+   * only increases: a statement prepared on the link belongs to the connection
+   * of that moment, because the server drops the statements of a connection
+   * when it is replaced or when the user changes. Zero for an entry that was
+   * not completed by a connect.
+   */
+  uint64_t epoch;
 } nr_mysqli_metadata_link_t;
 
 /*
