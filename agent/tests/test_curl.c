@@ -460,8 +460,8 @@ static void test_curl_multi_close(void) {
 static void test_curl_multi_exec_recycled_ids(void) {
   zval* mh;
   nr_segment_t* segment;
-  nr_segment_t* segments[4] = {0};
-  char* contexts[4] = {0};
+  nr_segment_t* segments[4] = {NULL};
+  char* contexts[4] = {NULL};
   size_t ended_before;
   int i;
   int j;

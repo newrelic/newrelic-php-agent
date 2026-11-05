@@ -97,8 +97,8 @@ static void ensure_curl_multi_metadata_hashmap(TSRMLS_D)
  * object in the metadata maps.
  */
 typedef struct {
-  struct _nr_php_curl_metadata_keys_t* keys;
-  uint64_t key;
+  struct _nr_php_curl_metadata_keys_t* keys; /* The keys of the transaction. */
+  uint64_t key; /* The key of the object in the metadata maps. */
 } nr_php_curl_key_t;
 
 struct _nr_php_curl_metadata_keys_t {
@@ -112,9 +112,12 @@ struct _nr_php_curl_metadata_keys_t {
 };
 
 /*
- * The destructor runs inside the free of the object. It only frees memory and
- * remembers the key: the metadata is cleaned up the next time the agent looks
- * at it, and no call into PHP is made here.
+ * Purpose : The destructor of the keys in the weak table. It runs inside the
+ *           free of the object. It only frees memory and remembers the key:
+ *           the metadata is cleaned up the next time the agent looks at it,
+ *           and no call into PHP is made here.
+ *
+ * Params  : 1. The nr_php_curl_key_t of the freed object.
  */
 static void nr_php_curl_key_dtor(void* value) {
   nr_php_curl_key_t* key = (nr_php_curl_key_t*)value;
@@ -157,6 +160,8 @@ void nr_php_curl_metadata_keys_destroy(void) {
 /*
  * Purpose : Get the key of a curl handle in the metadata maps.
  *
+ * Params  : 1. The curl handle.
+ *
  * Returns : The key, or 0 if the zval is not a curl handle.
  */
 static uint64_t nr_php_curl_metadata_key(const zval* handle) {
@@ -192,6 +197,8 @@ static uint64_t nr_php_curl_metadata_key(const zval* handle) {
 /*
  * Purpose : Get the number of the next multi handle of the transaction, which
  *           makes the name of its async context.
+ *
+ * Returns : The number.
  */
 static size_t nr_php_curl_next_multi_index(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
@@ -257,6 +264,14 @@ static void nr_php_curl_drain_freed_keys(void) {
 }
 #endif
 
+/*
+ * Purpose : Get the metadata of a curl handle, and create it if the handle has
+ *           none.
+ *
+ * Params  : 1. The curl handle.
+ *
+ * Returns : The metadata, or NULL if the zval is not a curl handle.
+ */
 static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 {
     nr_php_curl_md_t* metadata = NULL;
@@ -281,6 +296,14 @@ static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
     return metadata;
 }
 
+/*
+ * Purpose : Get the metadata of a curl multi handle, and create it if the
+ *           handle has none.
+ *
+ * Params  : 1. The curl multi handle.
+ *
+ * Returns : The metadata, or NULL if the zval is not a curl multi handle.
+ */
 static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
 {
     nr_php_curl_multi_md_t* multi_metadata;
