@@ -33,6 +33,8 @@ foreach (array($PG_HOST, $ip) as $h) {
 
 /*INI
 error_reporting = E_ALL & ~E_DEPRECATED
+newrelic.datastore_tracer.instance_reporting.enabled = 1
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
 */
 
 /*EXPECT

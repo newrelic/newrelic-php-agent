@@ -16,6 +16,11 @@ connection object during shutdown.
 require("skipif.inc");
 */
 
+/*INI
+newrelic.datastore_tracer.instance_reporting.enabled = 1
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
+*/
+
 /*EXPECT
 ok - query on first connection
 ok - query on second connection

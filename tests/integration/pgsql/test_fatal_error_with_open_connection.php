@@ -20,6 +20,8 @@ require("skipif.inc");
 display_errors=1
 log_errors=0
 error_reporting=E_ALL
+newrelic.datastore_tracer.instance_reporting.enabled = 1
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
 */
 
 /*EXPECT_REGEX
