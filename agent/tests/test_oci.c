@@ -26,6 +26,9 @@ static void set_statement(const char* name,
   nr_free(expr);
 }
 
+/*
+ * Returns the SQL that the store holds for the resource in $name, or NULL.
+ */
 static const char* get_statement(const char* name) {
   char* expr = nr_formatf("$%s", name);
   zval* stmt = tlib_php_request_eval_expr(expr);
