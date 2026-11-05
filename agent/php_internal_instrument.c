@@ -1291,7 +1291,7 @@ NR_INNER_WRAPPER(mysqli_execute_query) {
   nr_string_len_t sqlstrlen = 0;
   zval* params = NULL;
   zval* mysqli_obj = NULL;
-  int zcaught = 0;
+  bool zcaught = false;
   nr_segment_t* segment = NULL;
 
   if (FAILURE
