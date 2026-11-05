@@ -20,6 +20,7 @@
 #include "fw_support.h"
 #include "nr_mysqli_metadata.h"
 #include "php_objtable.h"
+#include "util_logging.h"
 #include "util_memory.h"
 
 /*
@@ -1324,6 +1325,11 @@ nr_status_t nr_php_mysqli_statement_link_get(
 
   statement = nr_php_mysqli_statement_find(stmt);
   if ((NULL == statement) || (0 == statement->link_epoch)) {
+    nrl_verbosedebug(NRL_SQL,
+                     "%s: no explain plan: the statement has no saved link, "
+                     "for example because the link connected while no "
+                     "transaction was active",
+                     __func__);
     return NR_FAILURE;
   }
 
@@ -1335,6 +1341,10 @@ nr_status_t nr_php_mysqli_statement_link_get(
        == nr_mysqli_metadata_get(nr_php_mysqli_links(), statement->link_handle,
                                  &metadata))
       || !metadata.complete || (metadata.epoch != statement->link_epoch)) {
+    nrl_verbosedebug(NRL_SQL,
+                     "%s: no explain plan: the connection of the statement's "
+                     "link changed or was closed",
+                     __func__);
     return NR_FAILURE;
   }
 
@@ -1346,6 +1356,10 @@ nr_status_t nr_php_mysqli_statement_link_get(
    * USE is not followed.
    */
   if (0 != nr_strcmp(metadata.database, statement->link_database)) {
+    nrl_verbosedebug(NRL_SQL,
+                     "%s: no explain plan: the link has another database "
+                     "selected than the one the statement was prepared in",
+                     __func__);
     return NR_FAILURE;
   }
 
