@@ -43,8 +43,8 @@ void nr_php_pgsql_instance_destroy(void* instance) {
  * used least recently.
  */
 typedef struct {
-  char* sql;
-  uint64_t used;
+  char* sql;     /* The SQL of the statement. */
+  uint64_t used; /* The value of the clock at the last save or lookup. */
 
   /*
    * For the unnamed statement only: the start time of the transaction that
@@ -57,8 +57,8 @@ typedef struct {
 } nr_php_pgsql_statement_t;
 
 typedef struct {
-  nr_hashmap_t* names;
-  uint64_t clock;
+  nr_hashmap_t* names; /* The nr_php_pgsql_statement_t, by statement name. */
+  uint64_t clock;      /* The value that the last use of a statement got. */
 } nr_php_pgsql_statements_t;
 
 /*
@@ -384,10 +384,14 @@ static nr_php_pgsql_statements_t* nr_php_pgsql_statements_find(
   return statements;
 }
 
+/*
+ * The statement used least recently so far: its name and the value of the
+ * clock at its last use.
+ */
 typedef struct {
-  const char* key;
-  size_t key_len;
-  uint64_t used;
+  const char* key; /* The name of the statement. */
+  size_t key_len;  /* The length of the name. */
+  uint64_t used;   /* The value of the clock at its last use. */
 } nr_php_pgsql_least_used_t;
 
 /*
