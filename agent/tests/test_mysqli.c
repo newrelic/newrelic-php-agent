@@ -1028,10 +1028,13 @@ static void test_explain_bound_count_mocked(void) {
 /*
  * The cases in which the explain for a query run with parameters, as
  * mysqli_execute_query() does, makes no explain connection. All of them return
- * before the parameters are used. That the parameters reach the statement of
- * the explain, and the plan itself, need a database and are covered by the
- * integration tests (test_execute_query_oo.php and
- * test_execute_query_param_types.php).
+ * before the parameters are used. The link was never connected, so a case
+ * shows that NULL comes back, not which check returned it. That the
+ * parameters reach the statement of the explain, and the plan itself, need a
+ * database and are covered by the integration tests
+ * (test_execute_query_oo.php and test_execute_query_param_types.php), and the
+ * checks on the time and on the kind of query by
+ * test_execute_query_insert_no_explain.php.
  */
 static void test_explain_query_params(void) {
   nrtxn_t* txn;

@@ -1294,6 +1294,13 @@ NR_INNER_WRAPPER(mysqli_execute_query) {
   bool zcaught = false;
   nr_segment_t* segment = NULL;
 
+  /*
+   * A call that PHP rejects, such as one with parameters that are not an
+   * array, fails both parses here and is recorded as "(unknown sql)", the same
+   * as a call to mysqli_query() with bad arguments is. A call whose parameters
+   * parse but which PHP then rejects, such as an array with a key, is recorded
+   * with its SQL although nothing reached the server.
+   */
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
                                   "os|a!", &mysqli_obj, &sqlstr, &sqlstrlen,
