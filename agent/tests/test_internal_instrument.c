@@ -144,7 +144,7 @@ static void old_handler_ends_txn_and_bails_out(INTERNAL_FUNCTION_PARAMETERS) {
 
 static void test_call_old_handler_segment(void) {
   nr_segment_t* segment;
-  int zcaught;
+  bool zcaught;
 
   tlib_php_request_start();
 

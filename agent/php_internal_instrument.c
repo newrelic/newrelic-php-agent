@@ -165,7 +165,7 @@ int nr_zend_call_old_handler_segment(nr_segment_t** segment,
                                      nrphpfn_t oldhandler,
                                      INTERNAL_FUNCTION_PARAMETERS) {
   nrtime_t txn_start_time = 0;
-  int zcaught;
+  bool zcaught;
 
   if (segment && *segment) {
     txn_start_time = nr_txn_start_time((*segment)->txn);
