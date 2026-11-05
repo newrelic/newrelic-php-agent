@@ -980,7 +980,7 @@ static void test_explain_bound_count_mocked(void) {
   zend_module_entry* mysqli;
   const zend_module_dep* original_deps;
   static const zend_module_dep libmysqlclient_deps[]
-      = {{"spl", NULL, NULL, MODULE_DEP_REQUIRED}, {NULL, NULL, NULL, 0}};
+      = {{.name = "spl", .type = MODULE_DEP_REQUIRED}, {.name = NULL}};
 
   tlib_php_request_start();
 

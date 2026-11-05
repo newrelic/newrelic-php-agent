@@ -1856,17 +1856,20 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
 #endif
   }
 
+  /*
+   * A constructor returns nothing, so the statement is the object it was
+   * called on and not return_value.
+   */
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_is_zval_valid_object(return_value)
-      && nr_php_mysqli_zval_is_stmt(this_obj TSRMLS_CC)
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
-    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
-                                 mysqli_obj TSRMLS_CC);
+      && nr_php_is_zval_valid_object(this_obj)
+      && nr_php_mysqli_zval_is_stmt(this_obj)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)) {
+    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(this_obj), mysqli_obj);
     nr_php_mysqli_statement_link_save(this_obj, mysqli_obj);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
-      nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
-                                    sqlstrlen TSRMLS_CC);
+      nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(this_obj), sqlstr,
+                                    sqlstrlen);
     }
   }
 }

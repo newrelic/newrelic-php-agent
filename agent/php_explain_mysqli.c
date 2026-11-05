@@ -15,6 +15,7 @@
 #include "php_hash.h"
 #include "php_mysqli.h"
 #include "fw_support.h"
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
 
@@ -403,7 +404,19 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
       bound_count = nr_php_explain_mysqli_bound_count(stmt);
 #endif
 
-      if ((param_count < 0) || (param_count != bound_count)) {
+      if (param_count < 0) {
+        nrl_verbosedebug(NRL_SQL,
+                         "%s: no explain plan: the number of parameters of "
+                         "the statement cannot be read",
+                         __func__);
+        nr_free(query);
+        return NULL;
+      }
+      if (param_count != bound_count) {
+        nrl_verbosedebug(NRL_SQL,
+                         "%s: no explain plan: the statement has %ld "
+                         "parameters and %ld values could be read",
+                         __func__, param_count, bound_count);
         nr_free(query);
         return NULL;
       }
