@@ -858,7 +858,7 @@ void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC) {
 }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
-void nr_php_curl_multi_close(zval* curlres) {
+void nr_php_curl_multi_close(const zval* curlres) {
   nr_segment_t* segment = nr_php_curl_multi_md_take_segment(curlres);
 
   nr_segment_end(&segment);

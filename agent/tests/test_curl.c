@@ -70,7 +70,7 @@ static void test_curl_exec(TSRMLS_D) {
   ch = nr_php_call(NULL, "curl_init", zurl);
 
   tlib_pass_if_null("no segment before curl_exec_pre",
-                    nr_php_curl_md_get_segment(ch TSRMLS_CC));
+                    nr_php_curl_md_get_segment(ch));
 
   /*
    * Calling nr_php_curl_exec_pre should assign a segment to the curl
@@ -91,7 +91,7 @@ static void test_curl_exec(TSRMLS_D) {
   nr_php_curl_exec_post(ch, false TSRMLS_CC);
 
   tlib_pass_if_null("the metadata does not keep the ended segment",
-                    nr_php_curl_md_get_segment(ch TSRMLS_CC));
+                    nr_php_curl_md_get_segment(ch));
   tlib_pass_if_not_null("segment initialized", segment);
   tlib_pass_if_true("segment stop time set",
                     segment->stop_time > segment->start_time,

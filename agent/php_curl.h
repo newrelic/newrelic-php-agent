@@ -166,7 +166,7 @@ extern void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC);
  *
  * Params  : 1. The curl multi resource.
  */
-extern void nr_php_curl_multi_close(zval* curlres);
+extern void nr_php_curl_multi_close(const zval* curlres);
 #endif
 
 #endif /* PHP_CURL_HDR */
