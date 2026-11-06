@@ -18,18 +18,7 @@
 #include "util_time.h"
 #include "util_strings.h"
 #include "util_logging.h"
-
-#if defined(__GLIBC__)
-#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
-#if defined(__x86_64__)
-__asm__(".symver strtoull,strtoull@GLIBC_2.2.5");
-__asm__(".symver strtol,strtol@GLIBC_2.2.5");
-#elif defined(__aarch64__)
-__asm__(".symver strtoull,strtoull@GLIBC_2.17");
-__asm__(".symver strtol,strtol@GLIBC_2.17");
-#endif
-#endif
-#endif
+#include "util_glibc_compat.h"
 
 /*
  * Purpose : Helper function to assign a string value to a field.  This function
