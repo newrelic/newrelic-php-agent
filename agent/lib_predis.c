@@ -990,6 +990,11 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
 
   NR_PHP_WRAPPER_CALL;
 
+  /* The command can run PHP code that ends the transaction. */
+  if (nrunlikely(NR_PHP_WRAPPER_TXN_CHANGED)) {
+    segment = NULL;
+  }
+
   params.instance = nr_predis_retrieve_datastore_instance(conn TSRMLS_CC);
 
   nr_segment_datastore_end(&segment, &params);
