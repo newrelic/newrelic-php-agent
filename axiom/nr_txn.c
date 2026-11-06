@@ -44,16 +44,7 @@
 #include "util_strings.h"
 #include "util_string_pool.h"
 #include "util_url.h"
-
-#if defined(__GLIBC__)
-#if (((__GLIBC__) > 2) || (((__GLIBC__) == 2) && ((__GLIBC_MINOR__) > 17)))
-#if defined(__x86_64__)
-__asm__(".symver strtol,strtol@GLIBC_2.2.5");
-#elif defined(__aarch64__)
-__asm__(".symver strtol,strtol@GLIBC_2.17");
-#endif
-#endif
-#endif
+#include "util_glibc_compat.h"
 
 struct _nr_txn_attribute_t {
   const char* name;
