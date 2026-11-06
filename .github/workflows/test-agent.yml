@@ -19,6 +19,8 @@ on:
       - 'dev'
   # trigger job for each pull request, regardless of the target branch
   pull_request:
+    paths-ignore:
+      - 'release-data/**'
 
 jobs:
   get-php-versions-amd64:
