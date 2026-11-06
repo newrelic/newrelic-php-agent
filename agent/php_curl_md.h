@@ -121,6 +121,19 @@ extern bool nr_php_curl_md_set_segment(zval* ch,
 extern nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC);
 
 /*
+ * Purpose : Hand over the segment field of the metadata struct associated with
+ *           the curl handle passed in, and forget it. The caller ends or
+ *           discards the segment, and the metadata no longer refers to it, so
+ *           a handle that is used again does not end it a second time.
+ *
+ * Params  : 1. The associated curl handle zval
+ *
+ * Returns : The segment associated to this curl handle if set and the
+ *           transaction is the one that created it, otherwise NULL.
+ */
+extern nr_segment_t* nr_php_curl_md_take_segment(const zval* ch);
+
+/*
  * Purpose : Retrieves a pointer to the nr_php_curl_multi_md_t struct associated
  *           with the given curl multi handle
  *
@@ -175,6 +188,20 @@ extern bool nr_php_curl_multi_md_set_segment(zval* mh,
  *           NULL.
  */
 extern nr_segment_t* nr_php_curl_multi_md_get_segment(const zval* mh TSRMLS_DC);
+
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+/*
+ * Purpose : Hand over the segment field of the metadata struct associated with
+ *           the curl multi handle passed in, and forget it. The caller ends
+ *           the segment, and the metadata no longer refers to it.
+ *
+ * Params  : 1. The associated curl multi handle zval
+ *
+ * Returns : The segment associated to this curl multi handle if set and the
+ *           transaction is the one that created it, otherwise NULL.
+ */
+extern nr_segment_t* nr_php_curl_multi_md_take_segment(const zval* mh);
+#endif
 
 /*
  * Purpose : Retrieves async context name of the metadata struct associated with
