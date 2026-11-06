@@ -1033,8 +1033,9 @@ static void test_explain_bound_count_mocked(void) {
  * parameters reach the statement of the explain, and the plan itself, need a
  * database and are covered by the integration tests
  * (test_execute_query_oo.php and test_execute_query_param_types.php), and the
- * checks on the time and on the kind of query by
- * test_execute_query_insert_no_explain.php.
+ * check on the time by
+ * test_execute_query_fast_no_explain_connection.php, and the check on the kind
+ * of query by test_execute_query_insert_no_explain.php.
  */
 static void test_explain_query_params(void) {
   nrtxn_t* txn;
