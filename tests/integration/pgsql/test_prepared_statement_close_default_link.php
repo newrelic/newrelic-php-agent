@@ -1,0 +1,55 @@
+<?php
+/*
+ * Copyright 2026 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+A pg_close() with no connection, which releases the default connection and leaves the connection open, SHALL leave the statements prepared on it: they are reported with their SQL when pg_execute() runs them with the connection in the next transaction.
+*/
+
+/*SKIPIF
+<?php
+require("skipif.inc");
+if (PHP_VERSION_ID < 80100) {
+  die("skip: the SQL of a statement is kept with the connection object from PHP 8.1\n");
+}
+*/
+
+/*EXPECT
+executed
+*/
+
+/*EXPECT_METRICS_EXIST
+Datastore/statement/Postgres/pg_user/select, 1
+*/
+
+/*EXPECT_METRICS_DONT_EXIST
+Datastore/operation/Postgres/other
+*/
+
+/*EXPECT_TRACED_ERRORS
+null
+*/
+
+require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
+
+function split_transaction() {
+  newrelic_end_transaction();
+  newrelic_start_transaction(ini_get("newrelic.appname"));
+}
+
+$users = "SELECT usename FROM pg_user WHERE usename = $1";
+
+$conn = pg_connect($PG_CONNECTION, PGSQL_CONNECT_FORCE_NEW);
+if (false === pg_prepare($conn, 'nr_stmt', $users)) {
+  echo "prepare failed: " . pg_last_error($conn) . "\n";
+  exit(1);
+}
+@pg_close();
+
+split_transaction();
+
+pg_execute($conn, 'nr_stmt', array('postgres'));
+echo "executed\n";
+

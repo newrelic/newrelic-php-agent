@@ -106,12 +106,46 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
 static zval* nr_php_explain_mysqli_prepare(zval* link,
                                            const char* query TSRMLS_DC);
 
-nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
-                                               zval* link,
-                                               const char* sql,
-                                               int sql_len,
-                                               nrtime_t start,
-                                               nrtime_t stop TSRMLS_DC) {
+/*
+ * Purpose : Whether an array of query parameters holds an object.
+ *
+ * Params  : 1. The array, or NULL.
+ *
+ * Returns : True if a value in the array, or the value a reference in it
+ *           points to, is an object.
+ *
+ * Notes   : PHP converts an object parameter to a string when the query runs,
+ *           by calling its __toString(). The explain would run the same query
+ *           with the same array, so the conversion would happen again, and
+ *           application code would run a second time.
+ */
+static bool nr_php_explain_mysqli_params_have_object(const zval* params) {
+  zval* value = NULL;
+
+  if (NULL == params || IS_ARRAY != Z_TYPE_P(params)) {
+    return false;
+  }
+
+  ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(params), value) {
+    if (Z_ISREF_P(value)) {
+      value = Z_REFVAL_P(value);
+    }
+    if (IS_OBJECT == Z_TYPE_P(value)) {
+      return true;
+    }
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return false;
+}
+
+nr_explain_plan_t* nr_php_explain_mysqli_query_params(const nrtxn_t* txn,
+                                                      zval* link,
+                                                      const char* sql,
+                                                      int sql_len,
+                                                      zval* params,
+                                                      nrtime_t start,
+                                                      nrtime_t stop) {
   nrtime_t duration;
   nr_explain_plan_t* plan = NULL;
   char* query;
@@ -133,13 +167,30 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
     return NULL;
   }
 
+  if (nr_php_explain_mysqli_params_have_object(params)) {
+    nrl_verbosedebug(NRL_SQL,
+                     "mysqli explain: skipped, a parameter is an object and "
+                     "converting it again could run application code twice");
+    return NULL;
+  }
+
   query = nr_strndup(sql, sql_len);
   plan = nr_php_explain_mysqli_issue(
       (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), NULL, 0, query,
-      NULL);
+      params);
   nr_free(query);
 
   return plan;
+}
+
+nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
+                                               zval* link,
+                                               const char* sql,
+                                               int sql_len,
+                                               nrtime_t start,
+                                               nrtime_t stop) {
+  return nr_php_explain_mysqli_query_params(txn, link, sql, sql_len, NULL,
+                                            start, stop);
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
@@ -587,6 +638,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     const char* sql,
     zval* params TSRMLS_DC) {
   int error_reporting;
+  nr_php_user_error_handler_state_t user_error_handler;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
   zval* stmt = NULL;
@@ -606,6 +658,18 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
 #endif
 
   error_reporting = nr_php_silence_errors(TSRMLS_C);
+
+  /*
+   * The application's error handler is not called while the explain connection
+   * runs. A warning from that connection, such as a refused login, would call
+   * it, and a handler can close the application's link. The data saved for the
+   * link is read through pointers across several calls into PHP (the options,
+   * the SSL settings, the connect and the database selection), so a handler
+   * that closed the link during any of them would free it: this guards against
+   * that. It also keeps the handler from seeing warnings that the
+   * application's own calls did not cause.
+   */
+  user_error_handler = nr_php_silence_user_error_handler();
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
   link_dup = nr_php_mysqli_link_duplicate_handle(link_handle);
@@ -661,6 +725,7 @@ end:
   nr_php_zval_free(&link_dup);
   nr_php_zval_free(&stmt);
 
+  nr_php_restore_user_error_handler(user_error_handler);
   nr_php_restore_errors(error_reporting TSRMLS_CC);
   NRTXNGLOBAL(generating_explain_plan) = 0;
 
