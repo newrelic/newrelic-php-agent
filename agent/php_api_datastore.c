@@ -89,6 +89,7 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
   };
   bool instrument = true;
   nr_segment_t* segment = NULL;
+  nrtime_t txn_start_time = 0;
   nr_segment_datastore_params_t node_params = {
     .callbacks = {
       .backtrace = nr_php_backtrace_callback,
@@ -143,6 +144,7 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
 
   if (instrument) {
     segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+    txn_start_time = nr_txn_start_time(NRPRG(txn));
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     /*
@@ -161,6 +163,19 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
    * surrounding wrapper.
    */
   efree(retval);
+
+  /*
+   * The callback is the application's code and can end the transaction. The
+   * segment is freed with the transaction, so it must not be used if the
+   * transaction ended, or ended and another one started.
+   */
+  if (segment && nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_API,
+                     "transaction ended or restarted during the callback of "
+                     "newrelic_record_datastore_segment; clearing the segment "
+                     "pointer");
+    segment = NULL;
+  }
 
   /*
    * Bail early if an error occurred earlier and we're not instrumenting the
