@@ -31,6 +31,33 @@ ok - cursor executed
 Datastore/operation/Oracle/other, 2
 */
 
+/*EXPECT_SPAN_EVENTS_LIKE
+[
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Oracle\/other",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Oracle"
+    },
+    {},
+    {
+      "peer.address": "unknown:unknown",
+      "db.statement": "BEGIN OPEN :cursor FOR SELECT ? AS one FROM dual; END;"
+    }
+  ]
+]
+*/
+
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 

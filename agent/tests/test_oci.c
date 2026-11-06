@@ -41,6 +41,7 @@ static const char* get_statement(const char* name) {
 
 static void test_statement_sql(void) {
   zval* not_a_resource;
+  zval* stmt;
 
   tlib_php_request_start();
 
@@ -78,14 +79,25 @@ static void test_statement_sql(void) {
                          get_statement("c"));
 
   /*
-   * NULL and empty SQL remove the entry.
+   * Replace, and remove with NULL or empty SQL, on the same resource: a call
+   * to set_statement() opens a new resource, so the SQL is set again on the
+   * resource that was saved.
    */
   set_statement("d", "SELECT 4 FROM dual", 18);
-  set_statement("d", NULL, 0);
+  stmt = tlib_php_request_eval_expr("$d");
+  nr_php_oci_statement_sql_set(stmt, "SELECT 5 FROM dual", 18);
+  tlib_pass_if_str_equal("the SQL is replaced", "SELECT 5 FROM dual",
+                         get_statement("d"));
+  tlib_pass_if_size_t_equal("replacing adds no entry", 4,
+                            nr_php_oci_statements_count());
+  nr_php_oci_statement_sql_set(stmt, NULL, 0);
   tlib_pass_if_null("NULL SQL removes the entry", get_statement("d"));
-  set_statement("e", "SELECT 5 FROM dual", 18);
-  set_statement("e", "", 0);
-  tlib_pass_if_null("empty SQL removes the entry", get_statement("e"));
+  nr_php_oci_statement_sql_set(stmt, "SELECT 6 FROM dual", 18);
+  nr_php_oci_statement_sql_set(stmt, "", 0);
+  tlib_pass_if_null("empty SQL removes the entry", get_statement("d"));
+  tlib_pass_if_size_t_equal("the removed entry is gone", 3,
+                            nr_php_oci_statements_count());
+  nr_php_zval_free(&stmt);
 
   /*
    * A statement that is freed loses its entry when the next one is saved.

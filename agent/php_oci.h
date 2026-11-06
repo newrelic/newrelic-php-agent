@@ -14,15 +14,17 @@
  *
  * Notes   : An oci8 statement is a PHP resource, not an object, so it cannot
  *           be tracked with the weak table that is used for objects. The ids
- *           of resources are never reused in a request (they come from the next
- *           free element of the resource list), so the SQL is kept by id and
- *           the entries of freed statements are dropped when a new statement
- *           is parsed.
+ *           of resources are never reused in a PHP request, which in worker
+ *           mode is the life of the worker (they come from the next free
+ *           element of the resource list), so the SQL is kept by id and the
+ *           entries of freed statements are dropped when a new statement is
+ *           parsed.
  */
 
 /*
  * Purpose : Create the store that holds the SQL of each oci8 statement. Call
- *           it once per request, before any statement exists.
+ *           it once per PHP request (in worker mode, the life of the
+ *           worker), before any statement exists.
  */
 extern void nr_php_oci_statements_create(void);
 
