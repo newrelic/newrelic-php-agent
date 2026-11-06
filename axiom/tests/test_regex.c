@@ -20,13 +20,13 @@ static void test_regex_option_mapping_f(int pcre_option,
                                         const char* pcre_name,
                                         const char* nr_name) {
   char* message = NULL;
-  unsigned long options = 0;
+  uint32_t options = 0;
   nr_regex_t* regex = nr_regex_create(".", nr_option, 0);
 
   message = nr_formatf("%s <=> %s", pcre_name, nr_name);
-  pcre_fullinfo(regex->code, regex->extra, PCRE_INFO_OPTIONS, (void*)&options);
+  pcre2_pattern_info(regex->code, PCRE2_INFO_ARGOPTIONS, &options);
 
-  tlib_pass_if_true(message, options & pcre_option, "options=%lu expected=%d",
+  tlib_pass_if_true(message, options & pcre_option, "options=%u expected=%d",
                     options, pcre_option);
 
   nr_free(message);
@@ -48,11 +48,11 @@ static void test_regex_create(void) {
   /*
    * Test : Option mapping.
    */
-  test_regex_option_mapping(PCRE_ANCHORED, NR_REGEX_ANCHORED);
-  test_regex_option_mapping(PCRE_CASELESS, NR_REGEX_CASELESS);
-  test_regex_option_mapping(PCRE_DOLLAR_ENDONLY, NR_REGEX_DOLLAR_ENDONLY);
-  test_regex_option_mapping(PCRE_DOTALL, NR_REGEX_DOTALL);
-  test_regex_option_mapping(PCRE_MULTILINE, NR_REGEX_MULTILINE);
+  test_regex_option_mapping(PCRE2_ANCHORED, NR_REGEX_ANCHORED);
+  test_regex_option_mapping(PCRE2_CASELESS, NR_REGEX_CASELESS);
+  test_regex_option_mapping(PCRE2_DOLLAR_ENDONLY, NR_REGEX_DOLLAR_ENDONLY);
+  test_regex_option_mapping(PCRE2_DOTALL, NR_REGEX_DOTALL);
+  test_regex_option_mapping(PCRE2_MULTILINE, NR_REGEX_MULTILINE);
 
   /*
    * Test : Study.
@@ -60,14 +60,12 @@ static void test_regex_create(void) {
   regex = nr_regex_create(".", 0, 0);
   tlib_pass_if_not_null("no study", regex);
   tlib_pass_if_not_null("no study", regex->code);
-  tlib_pass_if_null("no study", regex->extra);
   tlib_pass_if_int_equal("no study", 0, regex->capture_count);
   nr_regex_destroy(&regex);
 
   regex = nr_regex_create(".", 0, 1);
   tlib_pass_if_not_null("study", regex);
   tlib_pass_if_not_null("study", regex->code);
-  tlib_pass_if_not_null("study", regex->extra);
   tlib_pass_if_int_equal("study", 0, regex->capture_count);
   nr_regex_destroy(&regex);
 }
@@ -173,7 +171,7 @@ static void test_regex_substrings_create(void) {
   tlib_pass_if_ptr_equal("0 count", regex->code, ss->code);
   tlib_pass_if_null("0 count", ss->subject);
   tlib_pass_if_int_equal("0 count", 0, ss->capture_count);
-  tlib_pass_if_int_equal("0 count", 3, ss->ovector_size);
+  tlib_pass_if_int_equal("0 count", 2, ss->ovector_size);
   tlib_pass_if_not_null("0 count", ss->ovector);
   nr_regex_substrings_destroy(&ss);
 
@@ -182,7 +180,7 @@ static void test_regex_substrings_create(void) {
   tlib_pass_if_ptr_equal("1 count", regex->code, ss->code);
   tlib_pass_if_null("1 count", ss->subject);
   tlib_pass_if_int_equal("1 count", 1, ss->capture_count);
-  tlib_pass_if_int_equal("1 count", 6, ss->ovector_size);
+  tlib_pass_if_int_equal("1 count", 4, ss->ovector_size);
   tlib_pass_if_not_null("1 count", ss->ovector);
   nr_regex_substrings_destroy(&ss);
 
