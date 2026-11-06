@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PHP daemon image digests",
+  "description": "Content digest of every newrelic/php-daemon image published for a release, newest release first.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["images"],
+  "properties": {
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["digest", "platforms", "pushed", "version"],
+        "properties": {
+          "version": {
+            "description": "Image tag, which is the agent version without the build number.",
+            "type": "string",
+            "pattern": "^[0-9]+(\\.[0-9]+)+$"
+          },
+          "digest": {
+            "description": "Digest of the tag (the multi-platform index), as used by docker pull newrelic/php-daemon@<digest>.",
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "pushed": {
+            "description": "UTC time the registry reports for the last push of the tag.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "platforms": {
+            "description": "Digest of the image of each platform.",
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "pattern": "^linux/[a-z0-9/]+$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
