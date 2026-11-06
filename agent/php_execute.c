@@ -2053,10 +2053,16 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
-  } else if (!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name)) {
+  } else if ((!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name))
+             && NULL == segment->id && NULL == segment->attributes) {
     /*
      * If there is no custom instrumentation and tt detail is not more than 0,
-     * do not record the segment
+     * do not record the segment, unless it must be reported. A segment that
+     * has an ID already handed out cannot be discarded: the ID may be in an
+     * outgoing distributed tracing header, a log line, an error event or the
+     * linking metadata, and would point to a span that is never reported.
+     * A segment with attributes cannot be discarded either: the attributes
+     * (e.g. custom span parameters) are only reported with the span.
      */
     nr_segment_discard(&segment);
     return;
