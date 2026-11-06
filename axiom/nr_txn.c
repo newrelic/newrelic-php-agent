@@ -44,6 +44,7 @@
 #include "util_strings.h"
 #include "util_string_pool.h"
 #include "util_url.h"
+#include "util_glibc_compat.h"
 
 struct _nr_txn_attribute_t {
   const char* name;

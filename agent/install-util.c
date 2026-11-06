@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "util_glibc_compat.h"
 
 #if defined(__GNUC__)
 #define NRUNUSED __attribute__((__unused__))

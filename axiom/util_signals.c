@@ -24,6 +24,7 @@
 #include "util_signals.h"
 #include "util_strings.h"
 #include "util_syscalls.h"
+#include "util_glibc_compat.h"
 
 static int signal_tracer_fd = -1;
 static char signal_tracer_banner[256];
