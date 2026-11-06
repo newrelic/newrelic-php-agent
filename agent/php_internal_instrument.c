@@ -1350,8 +1350,8 @@ NR_INNER_WRAPPER(mysqli_execute_query) {
   }
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (nrlikely(NULL != segment)) {
     nr_datastore_instance_t* instance = NULL;
