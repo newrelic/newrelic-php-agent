@@ -78,6 +78,31 @@ static void test_curl_metadata_segment(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_curl_metadata_reset_segment(TSRMLS_D) {
+  zval* ch;
+  nr_segment_t* segment;
+
+  tlib_php_request_start();
+
+  tlib_pass_if_false("nr_php_curl_md_reset_segment is null safe",
+                     nr_php_curl_md_reset_segment(NULL TSRMLS_CC),
+                     "expected false");
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  ch = nr_php_call(NULL, "curl_init");
+  nr_php_curl_md_set_segment(ch, segment TSRMLS_CC);
+
+  tlib_pass_if_true("nr_php_curl_md_reset_segment succeeds",
+                    nr_php_curl_md_reset_segment(ch TSRMLS_CC),
+                    "expected true");
+  tlib_pass_if_null("nr_php_curl_md_reset_segment forgets the segment",
+                    nr_php_curl_md_get_segment(ch TSRMLS_CC));
+
+  nr_segment_end(&segment);
+  nr_php_zval_free(&ch);
+  tlib_php_request_end();
+}
+
 static void test_curl_metadata_method(TSRMLS_D) {
   const nr_php_curl_md_t* metadata;
   zval* ch;
@@ -455,6 +480,41 @@ static void test_curl_multi_md_initialized(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_curl_multi_md_reset(TSRMLS_D) {
+  nr_segment_t* segment;
+  zval* mh;
+
+  tlib_php_request_start();
+
+  mh = nr_php_call(NULL, "curl_multi_init");
+
+  /*
+   * Test : Handle NULL gracefully.
+   */
+  tlib_pass_if_false("NULL curl_multi handles are not reset",
+                     nr_php_curl_multi_md_reset(NULL TSRMLS_CC),
+                     "reset returned true");
+
+  /*
+   * Test : Resetting forgets the segment and the initialized state.
+   */
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  nr_php_curl_multi_md_set_segment(mh, segment TSRMLS_CC);
+  nr_php_curl_multi_md_set_initialized(mh TSRMLS_CC);
+
+  tlib_pass_if_true("reset succeeds", nr_php_curl_multi_md_reset(mh TSRMLS_CC),
+                    "reset returned false");
+  tlib_pass_if_null("reset forgets the segment",
+                    nr_php_curl_multi_md_get_segment(mh TSRMLS_CC));
+  tlib_pass_if_false("reset forgets the initialized state",
+                     nr_php_curl_multi_md_is_initialized(mh TSRMLS_CC),
+                     "initialized=true");
+
+  nr_segment_end(&segment);
+  nr_php_zval_free(&mh);
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
@@ -462,6 +522,7 @@ void test_main(void* p NRUNUSED) {
   if (tlib_php_require_extension("curl" TSRMLS_CC)) {
     test_curl_metadata_get(TSRMLS_C);
     test_curl_metadata_segment(TSRMLS_C);
+    test_curl_metadata_reset_segment(TSRMLS_C);
     test_curl_metadata_method(TSRMLS_C);
     test_curl_metadata_response_header(TSRMLS_C);
     test_curl_metadata_outbound_headers(TSRMLS_C);
@@ -471,6 +532,7 @@ void test_main(void* p NRUNUSED) {
     test_curl_multi_md_segment(TSRMLS_C);
     test_curl_multi_md_async_context(TSRMLS_C);
     test_curl_multi_md_initialized(TSRMLS_C);
+    test_curl_multi_md_reset(TSRMLS_C);
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
