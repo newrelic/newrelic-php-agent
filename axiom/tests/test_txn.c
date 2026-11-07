@@ -6019,10 +6019,9 @@ static void test_create_w3c_traceparent_header(void) {
   actual = nr_txn_create_w3c_traceparent_header(&txn, segment);
   expected = "00-0000000000000000000000meatballs!-";
   tlib_pass_if_not_null("random guid", nr_strstr(actual, expected));
-  tlib_pass_if_false(
-      "The segment priority should not be set for a random guid",
-      segment->priority & NR_SEGMENT_PRIORITY_DT, "priority=0x%08x",
-      segment->priority);
+  tlib_pass_if_false("The segment priority should not be set for a random guid",
+                     segment->priority & NR_SEGMENT_PRIORITY_DT,
+                     "priority=0x%08x", segment->priority);
   test_txn_metric_is("header created", txn.unscoped_metrics, MET_FORCED,
                      "Supportability/TraceContext/Create/Success", 1, 0, 0, 0,
                      0, 0);
