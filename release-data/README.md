@@ -43,7 +43,8 @@ sha256sum newrelic-php5-<version>-linux.tar.gz
 ```
 
 Tarballs built before signing started are listed in `tarball-hashes.json` once they have been signed. Versions
-at or above `first_signed_version` in `signing-key-fingerprints.json` were signed when they were built.
+at or above `first_signed_version` in `signing-key-fingerprints.json` were signed when they were built. The value `12.13.0` covers every build
+of 12.13.0 and later: snapshots, betas, release candidates and releases.
 
 ## Pin a daemon image
 
