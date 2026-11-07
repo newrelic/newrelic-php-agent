@@ -14,6 +14,9 @@ error is attached to the root span as the exception never reached the top.
 */
 
 /*INI
+newrelic.distributed_tracing_enabled = true
+newrelic.distributed_tracing_exclude_newrelic_header = true
+newrelic.cross_application_tracer.enabled = false
 newrelic.transaction_tracer.detail = 0
 newrelic.special.expensive_node_min = 50us
 log_errors=0
