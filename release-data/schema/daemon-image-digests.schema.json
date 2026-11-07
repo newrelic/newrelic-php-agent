@@ -4,8 +4,13 @@
   "description": "Content digest of every newrelic/php-daemon image published for a release, newest release first.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["images"],
+  "required": ["first_image_version", "images"],
   "properties": {
+    "first_image_version": {
+      "description": "The first image tag that was published. A tag below it has no official image; a tag at or above it that is not listed in images is missing.",
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)+$"
+    },
     "images": {
       "type": "array",
       "items": {

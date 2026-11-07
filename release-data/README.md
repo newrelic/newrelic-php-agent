@@ -54,3 +54,7 @@ same image:
 ```
 docker pull newrelic/php-daemon@sha256:<digest>
 ```
+
+`first_image_version` is the first tag that was published (`9.2.0`). A tag below it has no official image, so an
+image that claims such a tag is not ours. A tag at or above it that is not listed in `images` is missing from the list:
+do not trust an image for it without asking the PHP agent team.
