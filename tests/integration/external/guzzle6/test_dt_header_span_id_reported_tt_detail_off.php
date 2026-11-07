@@ -14,10 +14,7 @@ header must not be one of them: it is kept, so the ID resolves to a reported
 span. On PHP 8.x with the Observer API that segment used to be discarded, which
 is what https://github.com/newrelic/newrelic-php-agent/issues/1370 reported.
 The span with the ID sent in the header is expected to be the parent of the
-External span. That holds when the segment the ID was taken from is kept (or
-when the ID is taken from the nearest segment that is kept). A fix that sends
-the ID of the External span itself would need this expectation changed to
-compare the External span's guid instead.
+External span.
 */
 
 /*SKIPIF

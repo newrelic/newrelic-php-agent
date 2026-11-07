@@ -12,10 +12,7 @@ This is the control for the detail = 0 variant of this test: with
 newrelic.transaction_tracer.detail = 1 the segment holding the span ID that is
 sent in the header is kept, so the header span ID resolves to a reported span.
 The span with the ID sent in the header is expected to be the parent of the
-External span. That holds when the segment the ID was taken from is kept (or
-when the ID is taken from the nearest segment that is kept). A fix that sends
-the ID of the External span itself would need this expectation changed to
-compare the External span's guid instead.
+External span.
 */
 
 /*SKIPIF
