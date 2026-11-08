@@ -12,6 +12,8 @@ agent team.
 
 The format of each file is described by the JSON Schema with the same name in [`schema/`](schema/).
 
+A validator has to check the `format` keywords (`date`, `date-time`) to reject a date that does not exist, and it has to follow ECMA-262 for `pattern`, where `$` does not match before a trailing newline. Python's `jsonschema` does neither by default; the scripts that write these files check both.
+
 ## Verify a tarball
 
 Each tarball on the download site has a detached signature next to it, named like the tarball with `.asc` added.
