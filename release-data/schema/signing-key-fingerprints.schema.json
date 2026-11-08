@@ -4,7 +4,7 @@
   "description": "Fingerprints of the keys that sign PHP agent packages.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["keys"],
+  "required": ["first_signed_version", "keys"],
   "properties": {
     "first_signed_version": {
       "description": "First version whose tarballs were signed by the release pipeline.",
@@ -14,6 +14,18 @@
     "keys": {
       "type": "array",
       "minItems": 1,
+      "description": "The keys, with exactly one whose purpose is tarball.",
+      "contains": {
+        "type": "object",
+        "required": ["purpose"],
+        "properties": {
+          "purpose": {
+            "const": "tarball"
+          }
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
