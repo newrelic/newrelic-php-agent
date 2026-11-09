@@ -13,8 +13,8 @@ Laravel exception handler during later requests must still be reported.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0 not supported\n");
+if (version_compare(PHP_VERSION, "7.4", "<")) {
+  die("skip: PHP < 7.4 resets user instrumentation when a transaction starts\n");
 }
 */
 

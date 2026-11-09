@@ -11,13 +11,6 @@ Application::boot() as usual, and the agent must not resolve any service from
 the container before the application has booted.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0 not supported\n");
-}
-*/
-
 /*INI
 newrelic.framework = laravel
 */

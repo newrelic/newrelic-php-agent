@@ -10,13 +10,6 @@ application-level wrappers are installed from Application::boot() and the
 HTTP kernel fallback must not change naming or error reporting.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0 not supported\n");
-}
-*/
-
 /*INI
 newrelic.framework = laravel
 */

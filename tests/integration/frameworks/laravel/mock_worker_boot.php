@@ -51,7 +51,7 @@ namespace Illuminate\Foundation {
         const VERSION = '11.0.0';
 
         private $bindings = array();
-        private $booted = false;
+        protected $booted = false;
         public $resolvedBeforeBoot = array();
 
         public function __construct() {
@@ -73,7 +73,8 @@ namespace Illuminate\Foundation {
             return isset($this->bindings[$key]);
         }
 
-        public function offsetGet($key): mixed {
+        #[\ReturnTypeWillChange]
+        public function offsetGet($key) {
             if (!$this->booted) {
                 $this->resolvedBeforeBoot[] = $key;
             }
