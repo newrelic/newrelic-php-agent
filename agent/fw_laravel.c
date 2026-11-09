@@ -973,18 +973,16 @@ void nr_laravel_enable(TSRMLS_D) {
       nr_laravel_routes_get_route_for_methods TSRMLS_CC);
 
   /*
-   * If router filtering is disabled, then the filter installed by the
-   * Application::boot() callback will never fire. These callbacks attempt to
-   * mitigate that, but won't cover the (currently unsupported) case where the
-   * router service has been replaced and the normal Illuminate\Routing\Router
-   * methods aren't called.
+   * Name the transaction after the matched route. The callback needs no
+   * Application instance, so it is installed here, on detection, and also
+   * runs when the application was booted while no transaction was recording.
+   * It won't cover the (currently unsupported) case where the router service
+   * has been replaced and the normal Illuminate\Routing\Router methods aren't
+   * called.
    *
-   * If router filtering is enabled, then we may set the transaction name
-   * multiple times. This isn't considered to be an issue, as the last one will
-   * win, and that's almost certain to be the correct one. If this turns out to
-   * cause more performance overhead than we're comfortable with, then the
-   * simple fix would be to check if filtering is enabled in
-   * nr_laravel_router_method_with_request.
+   * Other Laravel callbacks may also name the transaction. This isn't
+   * considered to be an issue, as the last one will win, and that's almost
+   * certain to be the correct one.
    */
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Routing\\Router::prepareResponse"),
