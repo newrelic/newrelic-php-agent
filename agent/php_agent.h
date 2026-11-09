@@ -13,6 +13,7 @@
  * PHP specific.
  */
 
+#include <signal.h>
 #include <stdbool.h>
 
 #ifndef PHP_AGENT_HDR
@@ -101,9 +102,35 @@ extern zval* nr_php_backtrace(TSRMLS_D);
  * Purpose : Write a dump of the current VM position to a file descriptor.
  *
  * Params  : 1. The destination file descriptor.
- *           2. The maximum number of execution frames to write.
+ *           2. The maximum number of execution frames to write, or zero or
+ *              less for no limit. A line says when frames were left out.
  */
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
+
+/*
+ * Purpose : Write the PHP stack of the current thread to fd, for the fatal
+ *           signal handler, unless it cannot be read: a thread that has no PHP
+ *           state (thread-safe PHP) gets a line that says so, and a read that
+ *           faults is caught and gets a line that says that it failed.
+ *
+ * Params  : 1. The destination file descriptor.
+ *
+ * Returns : Nothing. The caller reraises the signal it is handling.
+ */
+extern void nr_php_guarded_backtrace_fd(int fd);
+
+/*
+ * Purpose : Tell a fault from a signal that was sent. The fatal signal handler
+ *           uses it while the PHP stack is read, to jump back only for a fault
+ *           of the read.
+ *
+ * Params  : 1. The signal number.
+ *           2. The details of the signal (si_code); NULL is taken for a fault.
+ *
+ * Returns : True for a SIGSEGV or SIGBUS that the kernel raised, false for any
+ *           other signal and for one that was sent (kill(), raise(), ...).
+ */
+extern bool nr_php_signal_is_fault(int sig, const siginfo_t* info);
 
 /*
  * Purpose : Same as nr_php_backtrace_to_json but designed as a callback
@@ -531,6 +558,47 @@ extern int nr_php_silence_errors(TSRMLS_D);
  * Params  : 1. The previous error reporting setting.
  */
 extern void nr_php_restore_errors(int error_reporting TSRMLS_DC);
+
+/*
+ * The state that nr_php_silence_user_error_handler saves and
+ * nr_php_restore_user_error_handler restores.
+ */
+typedef struct {
+  bool active;     /* whether a handler was set; if not, nothing was changed */
+  int error_types; /* the error types the handler was registered for */
+  size_t depth;    /* the number of handlers saved on PHP's stack */
+} nr_php_user_error_handler_state_t;
+
+/*
+ * Purpose : Stop PHP from calling the application's error handler (the
+ *           callback of set_error_handler()), but save the previous state.
+ *
+ * Notes   : Silencing errors does not do this: PHP decides whether to call the
+ *           handler from the set of error types the handler was registered for,
+ *           not from the error reporting setting. Code that runs PHP on the
+ *           application's behalf, such as the explain connection, uses this so
+ *           that the application's handler does not see warnings that its own
+ *           calls did not cause, and cannot change the application's state
+ *           (close a connection, for instance) while the agent is working on
+ *           it.
+ *
+ * Returns : The state to give to nr_php_restore_user_error_handler.
+ */
+extern nr_php_user_error_handler_state_t nr_php_silence_user_error_handler(
+    void);
+
+/*
+ * Purpose : Restore the state returned by nr_php_silence_user_error_handler.
+ *
+ * Params  : 1. The state that was returned.
+ *
+ * Notes   : If PHP code registered another handler while the error handler was
+ *           silenced, that handler keeps the types it was registered for, and
+ *           the handler that was silenced gets its own types back when PHP
+ *           returns to it: PHP saved the silenced value for it on its stack.
+ */
+extern void nr_php_restore_user_error_handler(
+    nr_php_user_error_handler_state_t state);
 
 /*
  * Purpose : Acquire a named constant from PHP.

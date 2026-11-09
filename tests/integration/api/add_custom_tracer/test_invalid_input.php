@@ -74,11 +74,13 @@ Supportability/api/add_custom_tracer, 4
 /*EXPECT_TRACED_ERRORS null*/
 
 function MY_function($x) {
+    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
     echo $x;
 }
 
 class MY_class {
     public static function MY_method($x) {
+        time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
         echo $x;
     }
 }

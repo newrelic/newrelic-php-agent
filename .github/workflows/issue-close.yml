@@ -22,4 +22,7 @@ jobs:
       GH_TOKEN: ${{ secrets.token }}
     steps:
       - name: close issue
-        run: gh issue -R ${{ github.repository }} close ${{ inputs.issue-number }}
+        env:
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+        run: gh issue -R "$REPO" close "$ISSUE_NUMBER"

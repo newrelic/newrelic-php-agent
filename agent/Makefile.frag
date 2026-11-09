@@ -85,6 +85,7 @@ TEST_BINARIES = \
 	tests/test_curl_md \
 	tests/test_datastore \
 	tests/test_environment \
+	tests/test_fatal_signal_handler \
 	tests/test_fibers \
 	tests/test_frankenphp \
 	tests/test_fw_codeigniter \
@@ -105,6 +106,7 @@ TEST_BINARIES = \
 	tests/test_mysql \
 	tests/test_mysqli \
 	tests/test_objtable \
+	tests/test_oci \
 	tests/test_output \
 	tests/test_pdo \
 	tests/test_pdo_mysql \

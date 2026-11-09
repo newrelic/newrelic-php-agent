@@ -1,0 +1,121 @@
+<?php
+/*
+ * Copyright 2026 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+A statement prepared with mysqli_prepare() in one transaction SHALL be reported with its SQL when mysqli_stmt_execute() runs it in the next transaction.
+*/
+
+/*SKIPIF
+<?php
+require("skipif.inc");
+if (PHP_VERSION_ID < 80000) {
+  die("skip: the SQL of a statement is kept across transactions from PHP 8.0\n");
+}
+*/
+
+/*INI
+newrelic.transaction_tracer.explain_enabled = false
+;comment=Set explain_threshold to 0 to ensure that the slow query is recorded.
+newrelic.transaction_tracer.explain_threshold = 0
+;comment=Disable instance and database name reporting (it is tested separately).
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
+newrelic.datastore_tracer.instance_reporting.enabled = 0
+*/
+
+/*EXPECT
+executed
+*/
+
+/*EXPECT_METRICS_EXIST
+Datastore/statement/MySQL/tables/select, 1
+*/
+
+/*EXPECT_METRICS_DONT_EXIST
+Datastore/operation/MySQL/other
+*/
+
+/*EXPECT_SLOW_SQLS
+[
+  [
+    [
+      "OtherTransaction/php__FILE__",
+      "<unknown>",
+      "?? SQL id",
+      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name = ?",
+      "Datastore/statement/MySQL/tables/select",
+      1,
+      "?? total time",
+      "?? min time",
+      "?? max time",
+      {
+        "backtrace": "??"
+      }
+    ]
+  ]
+]
+*/
+
+/*EXPECT_SPAN_EVENTS_LIKE
+[
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore/statement/MySQL/tables/select",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "MySQL"
+    },
+    {},
+    {
+      "peer.address": "unknown:unknown",
+      "db.statement": "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name = ?"
+    }
+  ]
+]
+*/
+
+/*EXPECT_TRACED_ERRORS
+null
+*/
+
+require_once(realpath(dirname(__FILE__)) . '/mysqli.inc');
+
+mysqli_report(MYSQLI_REPORT_OFF);
+
+$link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB,
+                       $MYSQL_PORT, $MYSQL_SOCKET);
+if (false === $link) {
+  echo "connect failed: " . mysqli_connect_error() . "\n";
+  exit(1);
+}
+
+$tables = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name = 'TRIGGERS'";
+
+function split_transaction() {
+  newrelic_end_transaction();
+  newrelic_start_transaction(ini_get("newrelic.appname"));
+}
+
+$stmt = mysqli_prepare($link, $tables);
+if (false === $stmt) {
+  echo "prepare failed: " . mysqli_error($link) . "\n";
+  exit(1);
+}
+
+split_transaction();
+
+mysqli_stmt_execute($stmt);
+echo "executed\n";
+mysqli_stmt_close($stmt);
+

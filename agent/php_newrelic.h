@@ -496,6 +496,25 @@ typedef struct _shared_globals_t {
   nr_php_objtable_t* pgsql_instances;
 
   /*
+   * The SQL of each prepared statement of each pgsql connection object
+   * (PHP 8.1+), by statement name, kept for as long as the connection object
+   * lives. A statement can be prepared in one transaction and executed in a
+   * later one. Unlike pgsql_instances, a connect keeps an existing entry; it
+   * marks the connection as the last one, which a call with no connection
+   * uses.
+   */
+  nr_php_objtable_t* pgsql_statements;
+
+  /*
+   * The statements (PHP 8.1+) of a call with no connection when no connection
+   * was marked as the last one: the connect happened while the agent was not
+   * recording. It is dropped when a connect marks a connection as the last
+   * one and when the default link is closed. The type is nr_php_pgsql_
+   * statements_t, which php_pgsql.c defines.
+   */
+  void* pgsql_default_statements;
+
+  /*
    * The datastore instance of each Predis node connection object (PHP 8.0+),
    * kept for as long as the object lives.
    */
@@ -509,7 +528,22 @@ typedef struct _shared_globals_t {
    */
   nr_php_objtable_t* pdo_options;
 
+  /*
+   * The SQL of each oci8 statement, by resource id. A statement resource can
+   * be used in a later transaction than the one that parsed it. Entries of
+   * statements that were freed are dropped when a new statement is parsed.
+   */
+  nr_hashmap_t* oci_statements;
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * The SQL of each mysqli statement object (PHP 8.0+), kept for as long as
+   * the object lives. A statement prepared in one transaction can be executed
+   * in a later one, for example when it is prepared at FrankenPHP worker
+   * start.
+   */
+  nr_php_objtable_t* mysqli_statement_sql;
+
   /*
    * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
    * request. The explain connection needs it in a later transaction. An entry

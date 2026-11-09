@@ -5,12 +5,12 @@
  */
 
 /*DESCRIPTION
-Test detection of packages when Composer is used but Composer installation
-is broken - method is unavailable. Supportability metric for Autoloader
-library should be present but not for Composer library. Package harvest should
-not be empty but generated using legacy method when package version is known.
-Because package version is known, package-specific metrics should be generated.
-No errors should be generated.
+Test detection of packages when Composer is used but Composer installation is
+broken - method is unavailable. Supportability metrics for the Autoloader and
+Composer libraries should be present: the Composer files exist, only the
+Composer API fails. Package harvest should not be empty but generated using
+legacy method when package version is known. Because package version is known,
+package-specific metrics should be generated. No errors should be generated.
 */
 
 /*INI
@@ -25,9 +25,6 @@ expected_packages=laravel/framework
 /*EXPECT_METRICS_EXIST
 Supportability/library/Autoloader/detected, 1
 Supportability/PHP/package/laravel/framework/11/detected
-*/
-
-/*EXPECT_METRICS_DONT_EXIST
 Supportability/library/Composer/detected, 1
 */
 
