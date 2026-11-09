@@ -626,18 +626,21 @@ NR_PHP_WRAPPER(nr_laravel_kernel_handle) {
     NR_PHP_WRAPPER_LEAVE;
   }
 
+  /*
+   * In a regular request this runs before the kernel boots the application,
+   * so it runs on every request. Read Application::$booted (declared since
+   * Laravel 4.2) rather than call isBooted(), to avoid a call into PHP code
+   * each time.
+   */
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
   app = nr_php_get_zval_object_property(this_var, "app");
-  if (nr_php_object_has_method(app, "isBooted")) {
-    booted = nr_php_call(app, "isBooted");
-    if (nr_php_is_zval_true(booted)) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "%s: wrapping booted application",
-                       __func__);
-      nr_laravel_instrument_application(app);
-    }
+  booted = nr_php_get_zval_object_property(app, "booted");
+  if (nr_php_is_zval_true(booted)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: wrapping booted application",
+                     __func__);
+    nr_laravel_instrument_application(app);
   }
 
-  nr_php_zval_free(&booted);
   nr_php_scope_release(&this_var);
 
   NR_PHP_WRAPPER_CALL;
