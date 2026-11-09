@@ -78,6 +78,7 @@ function function_exceeding_tt_detail_threshold()
 function custom_function_not_exceeding_tt_detail_threshold()
 {
   error_reporting(error_reporting()); // prevent from optimizing this function away
+  time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
   echo 'custom_function_not_exceeding_tt_detail_threshold called' . PHP_EOL;
 }
 

@@ -78,6 +78,27 @@ extern int nr_zend_call_old_handler(nrphpfn_t oldhandler,
                                     INTERNAL_FUNCTION_PARAMETERS);
 
 /*
+ * Purpose : Call the original handler of an instrumented function that has a
+ *           segment started for the call, and clear the segment if the
+ *           transaction it belongs to ended during the call.
+ *
+ * Params  : 1. A pointer to the segment started for the call. It is set to
+ *              NULL if the transaction ended, or ended and another one
+ *              started, while the original handler ran: the segment was freed
+ *              with its transaction and must not be used.
+ *           2. The original handler.
+ *
+ * Returns : Whether the original handler bailed out, as
+ *           nr_zend_call_old_handler does.
+ *
+ * Notes   : Use this instead of nr_zend_call_old_handler wherever the segment
+ *           is used after the call.
+ */
+extern int nr_zend_call_old_handler_segment(nr_segment_t** segment,
+                                            nrphpfn_t oldhandler,
+                                            INTERNAL_FUNCTION_PARAMETERS);
+
+/*
  * Purpose : Destroy internal function instrumentation records, freeing
  *           associated memory.
  *

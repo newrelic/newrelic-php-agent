@@ -12,10 +12,12 @@
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_mysqli.h"
+#include "php_oci.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "nr_datastore_instance.h"
 #include "php_datastore.h"
+#include "php_mysqli.h"
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "nr_txn.h"
@@ -161,13 +163,19 @@ PHP_RINIT_FUNCTION(newrelic) {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   NRPRG_SHARED(pgsql_instances)
       = nr_php_objtable_create(nr_php_pgsql_instance_destroy);
+  NRPRG_SHARED(pgsql_statements)
+      = nr_php_objtable_create(nr_php_pgsql_statements_destroy);
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   NRPRG_SHARED(predis_instances)
       = nr_php_objtable_create(nr_php_datastore_instance_dtor);
 #endif
   nr_php_pdo_options_create_table();
+  nr_php_oci_statements_create();
   nr_php_mysqli_links_create();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_sql_create_table();
+#endif
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
   NRPRG_CTX(predis_command_starts)

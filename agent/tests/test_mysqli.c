@@ -9,12 +9,17 @@
 #include "nr_datastore_instance.h"
 #include "php_agent.h"
 #include "php_datastore.h"
+#include "php_explain_mysqli.h"
 #include "php_mysqli.h"
 #include "php_mysqli_private.h"
 #include "php_objtable.h"
 #include "php_txn.h"
 #include "php_agent.h"
 #include "util_system.h"
+
+#ifdef NR_PHP_MYSQLI_MYSQLND
+#include "ext/mysqli/php_mysqli_structs.h"
+#endif
 
 static char* system_host_name;
 
@@ -660,9 +665,448 @@ static void test_strip_persistent_prefix(void) {
                          nr_php_mysqli_strip_persistent_prefix("p:host.name"));
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * A stdClass stands in for a mysqli_stmt: the table accepts any object.
+ */
+static void test_statement_sql(void) {
+  zval* first;
+  zval* second;
+  zval* not_object;
+  zval* reused;
+  nr_php_object_handle_t old_handle;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval("$first = new stdClass; $second = new stdClass;");
+  first = tlib_php_request_eval_expr("$first");
+  second = tlib_php_request_eval_expr("$second");
+  not_object = tlib_php_request_eval_expr("42");
+
+  tlib_pass_if_not_null("the table exists", NRPRG_SHARED(mysqli_statement_sql));
+  tlib_pass_if_null("a statement with no SQL saved",
+                    nr_php_mysqli_statement_sql_get(first));
+
+  nr_php_mysqli_statement_sql_set(first, "SELECT 1", 8);
+  tlib_pass_if_str_equal("saved SQL", "SELECT 1",
+                         nr_php_mysqli_statement_sql_get(first));
+  tlib_pass_if_null("another statement is untouched",
+                    nr_php_mysqli_statement_sql_get(second));
+
+  /* The length bounds the copy: the SQL needs no terminator. */
+  nr_php_mysqli_statement_sql_set(second, "SELECT 2 FROM t", 8);
+  tlib_pass_if_str_equal("the length bounds the SQL", "SELECT 2",
+                         nr_php_mysqli_statement_sql_get(second));
+
+  nr_php_mysqli_statement_sql_set(first, "SELECT 3", 8);
+  tlib_pass_if_str_equal("a second prepare replaces the SQL", "SELECT 3",
+                         nr_php_mysqli_statement_sql_get(first));
+  tlib_pass_if_str_equal("the other statement is untouched", "SELECT 2",
+                         nr_php_mysqli_statement_sql_get(second));
+  tlib_pass_if_size_t_equal(
+      "two entries", 2,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  nr_php_mysqli_statement_sql_set(first, NULL, 0);
+  tlib_pass_if_null("NULL SQL removes the entry",
+                    nr_php_mysqli_statement_sql_get(first));
+  nr_php_mysqli_statement_sql_set(second, "", 0);
+  tlib_pass_if_null("empty SQL removes the entry",
+                    nr_php_mysqli_statement_sql_get(second));
+
+  nr_php_mysqli_statement_sql_set(not_object, "SELECT 4", 8);
+  tlib_pass_if_null("a value that is not an object is rejected",
+                    nr_php_mysqli_statement_sql_get(not_object));
+
+  /* The entry goes when the object is freed. */
+  old_handle = Z_OBJ_HANDLE_P(first);
+  nr_php_mysqli_statement_sql_set(first, "SELECT 5", 8);
+  tlib_pass_if_size_t_equal(
+      "one entry", 1,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+  nr_php_zval_free(&first);
+  tlib_php_request_eval("$first = null;");
+  tlib_pass_if_size_t_equal(
+      "freeing the object drops the entry", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* A new object that takes the freed object's handle finds no entry. */
+  tlib_php_request_eval("$reused = new stdClass;");
+  reused = tlib_php_request_eval_expr("$reused");
+  tlib_pass_if_uint_equal("the new object takes the freed handle", old_handle,
+                          Z_OBJ_HANDLE_P(reused));
+  tlib_pass_if_null("the new object inherits nothing",
+                    nr_php_mysqli_statement_sql_get(reused));
+  nr_php_zval_free(&reused);
+
+  nr_php_zval_free(&second);
+  nr_php_zval_free(&not_object);
+  tlib_php_request_end();
+}
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * A stdClass stands in for a mysqli_stmt, and a mysqli object that has not
+ * connected for the link: the link needs the metadata of a connect.
+ */
+static void test_statement_link(void) {
+  zval* link;
+  zval* other;
+  zval* stmt;
+  nr_mysqli_metadata_link_handle_t handle = 0;
+
+  tlib_php_request_start();
+  set_explain_options(NRPRG(txn), 1, NR_SQL_OBFUSCATED, 1);
+
+  tlib_php_request_eval(
+      "$link = mysqli_init(); $other = mysqli_init(); $stmt = new stdClass;");
+  link = tlib_php_request_eval_expr("$link");
+  other = tlib_php_request_eval_expr("$other");
+  stmt = tlib_php_request_eval_expr("$stmt");
+
+  tlib_pass_if_status_failure("no link saved",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A link with no complete metadata cannot be duplicated: nothing is saved. */
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_failure("link without metadata",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "no entry for a link without metadata", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* The link and the SQL are kept independently. */
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("link saved",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_uint64_t_equal("link handle", Z_OBJ_HANDLE_P(link), handle);
+  tlib_pass_if_null("no SQL yet", nr_php_mysqli_statement_sql_get(stmt));
+  nr_php_mysqli_statement_sql_set(stmt, "SELECT 1", 8);
+  tlib_pass_if_str_equal("SQL saved", "SELECT 1",
+                         nr_php_mysqli_statement_sql_get(stmt));
+  nr_php_mysqli_statement_sql_set(stmt, NULL, 0);
+  tlib_pass_if_status_success("link kept when the SQL is dropped",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "one entry", 1,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /*
+   * A statement stays with the database it was prepared in: after select_db()
+   * the link is not used for it, until it is prepared again.
+   */
+  nr_php_mysqli_metadata_set_database(link, "other");
+  tlib_pass_if_status_failure("select_db: the statement is in another database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared in the new database",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_metadata_set_database(link, "other");
+  tlib_pass_if_status_success("the same database selected again",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A statement that is prepared after select_db() belongs to the new one. */
+  nr_php_mysqli_metadata_set_database(link, "third");
+  tlib_pass_if_status_failure("select_db again: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(stmt);
+  tlib_pass_if_status_success("refreshed after the prepare",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_refresh(NULL);
+
+  /* A change of user and a connect replace the connection. */
+  nr_php_mysqli_metadata_set_user(link, "v", "pw", NULL);
+  tlib_pass_if_status_failure("change_user: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared again",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  tlib_pass_if_status_failure("connect again: the statement is stale",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_mysqli_statement_link_set(stmt, link);
+  tlib_pass_if_status_success("prepared on the new connection",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* The metadata of a removed link is gone. */
+  nr_php_mysqli_metadata_remove(link);
+  tlib_pass_if_status_failure("metadata removed",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  /* A value that is not a link forgets the earlier one, and the entry goes. */
+  nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "db", 3306, NULL, 0);
+  nr_php_mysqli_statement_link_set(stmt, link);
+  nr_php_mysqli_statement_link_set(stmt, stmt);
+  tlib_pass_if_status_failure("forgotten",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_pass_if_size_t_equal(
+      "no entry left", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_statement_sql)));
+
+  /* A NULL result pointer is rejected. */
+  tlib_pass_if_status_failure("NULL handle",
+                              nr_php_mysqli_statement_link_get(stmt, NULL));
+
+  /*
+   * A link that is freed takes its metadata with it. Another link, which may
+   * get the same handle, has a connection of its own.
+   */
+  nr_php_mysqli_metadata_set_connect(other, "h", "u", "pw", "db", 3306, NULL,
+                                     0);
+  nr_php_mysqli_statement_link_set(stmt, other);
+  tlib_pass_if_status_success("prepared on another link",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  nr_php_zval_free(&other);
+  tlib_php_request_eval("unset($other);");
+  tlib_pass_if_status_failure("the link was freed",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+  tlib_php_request_eval("$third = mysqli_init();");
+  other = tlib_php_request_eval_expr("$third");
+  nr_php_mysqli_metadata_set_connect(other, "h", "u", "pw", "db", 3306, NULL,
+                                     0);
+  tlib_pass_if_status_failure("a new link does not take over the statement",
+                              nr_php_mysqli_statement_link_get(stmt, &handle));
+
+  nr_php_zval_free(&link);
+  nr_php_zval_free(&other);
+  nr_php_zval_free(&stmt);
+  tlib_php_request_end();
+}
+#endif
+
+#ifdef NR_PHP_MYSQLI_MYSQLND
+static void test_explain_bound_count(void) {
+  zval* stmt;
+  zval* other;
+
+  /* The mysqli of the PHP the tests are built against is built on mysqlnd. */
+  tlib_pass_if_int_equal("mysqli is built on mysqlnd", 1,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+
+  tlib_php_request_start();
+
+  /* A statement object that was never initialized has no data to read. */
+  tlib_php_request_eval(
+      "$stmt = (new ReflectionClass('mysqli_stmt'))"
+      "->newInstanceWithoutConstructor();");
+  stmt = tlib_php_request_eval_expr("$stmt");
+  tlib_pass_if_long_equal("uninitialized statement", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  nr_php_zval_free(&stmt);
+
+  tlib_php_request_eval("$other = new stdClass;");
+  other = tlib_php_request_eval_expr("$other");
+  tlib_pass_if_long_equal("not a statement", 0,
+                          nr_php_explain_mysqli_bound_count(other));
+  nr_php_zval_free(&other);
+
+  tlib_php_request_end();
+}
+/*
+ * A statement object whose mysqli data is built by hand, laid out as mysqlnd
+ * lays it out, with param_count bound variables.
+ */
+static zval* new_fake_bound_statement(unsigned int param_count,
+                                      bool with_bind) {
+  zval* stmt;
+  mysqli_object* intern;
+  MYSQLI_RESOURCE* resource = nr_zalloc(sizeof(MYSQLI_RESOURCE));
+  MY_STMT* my_stmt = nr_zalloc(sizeof(MY_STMT));
+  MYSQLND_STMT* nd_stmt = nr_zalloc(sizeof(MYSQLND_STMT));
+  MYSQLND_STMT_DATA* data = nr_zalloc(sizeof(MYSQLND_STMT_DATA));
+
+  data->param_count = param_count;
+  if (with_bind) {
+    data->param_bind = nr_calloc(param_count + 1, sizeof(MYSQLND_PARAM_BIND));
+  }
+  nd_stmt->data = data;
+  my_stmt->stmt = nd_stmt;
+  resource->ptr = my_stmt;
+
+  tlib_php_request_eval(
+      "$stmt = (new ReflectionClass('mysqli_stmt'))"
+      "->newInstanceWithoutConstructor();");
+  stmt = tlib_php_request_eval_expr("$stmt");
+  intern
+      = (mysqli_object*)((char*)Z_OBJ_P(stmt) - XtOffsetOf(mysqli_object, zo));
+  intern->ptr = resource;
+
+  return stmt;
+}
+
+/* Detach and free what new_fake_bound_statement() attached. */
+static void free_fake_bound_statement(zval** stmt) {
+  mysqli_object* intern
+      = (mysqli_object*)((char*)Z_OBJ_P(*stmt) - XtOffsetOf(mysqli_object, zo));
+  MYSQLI_RESOURCE* resource = (MYSQLI_RESOURCE*)intern->ptr;
+  MY_STMT* my_stmt = (MY_STMT*)resource->ptr;
+
+  /* mysqli would close the fake statement when the object is destroyed. */
+  intern->ptr = NULL;
+
+  nr_free(my_stmt->stmt->data->param_bind);
+  nr_free(my_stmt->stmt->data);
+  nr_free(my_stmt->stmt);
+  nr_free(my_stmt);
+  nr_free(resource);
+  nr_php_zval_free(stmt);
+}
+
+static void test_explain_bind_type_letter(void) {
+  tlib_pass_if_int_equal(
+      "double", 'd', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_DOUBLE));
+  tlib_pass_if_int_equal(
+      "long", 'i', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_LONG));
+  tlib_pass_if_int_equal(
+      "long long", 'i',
+      nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_LONGLONG));
+  tlib_pass_if_int_equal(
+      "string", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_STRING));
+  tlib_pass_if_int_equal(
+      "var string", 's',
+      nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_VAR_STRING));
+  tlib_pass_if_int_equal(
+      "blob", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_BLOB));
+  tlib_pass_if_int_equal(
+      "null", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_NULL));
+  tlib_pass_if_int_equal(
+      "float", 's', nr_php_explain_mysqli_bind_type_letter(MYSQL_TYPE_FLOAT));
+}
+
+static void test_explain_bound_count_mocked(void) {
+  zval* stmt;
+  zend_module_entry* mysqli;
+  const zend_module_dep* original_deps;
+  static const zend_module_dep libmysqlclient_deps[]
+      = {{.name = "spl", .type = MODULE_DEP_REQUIRED}, {.name = NULL}};
+
+  tlib_php_request_start();
+
+  mysqli = zend_hash_str_find_ptr(&module_registry, "mysqli",
+                                  sizeof("mysqli") - 1);
+  tlib_fail_if_null("mysqli module", mysqli);
+  original_deps = mysqli->deps;
+
+  stmt = new_fake_bound_statement(3, true);
+  tlib_pass_if_long_equal("mysqlnd: bound variables", 3,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  /* A mysqli without mysqlnd keeps its statements elsewhere: do not read. */
+  mysqli->deps = libmysqlclient_deps;
+  tlib_pass_if_int_equal("libmysqlclient: not mysqlnd", 0,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+  tlib_pass_if_long_equal("libmysqlclient: not read", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  mysqli->deps = NULL;
+  tlib_pass_if_int_equal("no dependencies: not mysqlnd", 0,
+                         nr_php_explain_mysqli_uses_mysqlnd());
+  tlib_pass_if_long_equal("no dependencies: not read", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+
+  mysqli->deps = original_deps;
+  tlib_pass_if_long_equal("restored", 3,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  stmt = new_fake_bound_statement(2, false);
+  tlib_pass_if_long_equal("nothing bound", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  stmt = new_fake_bound_statement(0, true);
+  tlib_pass_if_long_equal("no parameters", 0,
+                          nr_php_explain_mysqli_bound_count(stmt));
+  free_fake_bound_statement(&stmt);
+
+  tlib_php_request_end();
+}
+#endif
+
+/*
+ * The cases in which the explain for a query run with parameters, as
+ * mysqli_execute_query() does, makes no explain connection. All of them return
+ * before the parameters are used. The link was never connected, so a case
+ * shows that NULL comes back, not which check returned it. That the
+ * parameters reach the statement of the explain, and the plan itself, need a
+ * database and are covered by the integration tests
+ * (test_execute_query_oo.php and test_execute_query_param_types.php), and the
+ * check on the time by
+ * test_execute_query_fast_no_explain_connection.php, and the check on the kind
+ * of query by test_execute_query_insert_no_explain.php.
+ */
+static void test_explain_query_params(void) {
+  nrtxn_t* txn;
+  zval* link;
+  zval* other;
+  zval* params;
+  const char* select = "SELECT * FROM t WHERE id = ?";
+  const char* insert = "INSERT INTO t VALUES (?)";
+  nrtime_t stop = 10 * NR_TIME_DIVISOR;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  tlib_php_request_eval(
+      "$link = (new "
+      "ReflectionClass('mysqli'))->newInstanceWithoutConstructor();"
+      "$other = new stdClass;"
+      "$params = [1];");
+  link = tlib_php_request_eval_expr("$link");
+  other = tlib_php_request_eval_expr("$other");
+  params = tlib_php_request_eval_expr("$params");
+
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
+  txn->options.ep_threshold = 0;
+
+  tlib_pass_if_null("no transaction", nr_php_explain_mysqli_query_params(
+                                          NULL, link, select, nr_strlen(select),
+                                          params, 0, stop));
+  tlib_pass_if_null("no sql", nr_php_explain_mysqli_query_params(
+                                  txn, link, NULL, 0, params, 0, stop));
+  tlib_pass_if_null("not a link", nr_php_explain_mysqli_query_params(
+                                      txn, other, select, nr_strlen(select),
+                                      params, 0, stop));
+  tlib_pass_if_null("sql that cannot be explained",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, insert, nr_strlen(insert), params, 0, stop));
+
+  /* A link that was never connected has no parameters to connect with. */
+  tlib_pass_if_null("link with nothing saved",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0, stop));
+  tlib_pass_if_int_equal("explain state is restored", 0,
+                         NRTXNGLOBAL(generating_explain_plan));
+
+  /* The query without parameters takes the same path. */
+  tlib_pass_if_null("without parameters",
+                    nr_php_explain_mysqli_query(txn, link, select,
+                                                nr_strlen(select), 0, stop));
+
+  txn->options.ep_threshold = 20 * NR_TIME_DIVISOR;
+  tlib_pass_if_null("faster than the threshold",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0, stop));
+
+  txn->options.ep_threshold = 0;
+  txn->options.ep_enabled = 0;
+  tlib_pass_if_null("explain disabled",
+                    nr_php_explain_mysqli_query_params(
+                        txn, link, select, nr_strlen(select), params, 0, stop));
+
+  nr_php_zval_free(&link);
+  nr_php_zval_free(&other);
+  nr_php_zval_free(&params);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
-  tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
+  tlib_php_engine_create(
+      "extension = mysqli\nmysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);
 
   if (tlib_php_require_extension("mysqli" TSRMLS_CC)) {
     test_save_datastore_instance(TSRMLS_C);
@@ -679,6 +1123,16 @@ void test_main(void* p NRUNUSED) {
     test_link_metadata_lifetime();
 #endif
     test_option_to_string();
+    test_explain_query_params();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    test_statement_sql();
+    test_statement_link();
+#endif
+#ifdef NR_PHP_MYSQLI_MYSQLND
+    test_explain_bound_count();
+    test_explain_bind_type_letter();
+    test_explain_bound_count_mocked();
+#endif
   }
 
   tlib_php_engine_destroy(TSRMLS_C);

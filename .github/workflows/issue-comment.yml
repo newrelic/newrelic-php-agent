@@ -25,5 +25,9 @@ jobs:
       GH_TOKEN: ${{ secrets.token }}
     steps:
       - name: respond to issue
+        env:
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+          MESSAGE: ${{ inputs.message }}
         run: |
-          gh issue -R ${{ github.repository }} comment ${{ inputs.issue-number }} --body "${{ inputs.message }}"
+          gh issue -R "$REPO" comment "$ISSUE_NUMBER" --body "$MESSAGE"

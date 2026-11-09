@@ -15,8 +15,13 @@
 #include "php_hash.h"
 #include "php_mysqli.h"
 #include "fw_support.h"
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+
+#ifdef NR_PHP_MYSQLI_MYSQLND
+#include "ext/mysqli/php_mysqli_structs.h"
+#endif
 
 /*
  * Purpose : Iterator function to add a field to the columns in an explain
@@ -73,16 +78,19 @@ static nr_explain_plan_t* nr_php_explain_mysqli_fetch_plan(
  * Purpose : Helper function to duplicate a MySQLi link and issue an EXPLAIN
  *           query for the given SQL.
  *
- * Params  : 1. The link to duplicate.
- *           2. The handle of the MySQLi statement, or 0 if there was no
+ * Params  : 1. The handle of the link to duplicate.
+ *           2. The statement object the application prepared, or NULL if
+ *              there was none.
+ *           3. The handle of the MySQLi statement, or 0 if there was no
  *              statement.
- *           3. The SQL to explain.
- *           4. Params to be bound in execute
+ *           4. The SQL to explain.
+ *           5. Params to be bound in execute
  *
  * Returns : A newly allocated explain plan, or NULL on error.
  */
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
-    zval* link,
+    nr_mysqli_metadata_link_handle_t link_handle,
+    const zval* app_stmt,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC);
@@ -98,12 +106,46 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
 static zval* nr_php_explain_mysqli_prepare(zval* link,
                                            const char* query TSRMLS_DC);
 
-nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
-                                               zval* link,
-                                               const char* sql,
-                                               int sql_len,
-                                               nrtime_t start,
-                                               nrtime_t stop TSRMLS_DC) {
+/*
+ * Purpose : Whether an array of query parameters holds an object.
+ *
+ * Params  : 1. The array, or NULL.
+ *
+ * Returns : True if a value in the array, or the value a reference in it
+ *           points to, is an object.
+ *
+ * Notes   : PHP converts an object parameter to a string when the query runs,
+ *           by calling its __toString(). The explain would run the same query
+ *           with the same array, so the conversion would happen again, and
+ *           application code would run a second time.
+ */
+static bool nr_php_explain_mysqli_params_have_object(const zval* params) {
+  zval* value = NULL;
+
+  if (NULL == params || IS_ARRAY != Z_TYPE_P(params)) {
+    return false;
+  }
+
+  ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(params), value) {
+    if (Z_ISREF_P(value)) {
+      value = Z_REFVAL_P(value);
+    }
+    if (IS_OBJECT == Z_TYPE_P(value)) {
+      return true;
+    }
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return false;
+}
+
+nr_explain_plan_t* nr_php_explain_mysqli_query_params(const nrtxn_t* txn,
+                                                      zval* link,
+                                                      const char* sql,
+                                                      int sql_len,
+                                                      zval* params,
+                                                      nrtime_t start,
+                                                      nrtime_t stop) {
   nrtime_t duration;
   nr_explain_plan_t* plan = NULL;
   char* query;
@@ -125,20 +167,234 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
     return NULL;
   }
 
+  if (nr_php_explain_mysqli_params_have_object(params)) {
+    nrl_verbosedebug(NRL_SQL,
+                     "mysqli explain: skipped, a parameter is an object and "
+                     "converting it again could run application code twice");
+    return NULL;
+  }
+
   query = nr_strndup(sql, sql_len);
-  plan = nr_php_explain_mysqli_issue(link, 0, query, NULL TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), NULL, 0, query,
+      params);
   nr_free(query);
 
   return plan;
 }
 
+nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
+                                               zval* link,
+                                               const char* sql,
+                                               int sql_len,
+                                               nrtime_t start,
+                                               nrtime_t stop) {
+  return nr_php_explain_mysqli_query_params(txn, link, sql, sql_len, NULL,
+                                            start, stop);
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : The number of parameters of a prepared statement.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The number, or -1 if it cannot be read (the statement is closed
+ *           or was not initialized, or an exception is pending).
+ *
+ * Notes   : The property is read here and not with
+ *           nr_php_get_zval_object_property(): mysqli computes its properties
+ *           and returns them in storage that belongs to the caller. An
+ *           exception that the read throws is cleared.
+ */
+static long nr_php_explain_mysqli_stmt_param_count(const zval* stmt) {
+  zval rv;
+  const zval* count;
+
+  if (NULL != EG(exception)) {
+    return -1;
+  }
+
+  count = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
+                             "param_count", sizeof("param_count") - 1, 1, &rv);
+
+  /*
+   * mysqli throws when the statement is closed or was never initialized. The
+   * exception is the agent's, not the application's: no exception was pending
+   * before the read.
+   */
+  if (NULL != EG(exception)) {
+    zend_clear_exception();
+    return -1;
+  }
+
+  return (count && (IS_LONG == Z_TYPE_P(count))) ? (long)Z_LVAL_P(count) : -1;
+}
+
+#ifdef NR_PHP_MYSQLI_MYSQLND
+/*
+ * Purpose : Tell whether the mysqli extension that is loaded was built on
+ *           mysqlnd. The data read below is mysqlnd's: the agent is compiled
+ *           against the headers of one PHP build and runs in the customer's,
+ *           whose mysqli may use libmysqlclient instead, with a different
+ *           structure behind the same pointers.
+ *
+ * Returns : true if mysqli requires mysqlnd, false if not or if mysqli is not
+ *           loaded.
+ */
+bool nr_php_explain_mysqli_uses_mysqlnd(void) {
+  const zend_module_entry* mysqli;
+  const zend_module_dep* dep;
+
+  mysqli = (const zend_module_entry*)zend_hash_str_find_ptr(
+      &module_registry, "mysqli", sizeof("mysqli") - 1);
+  if ((NULL == mysqli) || (NULL == mysqli->deps)) {
+    return false;
+  }
+
+  for (dep = mysqli->deps; dep->name; dep++) {
+    if ((MODULE_DEP_REQUIRED == dep->type)
+        && (0 == nr_strcmp(dep->name, "mysqlnd"))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/*
+ * Purpose : Get the mysqlnd data of a statement object. mysqli binds the
+ *           variables of bind_param() into it, and holds them for as long as
+ *           the statement lives.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The data, which mysqli owns, or NULL if the zval is not a
+ *           statement, the statement was not initialized, or mysqli is not
+ *           built on mysqlnd.
+ */
+static const MYSQLND_STMT_DATA* nr_php_explain_mysqli_stmt_data(
+    const zval* stmt) {
+  const mysqli_object* intern;
+  const MYSQLI_RESOURCE* resource;
+  const MY_STMT* my_stmt;
+
+  if (!nr_php_mysqli_zval_is_stmt(stmt)
+      || !nr_php_explain_mysqli_uses_mysqlnd()) {
+    return NULL;
+  }
+
+  intern = (const mysqli_object*)((const char*)Z_OBJ_P(stmt)
+                                  - XtOffsetOf(mysqli_object, zo));
+  resource = (const MYSQLI_RESOURCE*)intern->ptr;
+  my_stmt = resource ? (const MY_STMT*)resource->ptr : NULL;
+
+  return (my_stmt && my_stmt->stmt) ? my_stmt->stmt->data : NULL;
+}
+
+char nr_php_explain_mysqli_bind_type_letter(unsigned char type) {
+  switch (type) {
+    case MYSQL_TYPE_DOUBLE:
+      return 'd';
+    case MYSQL_TYPE_LONGLONG:
+    case MYSQL_TYPE_LONG:
+      return 'i';
+    default:
+      return 's';
+  }
+}
+
+/*
+ * Purpose : Count the variables that bind_param() bound.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The count, or 0 if nothing is bound or the data cannot be read.
+ */
+long nr_php_explain_mysqli_bound_count(const zval* stmt) {
+  const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
+
+  return (data && data->param_bind) ? (long)data->param_count : 0;
+}
+
+/*
+ * Purpose : Bind the values that bind_param() bound on the application's
+ *           statement to the statement of the explain.
+ *
+ * Params  : 1. The statement of the explain.
+ *           2. The application's statement.
+ *
+ * Returns : NR_SUCCESS, or NR_FAILURE if nothing was bound or the bind failed.
+ *
+ * Notes   : The values are copies: the explain does not hold the application's
+ *           variables. The type letters come from the types that were bound.
+ */
+static nr_status_t nr_php_explain_mysqli_bind_live(zval* dest,
+                                                   const zval* stmt) {
+  const MYSQLND_STMT_DATA* data = nr_php_explain_mysqli_stmt_data(stmt);
+  zval** bind_args;
+  zval* retval;
+  char* format;
+  unsigned int count;
+  unsigned int i;
+  nr_status_t status = NR_FAILURE;
+
+  if ((NULL == data) || (NULL == data->param_bind)
+      || (0 == data->param_count)) {
+    return NR_FAILURE;
+  }
+
+  count = data->param_count;
+  bind_args = (zval**)nr_calloc(count + 1, sizeof(zval*));
+  format = (char*)nr_malloc(count + 1);
+
+  for (i = 0; i < count; i++) {
+    const zval* bound = &data->param_bind[i].zv;
+    zval copy;
+
+    if (Z_ISREF_P(bound)) {
+      bound = Z_REFVAL_P(bound);
+    }
+
+    format[i]
+        = nr_php_explain_mysqli_bind_type_letter(data->param_bind[i].type);
+
+    /* bind_param() takes its arguments by reference. */
+    ZVAL_COPY(&copy, bound);
+    bind_args[i + 1] = nr_php_zval_alloc();
+    ZVAL_NEW_REF(bind_args[i + 1], &copy);
+  }
+  format[count] = '\0';
+
+  bind_args[0] = nr_php_zval_alloc();
+  ZVAL_STRINGL(bind_args[0], format, count);
+
+  retval = nr_php_call_user_func(dest, "bind_param", count + 1, bind_args);
+  if (nr_php_is_zval_true(retval)) {
+    status = NR_SUCCESS;
+  }
+
+  for (i = 0; i <= count; i++) {
+    nr_php_zval_free(&bind_args[i]);
+  }
+  nr_php_zval_free(&retval);
+  nr_free(bind_args);
+  nr_free(format);
+
+  return status;
+}
+#endif /* NR_PHP_MYSQLI_MYSQLND */
+#endif
+
 nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
+                                              const zval* stmt,
                                               nr_php_object_handle_t handle,
                                               zval* params,
                                               nrtime_t start,
                                               nrtime_t stop TSRMLS_DC) {
   nrtime_t duration;
   zval* link = NULL;
+  nr_mysqli_metadata_link_handle_t link_handle = 0;
   nr_explain_plan_t* plan = NULL;
   char* query = NULL;
 
@@ -152,17 +408,74 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
   }
 
   link = nr_php_mysqli_query_get_link(handle TSRMLS_CC);
-  if (NULL == link) {
+  if (link) {
+    link_handle = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
+    query = nr_php_mysqli_query_get_query(handle);
+  }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  if (NULL == query) {
+    const char* sql = nr_php_mysqli_statement_sql_get(stmt);
+
+    /*
+     * The transaction has no link or no query for the statement, for example
+     * because it was prepared in an earlier transaction. The SQL and the link
+     * saved with the statement object are used instead.
+     */
+    if ((NULL == sql)
+        || (NR_FAILURE
+            == nr_php_mysqli_statement_link_get(stmt, &link_handle))) {
+      return NULL;
+    }
+    query = nr_strdup(sql);
+
+    /*
+     * Without the parameters the statement would fail to execute on the
+     * explain connection, so it is not opened. The parameters are the ones
+     * mysqli holds for the statement, if they can be read and there are as
+     * many as the statement has. A statement whose number of parameters cannot
+     * be read is not opened either.
+     */
+    if ((NULL == params) && !nr_php_mysqli_query_has_bind(handle)) {
+      long param_count = nr_php_explain_mysqli_stmt_param_count(stmt);
+      long bound_count = 0;
+
+#ifdef NR_PHP_MYSQLI_MYSQLND
+      bound_count = nr_php_explain_mysqli_bound_count(stmt);
+#endif
+
+      if (param_count < 0) {
+        nrl_verbosedebug(NRL_SQL,
+                         "%s: no explain plan: the number of parameters of "
+                         "the statement cannot be read",
+                         __func__);
+        nr_free(query);
+        return NULL;
+      }
+      if (param_count != bound_count) {
+        nrl_verbosedebug(NRL_SQL,
+                         "%s: no explain plan: the statement has %ld "
+                         "parameters and %ld values could be read",
+                         __func__, param_count, bound_count);
+        nr_free(query);
+        return NULL;
+      }
+    }
+  }
+#endif
+
+  if (NULL == query) {
     return NULL;
   }
 
-  query = nr_php_mysqli_query_get_query(handle TSRMLS_CC);
   if (!nr_php_explain_mysql_query_is_explainable(query, nr_strlen(query))) {
     nr_free(query);
     return NULL;
   }
 
-  plan = nr_php_explain_mysqli_issue(link, handle, query, params TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(
+      link_handle, stmt, nr_php_mysqli_query_exists(handle) ? handle : 0, query,
+      params);
   nr_free(query);
 
   return plan;
@@ -319,11 +632,13 @@ end:
 }
 
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
-    zval* link,
+    nr_mysqli_metadata_link_handle_t link_handle,
+    const zval* app_stmt,
     nr_php_object_handle_t handle,
     const char* sql,
     zval* params TSRMLS_DC) {
   int error_reporting;
+  nr_php_user_error_handler_state_t user_error_handler;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
   zval* stmt = NULL;
@@ -338,10 +653,26 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     return NULL;
   }
 
+#ifndef NR_PHP_MYSQLI_MYSQLND
+  (void)app_stmt;
+#endif
+
   error_reporting = nr_php_silence_errors(TSRMLS_C);
+
+  /*
+   * The application's error handler is not called while the explain connection
+   * runs. A warning from that connection, such as a refused login, would call
+   * it, and a handler can close the application's link. The data saved for the
+   * link is read through pointers across several calls into PHP (the options,
+   * the SSL settings, the connect and the database selection), so a handler
+   * that closed the link during any of them would free it: this guards against
+   * that. It also keeps the handler from seeing warnings that the
+   * application's own calls did not cause.
+   */
+  user_error_handler = nr_php_silence_user_error_handler();
   NRTXNGLOBAL(generating_explain_plan) = 1;
 
-  link_dup = nr_php_mysqli_link_duplicate(link TSRMLS_CC);
+  link_dup = nr_php_mysqli_link_duplicate_handle(link_handle);
   if (NULL == link_dup) {
     goto end;
   }
@@ -356,6 +687,18 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
       goto end;
     }
   }
+#ifdef NR_PHP_MYSQLI_MYSQLND
+  else if (app_stmt && (NULL == params)
+           && (nr_php_explain_mysqli_bound_count(app_stmt) > 0)) {
+    /*
+     * The parameters were bound in an earlier transaction: mysqli still holds
+     * the variables, and their values are what execute() used.
+     */
+    if (NR_FAILURE == nr_php_explain_mysqli_bind_live(stmt, app_stmt)) {
+      goto end;
+    }
+  }
+#endif
 
   if (NR_FAILURE == nr_php_explain_mysqli_execute(stmt, params TSRMLS_CC)) {
     goto end;
@@ -382,6 +725,7 @@ end:
   nr_php_zval_free(&link_dup);
   nr_php_zval_free(&stmt);
 
+  nr_php_restore_user_error_handler(user_error_handler);
   nr_php_restore_errors(error_reporting TSRMLS_CC);
   NRTXNGLOBAL(generating_explain_plan) = 0;
 
