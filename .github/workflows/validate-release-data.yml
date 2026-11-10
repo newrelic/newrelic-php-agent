@@ -19,10 +19,9 @@ on:
     paths:
       - 'release-data/**'
       - '.github/workflows/validate-release-data.yml'
+  # No paths filter on pull requests: a required check that is skipped by a filter never reports, and the pull request
+  # could not be merged. The job takes seconds.
   pull_request:
-    paths:
-      - 'release-data/**'
-      - '.github/workflows/validate-release-data.yml'
 
 jobs:
   validate:
