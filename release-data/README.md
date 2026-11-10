@@ -37,12 +37,19 @@ Each tarball on the download site has a detached signature next to it, named lik
    signed. gpg also prints a warning that the key is not certified with a trusted signature; the fingerprint
    comparison in the previous step is what establishes trust in the key.
 
-To check only that the download is intact, compare its SHA-256 hash with the entry for the version in
-`tarball-hashes.json`:
+4. Compare the SHA-256 hash of the file with the entry for the version in `tarball-hashes.json`. The signature shows
+   that New Relic's key signed these bytes; it does not say which version or build they are, so a signed tarball of
+   another build that was renamed would pass step 3. The hash is recorded for this version and file name:
 
-```
-sha256sum newrelic-php5-<version>-linux.tar.gz
-```
+   ```
+   sha256sum newrelic-php5-<version>-linux.tar.gz
+   ```
+5. Check that the first entry of the tarball is the folder named like the file, `newrelic-php5-<version>-linux/`. That
+   name is inside the signed bytes:
+
+   ```
+   tar -tzf newrelic-php5-<version>-linux.tar.gz | head -n 1
+   ```
 
 Tarballs built before signing started are listed in `tarball-hashes.json` once they have been signed. Versions
 at or above `first_signed_version` in `signing-key-fingerprints.json` were signed when they were built. The value `12.13.0` covers every build
