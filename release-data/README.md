@@ -14,6 +14,23 @@ The format of each file is described by the JSON Schema with the same name in [`
 
 A validator has to check the `format` keywords (`date`, `date-time`) to reject a date that does not exist, and it has to follow ECMA-262 for `pattern`, where `$` does not match before a trailing newline. Python's `jsonschema` does neither by default; the scripts that write these files check both.
 
+## Checks on a change to these files
+
+The other pull request workflows ignore `release-data/**`, so the workflow
+[`validate-release-data`](../.github/workflows/validate-release-data.yml) is the check that runs on a change to these files
+(on every pull request that touches them and on every push to `main`). It runs [`validate.py`](validate.py), which checks:
+
+* each file against its schema, with the `date` and `date-time` formats asserted and `$` read as ECMA-262 reads it;
+* the format that the writer scripts of the builder and daemon repositories write: sorted keys, two-space indent, one final newline;
+* `tarball-hashes.json`: releases newest first by version number, no version twice, file names that match the version and platform;
+* `daemon-image-digests.json`: images newest first, no tag twice, no tag below `first_image_version`;
+* `signing-key-fingerprints.json`: no fingerprint twice; every `public_key_url` is an https URL on `download.newrelic.com` with the
+  file name `NEWRELIC_<PURPOSE>_<last 8 characters of the fingerprint>.public`. The key at that address is not fetched, so a
+  wrong but well-formed fingerprint is still the approver's check.
+
+The tests of the validator are in [`tests/`](tests/): `python3 -m unittest discover -s release-data/tests` (needs `jsonschema`).
+The workflow is meant to be a required check; that needs a ruleset change.
+
 ## Verify a tarball
 
 Each tarball on the download site has a detached signature next to it, named like the tarball with `.asc` added.
