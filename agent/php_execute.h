@@ -117,7 +117,7 @@ extern void nr_framework_create_metric(TSRMLS_D);
 /*
  * Purpose : Detect library and framework usage from the opcache status
  *
- *           This function gets a list of all files loaded into opcache and
+ *           This function gets the list of preloaded scripts from opcache and
  *           detects frameworks and libraries based on those files.
  *
  *           This is necessary to correctly instrument frameworks and libraries
