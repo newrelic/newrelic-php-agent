@@ -1,0 +1,47 @@
+#
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# Checks the files in release-data/ (the tarball hashes, the daemon image digests and the signing key
+# fingerprints) against their schemas and against the format that the writer scripts use. The other pull
+# request workflows ignore release-data/**, so this is the only check that runs on a change to it. See
+# release-data/validate.py for what is checked.
+
+name: validate-release-data
+
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'release-data/**'
+      - '.github/workflows/validate-release-data.yml'
+  # No paths filter on pull requests: a required check that is skipped by a filter never reports, and the pull request
+  # could not be merged. The job takes seconds.
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate release-data
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read    # This is required for actions/checkout
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          sparse-checkout: release-data
+          persist-credentials: false
+      # release-data/requirements.txt pins jsonschema and its dependencies with hashes (made by pip-compile from
+      # release-data/requirements.in), so a changed package on PyPI fails the install instead of running here.
+      - name: Install the JSON Schema validator
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet --require-hashes -r release-data/requirements.txt
+      - name: Test the validator
+        run: '"$RUNNER_TEMP/venv/bin/python" -m unittest discover -s release-data/tests'
+      - name: Validate the files
+        run: '"$RUNNER_TEMP/venv/bin/python" release-data/validate.py release-data'

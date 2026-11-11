@@ -22,3 +22,9 @@ updates:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: "pip"
+    directory: "/release-data"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci(release-data):"

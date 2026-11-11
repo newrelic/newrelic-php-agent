@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PHP agent signing key fingerprints",
+  "description": "Fingerprints of the keys that sign PHP agent packages.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["first_signed_version", "keys"],
+  "properties": {
+    "first_signed_version": {
+      "description": "First version whose tarballs were signed by the release pipeline.",
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)+$"
+    },
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The keys, with exactly one active key whose purpose is tarball (a key without status is active). validate.py requires one active key for each of apt and rpm too. A key that is replaced stays in the list with the status retired, for as long as anything it signed can be downloaded.",
+      "contains": {
+        "type": "object",
+        "required": ["purpose"],
+        "properties": {
+          "purpose": {
+            "const": "tarball"
+          },
+          "status": {
+            "const": "active"
+          }
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["created", "expires", "fingerprint", "name", "public_key_url", "purpose"],
+        "properties": {
+          "created": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "expires": {
+            "description": "A date or the word never.",
+            "type": "string",
+            "pattern": "^(never|[0-9]{4}-[0-9]{2}-[0-9]{2})$",
+            "if": {"pattern": "^[0-9]"},
+            "then": {"format": "date"}
+          },
+          "fingerprint": {
+            "description": "Full fingerprint, 40 upper-case hexadecimal digits without spaces.",
+            "type": "string",
+            "pattern": "^[0-9A-F]{40}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "public_key_url": {
+            "description": "https on download.newrelic.com, a path of letters, digits, / _ . and -, and the extension .public, or .gpg for the legacy key (no whitespace or control characters).",
+            "type": "string",
+            "pattern": "^https://download\\.newrelic\\.com/[A-Za-z0-9/_.-]+\\.(public|gpg)$"
+          },
+          "purpose": {
+            "enum": ["apt", "legacy", "rpm", "tarball"]
+          },
+          "status": {
+            "description": "active (the default when the field is absent), retired or revoked. A retired key is no longer used for new releases; it stays listed so that older releases can still be checked against a published fingerprint. A revoked key was withdrawn because it may have been compromised: nothing it signed is evidence, and it stays listed so that this is on record.",
+            "enum": ["active", "retired", "revoked"]
+          }
+        }
+      }
+    }
+  }
+}

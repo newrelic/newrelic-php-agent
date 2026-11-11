@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PHP agent tarball hashes",
+  "description": "SHA-256 hash of every tarball of each release, newest release first.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["releases"],
+  "properties": {
+    "releases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["date", "files", "version"],
+        "properties": {
+          "date": {
+            "description": "UTC date the hashes were recorded.",
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)(\\.(0|[1-9][0-9]*)){3}$"
+          },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["filename", "platform", "sha256"],
+              "properties": {
+                "filename": {
+                  "description": "newrelic-php5-<version>-<platform>.tar.gz. Its URL is https://download.newrelic.com/php_agent/archive/<version>/<filename>. No URL and no architecture are stored: the URL follows from these two values, and a linux tarball holds the builds for both architectures.",
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]+\\.tar\\.gz$"
+                },
+                "platform": {
+                  "description": "The part of the file name between the version and .tar.gz.",
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$"
+                },
+                "libc": {
+                  "description": "Only for the linux platforms.",
+                  "enum": ["glibc", "musl"]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
