@@ -32,6 +32,7 @@
               "required": ["filename", "platform", "sha256"],
               "properties": {
                 "filename": {
+                  "description": "newrelic-php5-<version>-<platform>.tar.gz. Its URL is https://download.newrelic.com/php_agent/archive/<version>/<filename>. No URL and no architecture are stored: the URL follows from these two values, and a linux tarball holds the builds for both architectures.",
                   "type": "string",
                   "pattern": "^[A-Za-z0-9._-]+\\.tar\\.gz$"
                 },

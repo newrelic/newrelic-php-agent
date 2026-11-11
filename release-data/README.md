@@ -14,6 +14,83 @@ The format of each file is described by the JSON Schema with the same name in [`
 
 A validator has to check the `format` keywords (`date`, `date-time`) to reject a date that does not exist, and it has to follow ECMA-262 for `pattern`, where `$` does not match before a trailing newline. Python's `jsonschema` does neither by default; the scripts that write these files check both.
 
+## Read the files
+
+Everything below was tried with `jq` on sample files in the same shape. The examples are shell commands; replace the version and
+the file name.
+
+### `tarball-hashes.json`
+
+```
+{"releases": [ {"version": "12.13.0.320", "date": "2026-11-20", "files": [
+    {"filename": "newrelic-php5-12.13.0.320-linux.tar.gz", "platform": "linux", "libc": "glibc", "sha256": "<64 hex digits>"},
+    ... ]}, ... ]}
+```
+
+* `releases` is ordered newest version first, by version number (12.10 is newer than 12.9). `.releases[0]` is the newest.
+* `version` is four numbers (`12.13.0.320`). `date` is the UTC date the hashes were recorded: the release date for a release that was
+  recorded when it was promoted, the date of the backfill for a release that was signed later.
+* A file has `filename`, `platform`, `sha256`, and `libc` (`glibc` or `musl`) for the linux platforms only. The `filename` is always
+  `newrelic-php5-<version>-<platform>.tar.gz`, and `platform` is the part between the version and `.tar.gz`: `linux`, `linux-musl`,
+  `osx`, `freebsd` or `solaris`.
+* **There is no architecture and no URL in an entry, on purpose.** A linux tarball holds the builds for both architectures
+  (`daemon/newrelic-daemon.x64` and `daemon/newrelic-daemon.aarch64`, `agent/x64/` and `agent/aarch64/`), so the architecture is not a
+  property of the file. The URL is a function of two values that the entry has, so storing it would only add a value that can
+  disagree with them.
+
+**The URL of a file** is `https://download.newrelic.com/php_agent/archive/<version>/<filename>`. The newest release is also copied to
+`https://download.newrelic.com/php_agent/release/<filename>`; use the `archive` URL, which works for every version. The signature is the
+same URL with `.asc` added.
+
+```
+# the SHA-256 of one file
+jq -r --arg v 12.13.0.320 --arg f newrelic-php5-12.13.0.320-linux.tar.gz \
+  '.releases[] | select(.version == $v) | .files[] | select(.filename == $f) | .sha256' tarball-hashes.json
+
+# the URL and the hash of the file of one platform
+jq -r --arg v 12.13.0.320 --arg p linux '.releases[] | select(.version == $v) | . as $r | .files[] | select(.platform == $p)
+  | "https://download.newrelic.com/php_agent/archive/\($r.version)/\(.filename)  \(.sha256)"' tarball-hashes.json
+
+# every URL of a release
+jq -r --arg v 12.13.0.320 '.releases[] | select(.version == $v) | . as $r | .files[]
+  | "https://download.newrelic.com/php_agent/archive/\($r.version)/\(.filename)"' tarball-hashes.json
+
+# the version of the newest release, and the musl file names of a release
+jq -r '.releases[0].version' tarball-hashes.json
+jq -r --arg v 12.13.0.320 '.releases[] | select(.version == $v) | .files[] | select(.libc == "musl") | .filename' tarball-hashes.json
+
+# check downloaded files against the list (run in the directory of the files; prints OK or FAILED for each)
+jq -r --arg v 12.13.0.320 '.releases[] | select(.version == $v) | .files[] | "\(.sha256)  \(.filename)"' tarball-hashes.json | sha256sum -c --ignore-missing -
+```
+
+If a version is not in the list, no hash is recorded for it: it is older than the backfill or was removed from the download site.
+
+### `daemon-image-digests.json`
+
+`{"first_image_version": "9.2.0", "images": [{"version": "12.12.0", "digest": "sha256:...", "platforms": {"linux/amd64": "sha256:..."},
+"pushed": "<UTC time>"}, ...]}`, newest first. `version` is the image tag, which is the agent version without the build number.
+`digest` is the digest of the tag (the index over all platforms) and `platforms` has the digest of the image of each platform. A tag
+below `first_image_version` has no official image.
+
+```
+jq -r --arg t 12.12.0 '.images[] | select(.version == $t) | .digest' daemon-image-digests.json
+jq -r --arg t 12.12.0 '.images[] | select(.version == $t) | .platforms["linux/amd64"]' daemon-image-digests.json
+docker pull newrelic/php-daemon@sha256:<the digest>
+```
+
+### `signing-key-fingerprints.json`
+
+`{"first_signed_version": "12.13.0", "keys": [{"purpose": "apt" | "rpm" | "tarball", "name", "fingerprint", "created", "expires",
+"public_key_url"}, ...]}`. `fingerprint` is 40 upper-case hex digits without spaces. `expires` is a date or `never`.
+`first_signed_version` is the first version whose tarballs were signed when they were built: the numbers at the start of a snapshot
+version (`12.13.0.320SNAPSHOT`) are compared with it. Older versions that are in `tarball-hashes.json` were signed later.
+
+```
+jq -r '.keys[] | select(.purpose == "tarball") | .public_key_url' signing-key-fingerprints.json
+jq -r '.keys[] | select(.purpose == "tarball") | .fingerprint | [scan(".{4}")] | join(" ")' signing-key-fingerprints.json   # as gpg prints it
+jq -r '.first_signed_version' signing-key-fingerprints.json
+```
+
 ## Checks on a change to these files
 
 The other pull request workflows ignore `release-data/**`, so the workflow
