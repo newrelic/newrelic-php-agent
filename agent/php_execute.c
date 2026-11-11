@@ -1619,15 +1619,26 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
 }
 
 void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
+  zval* include_scripts = NULL;
   zval* status = NULL;
+  zval* preload_statistics = NULL;
   zval* scripts = NULL;
-  zend_ulong key_num = 0;
-  nr_php_string_hash_key_t* key_str = NULL;
   zval* val = NULL;
-  const char* filename;
-  size_t filename_len;
 
-  status = nr_php_call(NULL, "opcache_get_status");
+  /*
+   * Only the preloaded scripts are needed here. A preloaded class's file
+   * normally runs during preloading, not in a request, so its library can't
+   * be detected from the file running. Every other script is detected when a
+   * request executes it.
+   *
+   * Passing false skips building the list of every cached script, whose cost
+   * grows with the size of opcache, and which also holds scripts this request
+   * never runs.
+   */
+  include_scripts = nr_php_zval_alloc();
+  nr_php_zval_bool(include_scripts, 0);
+  status = nr_php_call(NULL, "opcache_get_status", include_scripts);
+  nr_php_zval_free(&include_scripts);
 
   if (NULL == status) {
     nrl_warning(NRL_INSTRUMENT,
@@ -1637,9 +1648,9 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   }
   if (IS_ARRAY != Z_TYPE_P(status)) {
     /*
-     * `opcache_get_status` returns either an array or false.  If it's not an
-     * array, it must have returned false indicating we are unable to get the
-     * status yet.
+     * `opcache_get_status` returns either an array or false.  It returns
+     * false when opcache.restrict_api doesn't allow the calling script, or
+     * when opcache failed to start.
      */
     nrl_debug(NRL_INSTRUMENT,
               "User instrumentation from opcache: opcache status "
@@ -1647,32 +1658,54 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
     goto end;
   }
 
-  scripts = nr_php_zend_hash_find(Z_ARRVAL_P(status), "scripts");
+  preload_statistics
+      = nr_php_zend_hash_find(Z_ARRVAL_P(status), "preload_statistics");
+
+  if (NULL == preload_statistics) {
+    /*
+     * Opcache adds 'preload_statistics' once preloading is done, so it is
+     * missing in the request that runs the preload script. It is also missing
+     * when opcache.file_cache_only is set, because preloading doesn't run in
+     * that mode.
+     */
+    nrl_debug(NRL_INSTRUMENT,
+              "User instrumentation from opcache: missing "
+              "'preload_statistics' key in status information");
+    goto end;
+  }
+
+  if (IS_ARRAY != Z_TYPE_P(preload_statistics)) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: 'preload_statistics' "
+                "value in status information is not an array");
+    goto end;
+  }
+
+  scripts = nr_php_zend_hash_find(Z_ARRVAL_P(preload_statistics), "scripts");
 
   if (NULL == scripts) {
     nrl_warning(NRL_INSTRUMENT,
                 "User instrumentation from opcache: missing 'scripts' key in "
-                "status information");
+                "'preload_statistics' status information");
     goto end;
   }
 
   if (IS_ARRAY != Z_TYPE_P(scripts)) {
     nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: 'scripts' value in status "
-                "information is not an array");
+                "User instrumentation from opcache: 'scripts' value in "
+                "'preload_statistics' status information is not an array");
     goto end;
   }
 
   nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: started");
 
-  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(scripts), key_num, key_str, val) {
-    (void)key_num;
-    (void)val;
+  ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(scripts), val) {
+    if (!nr_php_is_zval_valid_string(val)) {
+      continue;
+    }
 
-    filename = ZEND_STRING_VALUE(key_str);
-    filename_len = ZEND_STRING_LEN(key_str);
-
-    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
+    nr_php_user_instrumentation_from_file(Z_STRVAL_P(val),
+                                          Z_STRLEN_P(val) TSRMLS_CC);
   }
   ZEND_HASH_FOREACH_END();
 
@@ -2073,10 +2106,16 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
-  } else if (!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name)) {
+  } else if ((!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name))
+             && NULL == segment->id && NULL == segment->attributes) {
     /*
      * If there is no custom instrumentation and tt detail is not more than 0,
-     * do not record the segment
+     * do not record the segment, unless it must be reported. A segment that
+     * has an ID already handed out cannot be discarded: the ID may be in an
+     * outgoing distributed tracing header, a log line, an error event or the
+     * linking metadata, and would point to a span that is never reported.
+     * A segment with attributes cannot be discarded either: the attributes
+     * (e.g. custom span parameters) are only reported with the span.
      */
     nr_segment_discard(&segment);
     return;
