@@ -29,6 +29,15 @@
 extern nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC);
 
 /*
+ * By default the engine starts with a working (fake) daemon connection, so
+ * that nothing talks to a real daemon. A test sets this to 0 before
+ * tlib_php_engine_create() to start MINIT with no daemon connection, the way a
+ * real process starts when the daemon is not running yet. The request-start
+ * code still gives the agent the fake connection, so only MINIT is affected.
+ */
+extern int tlib_php_use_fake_daemon_fd;
+
+/*
  * Purpose : Destroy a Zend Engine.
  */
 extern void tlib_php_engine_destroy(TSRMLS_D);

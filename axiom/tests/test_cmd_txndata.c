@@ -1335,6 +1335,7 @@ static void test_empty_txn(void) {
   nr_flatbuffers_table_t tbl;
   nr_status_t st;
   nr_aoffset_t absolute;
+  int tid;
 
   nbsockpair(socks);
   nr_set_daemon_fd(socks[0]);
@@ -1395,6 +1396,11 @@ static void test_empty_txn(void) {
   tlib_pass_if_int_equal(
       __func__, nr_getpid(),
       (int)nr_flatbuffers_table_read_i32(&tbl, TRANSACTION_FIELD_PID, 0));
+
+  tid = nr_gettid();
+  tlib_pass_if_uint64_t_equal(
+      __func__, (uint64_t)tid,
+      nr_flatbuffers_table_read_u64(&tbl, TRANSACTION_FIELD_THREAD_ID, 0));
 
 done:
   nr_buffer_destroy(&buf);

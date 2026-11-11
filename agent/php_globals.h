@@ -21,7 +21,7 @@ typedef struct _nrphpglobals_t {
   int cli;                  /* Set to 1 if this is a cli/cgi invocation */
   char* ssl_cafile;         /* Path to SSL CA bundle */
   char* ssl_capath;         /* Path to directory of SSL CA certs */
-  char* collector;          /* Collector host */
+  char* collector;          /* Collector host; read per transaction */
   char* proxy;              /* Egress proxy */
   char* daemon;             /* Path to daemon executable */
   char* pidfile;            /* Path to PID file */
@@ -79,9 +79,11 @@ typedef struct _nrphpglobals_t {
   int composer_api_per_process_detection;  /* Enables per-process VM package
                                               detection when Composer API is also
                                               enabled */
-  nr_composer_api_status_t composer_api_status; /* Composer API's status */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
   bool laravel_horizon_worker_used; /* Set to true if Laravel Horizon is used */
+#ifdef ZTS
+  int ini_startup_done; /* Set in MINIT once the INI entries are registered */
+#endif
 
   /* Original PHP callback pointer contents */
   nrphperrfn_t orig_error_cb;

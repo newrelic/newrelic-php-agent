@@ -215,19 +215,19 @@ typedef enum _nr_cpu_usage_t {
   NR_CPU_USAGE_COUNT = 2
 } nr_cpu_usage_t;
 
-typedef enum {
-  NR_COMPOSER_API_STATUS_UNSET = 0,
-  NR_COMPOSER_API_STATUS_INVALID_USE = 1,
-  NR_COMPOSER_API_STATUS_INIT_FAILURE = 2,
-  NR_COMPOSER_API_STATUS_CALL_FAILURE = 3,
-  NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED = 4,
-  NR_COMPOSER_API_STATUS_INVALID_RESULT = 5,
-} nr_composer_api_status_t;
-
 typedef struct _nr_composer_info_t {
   bool autoload_detected;
   bool composer_detected;
-  nr_composer_api_status_t api_status;
+  /*
+   * Borrowed pointer into this thread's entry in the owning nrapp_t's
+   * composer_map — not a copy. Fetched once in nr_txn_begin; see nr_app.h
+   * for the locking contract. NULL means either the fetch failed (rare
+   * allocation failure) or app was NULL at txn begin — treat as "unknown"
+   * at every read site, not as UNSET.
+   */
+  nr_composer_thread_entry_t* entry;
+  uint64_t composer_pull_epoch; /* epoch value this txn pulled at its pull
+                                    point, if any; 0 if never pulled */
 } nr_composer_info_t;
 
 /*
@@ -1270,6 +1270,97 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
 extern nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
                                                 char* package_name,
                                                 char* package_version);
+
+/*
+ * Purpose : Pull any Composer packages newly scanned into this txn's
+ *           per-thread composer entry (txn->composer_info.entry) into the
+ *           transaction's own php_packages, if the entry's epoch has moved
+ *           on since this txn last pulled.
+ *
+ *           Assumed to run only on the entry's owning thread, as part of
+ *           that thread's own request lifecycle -- no locking is taken
+ *           here, matching the fact that only that thread ever touches its
+ *           own entry (see nr_app.h for the app_lock contract, which
+ *           governs the composer_map structure and a separate cross-thread
+ *           read path, not this same-thread pull).
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_pull_composer_packages(nrtxn_t* txn);
+
+/*
+ * Purpose : Mark this txn's pulled Composer packages as sent by advancing
+ *           the per-thread entry's last_sent_epoch to match the epoch this
+ *           txn pulled, provided no newer scan has overwritten the entry
+ *           since then (otherwise left alone, so a future pull picks up
+ *           the newer epoch).
+ *
+ *           Assumed to run only on the entry's owning thread, for the same
+ *           reason as nr_txn_pull_composer_packages above -- no locking is
+ *           taken here.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_mark_composer_packages_sent(nrtxn_t* txn);
+
+/*
+ * Purpose : Unconditionally advance this txn's per-thread composer entry's
+ *           last_sent_epoch to match entry->epoch, without going through
+ *           the normal pull/mark-sent path above (which nr_php_txn_end
+ *           skips entirely when a transaction is already known to be
+ *           ignored before nr_txn_end runs). Used so that a discarded
+ *           transaction's pending Composer scan isn't inherited and
+ *           re-reported by the next transaction on this thread.
+ *
+ *           That invariant is scoped to callers on this route only. A
+ *           transaction that is only marked ignored during nr_txn_end --
+ *           by an ignore-type url or transaction_name rule -- has already
+ *           pulled, never reaches this function, and deliberately leaves
+ *           the entry alone so the next transaction on the thread re-pulls
+ *           and reports the scan. Both routes report a given scan at most
+ *           once; they differ in whether it is swallowed or deferred. See
+ *           nr_php_txn_end for why that difference is intentional.
+ *
+ *           If entry->epoch != entry->last_sent_epoch going in (i.e. there
+ *           was a genuinely unsent scan to swallow), also destroys
+ *           entry->packages and resets entry->status to
+ *           NR_COMPOSER_API_STATUS_UNSET, so the entry reads back exactly
+ *           as if the scan had never happened -- this is what lets the
+ *           legacy-detection suppression guard in
+ *           nr_txn_add_php_package_from_source() correctly re-arm for the
+ *           next transaction on this thread, instead of staying
+ *           permanently suppressed by a stale COLLECTED status. If the
+ *           entry was already fully sent (epoch == last_sent_epoch), this
+ *           is a no-op beyond the epoch write -- an unrelated discard on an
+ *           already-sent thread must not destroy legitimate history.
+ *
+ *           Unlike nr_txn_mark_composer_packages_sent(), this does not
+ *           gate on composer_pull_epoch == entry->epoch, because the pull
+ *           never ran on this path -- composer_pull_epoch is still 0 (or
+ *           stale). The write happens regardless.
+ *
+ *           Assumed to run only on the entry's owning thread, for the same
+ *           reason as nr_txn_pull_composer_packages/
+ *           nr_txn_mark_composer_packages_sent above -- no locking is
+ *           taken here.
+ *
+ *           Known limitation: if a Composer scan and this discard land in
+ *           the same transaction, that scan's data is lost -- permanently
+ *           in a persistent-worker context (no future autoload event will
+ *           re-scan), harmlessly in traditional per-request contexts
+ *           (which get another chance next request). This matches how a
+ *           discarded transaction's data is already treated everywhere
+ *           else, with no special-casing for Composer.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_discard_composer_packages(nrtxn_t* txn);
 
 /*
  * Purpose : Add php package suggestion to transaction. This function

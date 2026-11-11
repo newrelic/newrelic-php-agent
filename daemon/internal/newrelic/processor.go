@@ -740,7 +740,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 			metrics := harvest.Metrics
 			harvest.addInstanceReportingMetric(metrics)
 			harvest.createHttpErrorMetrics(metrics)
-			harvest.pidSet = make(map[int]struct{})
+			harvest.pidSet = make(map[pidKey]struct{})
 			harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 			harvest.httpErrorSet = make(map[int]float64)
 
@@ -1010,13 +1010,20 @@ func (p *Processor) Run() error {
 	}
 }
 
+// TxnProcessInfo carries the OS process and thread identity of the agent
+// that sent this transaction, extracted from the flatbuffer in processBinary.
+type TxnProcessInfo struct {
+	PID      int
+	ThreadID uint64
+}
+
 type AgentDataHandler interface {
-	IncomingTxnData(id AgentRunID, sample AggregaterInto)
+	IncomingTxnData(id AgentRunID, sample AggregaterInto, meta TxnProcessInfo)
 	IncomingSpanBatch(batch SpanBatch)
 	IncomingAppInfo(id *AgentRunID, info *AppInfo) AppInfoReply
 }
 
-func integrationLog(now time.Time, id AgentRunID, format string, seq uint64, p PayloadCreator) {
+func integrationLog(now time.Time, id AgentRunID, format string, seq uint64, meta TxnProcessInfo, p PayloadCreator) {
 	if p.Empty() {
 		return
 	}
@@ -1026,13 +1033,13 @@ func integrationLog(now time.Time, id AgentRunID, format string, seq uint64, p P
 		return
 	}
 	if format == "seq" {
-		log.Infof("NR_INTEGRATION_TEST '%s' '%d' '%s'", p.Cmd(), seq, js)
+		log.Infof("NR_INTEGRATION_TEST '%s' seq=%d pid=%d thread_id=%d '%s'", p.Cmd(), seq, meta.PID, meta.ThreadID, js)
 	} else {
 		log.Infof("NR_INTEGRATION_TEST '%s' '%s'", p.Cmd(), js)
 	}
 }
 
-func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
+func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto, meta TxnProcessInfo) {
 	if p.cfg.IntegrationMode {
 		var seq uint64
 		if p.cfg.IntegrationFormat == "seq" {
@@ -1041,16 +1048,16 @@ func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 		h := NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 		sample.AggregateInto(h)
 		now := time.Now()
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.Metrics)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.CustomEvents)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.ErrorEvents)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.Errors)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.SlowSQLs)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.SpanEvents)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.TxnTraces)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.TxnEvents)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.LogEvents)
-		integrationLog(now, id, p.cfg.IntegrationFormat, seq, h.PhpPackages)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.Metrics)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.CustomEvents)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.ErrorEvents)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.Errors)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.SlowSQLs)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.SpanEvents)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.TxnTraces)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.TxnEvents)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.LogEvents)
+		integrationLog(now, id, p.cfg.IntegrationFormat, seq, meta, h.PhpPackages)
 	}
 	p.txnDataChannel <- TxnData{ID: id, Sample: sample}
 }

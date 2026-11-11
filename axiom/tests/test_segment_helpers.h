@@ -238,7 +238,7 @@ static NRUNUSED nrtxn_t* new_txn(int background) {
   app.connect_reply = nro_create_from_json(
       "{\"collect_traces\":true,\"collect_errors\":true}");
   app.info.license = nr_strdup("0123456789012345678901234567890123456789");
-  app.rnd = NULL;
+  app.rnd_map = NULL;
   app.limits = (nr_app_limits_t){
       .analytics_events = NR_MAX_ANALYTIC_EVENTS,
       .custom_events = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED,
