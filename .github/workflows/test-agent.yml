@@ -223,7 +223,7 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
-      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+      IMAGE_VERSION: v6
     strategy:
       matrix:
         platform: [gnu, musl]
@@ -314,7 +314,7 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
-      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+      IMAGE_VERSION: v6
     strategy:
       matrix:
         platform: [gnu, musl]
@@ -435,7 +435,7 @@ jobs:
           LIBC: ${{matrix.platform}}
           PLATFORM: linux/${{matrix.arch}}
           AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+          IMAGE_VERSION: v6
         working-directory: ./php-agent
         run: |
           make test-services-start
@@ -527,7 +527,7 @@ jobs:
           LIBC: ${{matrix.platform}}
           PLATFORM: linux/${{matrix.arch}}
           AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+          IMAGE_VERSION: v6
         working-directory: ./php-agent
         run: |
           make test-services-start
