@@ -85,6 +85,9 @@ docker pull newrelic/php-daemon@sha256:<the digest>
 `first_signed_version` is the first version whose tarballs were signed when they were built: the numbers at the start of a snapshot
 version (`12.13.0.320SNAPSHOT`) are compared with it. Older versions that are in `tarball-hashes.json` were signed later.
 
+Exactly one key has the purpose `tarball` (the schema enforces it). The tools that read this file take that key, so a
+key rotation lifts the limit in the schema in the same pull request that changes them.
+
 ```
 jq -r '.keys[] | select(.purpose == "tarball") | .public_key_url' signing-key-fingerprints.json
 jq -r '.keys[] | select(.purpose == "tarball") | .fingerprint | [scan(".{4}")] | join(" ")' signing-key-fingerprints.json   # as gpg prints it
@@ -116,12 +119,13 @@ Each tarball on the download site has a detached signature next to it, named lik
 
 1. Download the tarball, its `.asc` file and the public key listed for the `tarball` purpose in
    `signing-key-fingerprints.json`.
-2. Import the key and compare its fingerprint with the one in `signing-key-fingerprints.json`. Get that file from
-   this repository, not from the download site, so that the fingerprint does not come from the same place as the key:
+2. Compare the fingerprint of the key file with the one in `signing-key-fingerprints.json`, then import the key. Get that
+   file from this repository, not from the download site, so that the fingerprint does not come from the same place as the key.
+   The fingerprint printed under the `pub` line must equal the listed one, written in groups of four (see the `jq` line above):
 
    ```
+   gpg --show-keys --with-fingerprint NEWRELIC_TARBALL_<last 8 of the fingerprint>.public
    gpg --import NEWRELIC_TARBALL_<last 8 of the fingerprint>.public
-   gpg --fingerprint "New Relic PHP Agent Tarball Signing Key"
    ```
 3. Verify the signature:
 
@@ -129,9 +133,10 @@ Each tarball on the download site has a detached signature next to it, named lik
    gpg --verify newrelic-php5-<version>-linux.tar.gz.asc newrelic-php5-<version>-linux.tar.gz
    ```
 
-   The line `Good signature from "New Relic PHP Agent Tarball Signing Key (2026)"` means the file is the one that was
-   signed. gpg also prints a warning that the key is not certified with a trusted signature; the fingerprint
-   comparison in the previous step is what establishes trust in the key.
+   The output must say `Good signature`, and its `Primary key fingerprint:` line (printed after the warning below) must equal
+   the listed fingerprint. Do not rely on the name in the `Good signature from "..."` line: anyone can make a key with that
+   name. gpg also prints a warning that the key is not certified with a trusted signature; the fingerprint comparison is
+   what establishes trust in the key.
 
 4. If the version is listed in `tarball-hashes.json`, compare the SHA-256 hash of the file with its entry. The signature shows
    that New Relic's key signed these bytes; it does not say which version or build they are, so a signed tarball of

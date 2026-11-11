@@ -14,7 +14,7 @@
     "keys": {
       "type": "array",
       "minItems": 1,
-      "description": "The keys, with exactly one whose purpose is tarball.",
+      "description": "The keys, with exactly one whose purpose is tarball. The tools that read this file (the release workflows, the daemon repository and the install tests) take that key; a rotation lifts maxContains in the same pull request that changes them.",
       "contains": {
         "type": "object",
         "required": ["purpose"],
