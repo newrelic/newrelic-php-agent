@@ -139,6 +139,12 @@ static nr_status_t stub_cmd_txndata_tx(const nrtxn_t* txn);
  */
 
 nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
+  return tlib_php_engine_create_ex(extra_ini, NULL);
+}
+
+nr_status_t tlib_php_engine_create_ex(
+    const char* extra_ini,
+    const zend_function_entry* additional_functions) {
   nr_cmd_appinfo_hook = stub_cmd_appinfo_tx;
   nr_cmd_txndata_hook = stub_cmd_txndata_tx;
 
@@ -160,6 +166,13 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
   nr_memcpy(&tlib_module, &php_embed_module, sizeof(sapi_module_struct));
   tlib_module.startup = NULL;
   tlib_module.ub_write = tlib_php_engine_ub_write;
+
+  /*
+   * php_module_startup() registers the SAPI's own functions before
+   * zend_post_startup(), so they get the same engine state as any other
+   * internal function. Functions registered after startup don't.
+   */
+  tlib_module.additional_functions = additional_functions;
 
   /*
    * Start up TSRM if required.
