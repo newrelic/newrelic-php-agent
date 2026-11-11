@@ -14,6 +14,7 @@
 #include "util_md5.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "util_glibc_compat.h"
 
 /*
  * txnName is hashed against a bit-rotated hash of the caller's path hash.

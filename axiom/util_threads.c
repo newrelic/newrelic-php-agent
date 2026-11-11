@@ -12,6 +12,7 @@
 #include "util_errno.h"
 #include "util_logging.h"
 #include "util_threads.h"
+#include "util_glibc_compat.h"
 
 nr_status_t nrt_create_f(nrthread_t* thread,
                          const nrthread_attr_t* attr,

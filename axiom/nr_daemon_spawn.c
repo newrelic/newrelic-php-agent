@@ -24,6 +24,7 @@
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_syscalls.h"
+#include "util_glibc_compat.h"
 
 #define NR_DAEMON_ARGV_DEFAULT_CAPACITY 16
 #define NR_DAEMON_ARGV_GROWTH_FACTOR 2

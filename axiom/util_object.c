@@ -19,6 +19,7 @@
 #include "util_object.h"
 #include "util_object_private.h"
 #include "util_strings.h"
+#include "util_glibc_compat.h"
 
 /*
  * Set the chunk size we use to allocate for hashes and arrays.

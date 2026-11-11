@@ -18,6 +18,7 @@
 #include "util_time.h"
 #include "util_strings.h"
 #include "util_logging.h"
+#include "util_glibc_compat.h"
 
 /*
  * Purpose : Helper function to assign a string value to a field.  This function
@@ -1300,14 +1301,15 @@ char* nr_distributed_trace_create_w3c_traceparent_header(const char* trace_id,
 }
 
 void nr_distributed_trace_handle_inbound_w3c_sampled_flag(
-        nr_distributed_trace_t* dt,
-        const nrobj_t* trace_headers,
+    nr_distributed_trace_t* dt,
+    const nrobj_t* trace_headers,
     nr_upstream_parent_sampling_control_t remote_parent_sampled,
     nr_upstream_parent_sampling_control_t remote_parent_not_sampled) {
   const nrobj_t* traceparent = NULL;
   int sampled = 0;
   nr_status_t parse_err = NR_FAILURE;
-  if (DEFAULT != remote_parent_sampled || DEFAULT != remote_parent_not_sampled) {
+  if (DEFAULT != remote_parent_sampled
+      || DEFAULT != remote_parent_not_sampled) {
     traceparent = nro_get_hash_value(trace_headers, "traceparent", &parse_err);
     if (nrunlikely(NULL == traceparent || NR_SUCCESS != parse_err)) {
       return;

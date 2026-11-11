@@ -10,6 +10,7 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "util_glibc_compat.h"
 
 #define NR_NONEXISTENT_HEADER "X-New-Relic-Non-Existent-Header"
 
