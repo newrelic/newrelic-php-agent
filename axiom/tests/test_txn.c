@@ -5886,6 +5886,7 @@ static void test_create_w3c_tracestate_header(void) {
    */
   segment = nr_malloc(sizeof(nr_segment_t));
   segment->id = NULL;
+  segment->priority = 0;
   tlib_pass_if_null("txn is null",
                     nr_txn_create_w3c_tracestate_header(NULL, segment));
 
@@ -5918,15 +5919,24 @@ static void test_create_w3c_tracestate_header(void) {
   tlib_pass_if_not_null("analytic events should not have txnId",
                         nr_strstr(actual, expected));
   nr_free(actual);
+  tlib_pass_if_true(
+      "The segment priority should be set when its id is in the header",
+      segment->priority & NR_SEGMENT_PRIORITY_DT, "priority=0x%08x",
+      segment->priority);
 
   /*
    * Test : analytic events on + span events off
    */
   txn.options.span_events_enabled = false;
   txn.options.analytics_events_enabled = true;
+  segment->priority = 0;
   actual = nr_txn_create_w3c_tracestate_header(&txn, segment);
   expected = "tk@nr=0-0-accountId-appId--txnId-1-0.770000";
   tlib_pass_if_not_null("span events off", nr_strstr(actual, expected));
+  tlib_pass_if_false(
+      "The segment priority should not be set when its id is not in the header",
+      segment->priority & NR_SEGMENT_PRIORITY_DT, "priority=0x%08x",
+      segment->priority);
   nr_free(actual);
 
   /*
@@ -5959,6 +5969,7 @@ static void test_create_w3c_traceparent_header(void) {
 
   segment = nr_malloc(sizeof(nr_segment_t));
   segment->id = NULL;
+  segment->priority = 0;
 
   /*
    * Test : No txn and valid span
@@ -6008,6 +6019,9 @@ static void test_create_w3c_traceparent_header(void) {
   actual = nr_txn_create_w3c_traceparent_header(&txn, segment);
   expected = "00-0000000000000000000000meatballs!-";
   tlib_pass_if_not_null("random guid", nr_strstr(actual, expected));
+  tlib_pass_if_false("The segment priority should not be set for a random guid",
+                     segment->priority & NR_SEGMENT_PRIORITY_DT,
+                     "priority=0x%08x", segment->priority);
   test_txn_metric_is("header created", txn.unscoped_metrics, MET_FORCED,
                      "Supportability/TraceContext/Create/Success", 1, 0, 0, 0,
                      0, 0);
@@ -6020,6 +6034,10 @@ static void test_create_w3c_traceparent_header(void) {
   actual = nr_txn_create_w3c_traceparent_header(&txn, segment);
   expected = "00-0000000000000000000000meatballs!-currentspan-01";
   tlib_pass_if_str_equal("currentspan guid true flag", expected, actual);
+  tlib_pass_if_true(
+      "The segment priority should be set when its id is in the header",
+      segment->priority & NR_SEGMENT_PRIORITY_DT, "priority=0x%08x",
+      segment->priority);
   test_txn_metric_is("header created", txn.unscoped_metrics, MET_FORCED,
                      "Supportability/TraceContext/Create/Success", 2, 0, 0, 0,
                      0, 0);
