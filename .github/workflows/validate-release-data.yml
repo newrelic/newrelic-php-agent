@@ -35,10 +35,12 @@ jobs:
         with:
           sparse-checkout: release-data
           persist-credentials: false
+      # release-data/requirements.txt pins jsonschema and its dependencies with hashes (made by pip-compile from
+      # release-data/requirements.in), so a changed package on PyPI fails the install instead of running here.
       - name: Install the JSON Schema validator
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet 'jsonschema==4.23.0'
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet --require-hashes -r release-data/requirements.txt
       - name: Test the validator
         run: '"$RUNNER_TEMP/venv/bin/python" -m unittest discover -s release-data/tests'
       - name: Validate the files

@@ -52,8 +52,9 @@
             "type": "string"
           },
           "public_key_url": {
+            "description": "https on download.newrelic.com, a path of letters, digits, / _ . and -, and the extension .public (no whitespace or control characters).",
             "type": "string",
-            "pattern": "^https://"
+            "pattern": "^https://download\\.newrelic\\.com/[A-Za-z0-9/_.-]+\\.public$"
           },
           "purpose": {
             "enum": ["apt", "rpm", "tarball"]

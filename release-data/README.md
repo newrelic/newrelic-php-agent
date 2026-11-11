@@ -63,7 +63,7 @@ jq -r --arg v 12.13.0.320 '.releases[] | select(.version == $v) | .files[] | sel
 jq -r --arg v 12.13.0.320 '.releases[] | select(.version == $v) | .files[] | "\(.sha256)  \(.filename)"' tarball-hashes.json | sha256sum -c --ignore-missing -
 ```
 
-If a version is not in the list, no hash is recorded for it: it is older than the backfill or was removed from the download site.
+If a version is not in the list, no hash is recorded for it: it is a snapshot, a beta or a release candidate (never listed), a release whose pull request has not merged yet, an older release that the backfill has not reached, or a version that was removed from the download site.
 
 ### `daemon-image-digests.json`
 
@@ -95,18 +95,20 @@ jq -r '.first_signed_version' signing-key-fingerprints.json
 
 The other pull request workflows ignore `release-data/**`, so the workflow
 [`validate-release-data`](../.github/workflows/validate-release-data.yml) is the check that runs on a change to these files
-(on every pull request that touches them and on every push to `main`). It runs [`validate.py`](validate.py), which checks:
+(on every pull request, and on every push to `main` that changes them). It runs [`validate.py`](validate.py), which checks:
 
 * each file against its schema, with the `date` and `date-time` formats asserted and `$` read as ECMA-262 reads it;
 * the format that the writer scripts of the builder and daemon repositories write: sorted keys, two-space indent, one final newline;
-* `tarball-hashes.json`: releases newest first by version number, no version twice, file names that match the version and platform;
+* `tarball-hashes.json`: releases newest first by version number, no version twice, file names that match the version and platform, no platform
+  twice in a release, and `libc` set exactly for the linux platforms (`glibc` for `linux`, `musl` for `linux-musl`);
 * `daemon-image-digests.json`: images newest first, no tag twice, no tag below `first_image_version`;
 * `signing-key-fingerprints.json`: no fingerprint twice; every `public_key_url` is an https URL on `download.newrelic.com` with the
   file name `NEWRELIC_<PURPOSE>_<last 8 characters of the fingerprint>.public`. The key at that address is not fetched, so a
   wrong but well-formed fingerprint is still the approver's check.
 
 The tests of the validator are in [`tests/`](tests/): `python3 -m unittest discover -s release-data/tests` (needs `jsonschema`).
-The workflow is meant to be a required check; that needs a ruleset change.
+The workflow is a required check on `main`. It installs `jsonschema` and its dependencies from `requirements.txt`, which pins them with hashes
+(made by `pip-compile` from `requirements.in`; regenerate it with the command in that file).
 
 ## Verify a tarball
 
@@ -131,15 +133,20 @@ Each tarball on the download site has a detached signature next to it, named lik
    signed. gpg also prints a warning that the key is not certified with a trusted signature; the fingerprint
    comparison in the previous step is what establishes trust in the key.
 
-4. Compare the SHA-256 hash of the file with the entry for the version in `tarball-hashes.json`. The signature shows
+4. If the version is listed in `tarball-hashes.json`, compare the SHA-256 hash of the file with its entry. The signature shows
    that New Relic's key signed these bytes; it does not say which version or build they are, so a signed tarball of
    another build that was renamed would pass step 3. The hash is recorded for this version and file name:
 
    ```
    sha256sum newrelic-php5-<version>-linux.tar.gz
    ```
+
+   Only official releases are listed, and a release only after the pull request that records it has merged. Snapshots, betas and
+   release candidates are signed but never listed, and a new release has no entry until then. If the version is not listed,
+   steps 3 and 5 are the checks that apply.
 5. Check that the first entry of the tarball is the folder named like the file, `newrelic-php5-<version>-linux/`. That
-   name is inside the signed bytes:
+   name is inside the signed bytes, so this check works with or without an entry and ties the signed bytes to the version
+   when there is no hash:
 
    ```
    tar -tzf newrelic-php5-<version>-linux.tar.gz | head -n 1

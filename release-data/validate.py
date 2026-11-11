@@ -10,7 +10,8 @@ builder and daemon repositories write.
 
 usage: validate.py [<release-data-dir>]      (default: the directory of this script)
 
-Every problem is printed (one line each) and the exit status is 1 if there was one. What it checks:
+Every problem is printed (one line each, as a GitHub Actions ::error:: line, with line breaks inside a value written as
+\n) and the exit status is 1 if there was one. What it checks:
 
   * each schema is a valid JSON Schema, and each data file matches its schema with the formats date and
     date-time asserted and with "$" in a pattern read as ECMA-262 reads it (it does not match before a
@@ -18,7 +19,8 @@ Every problem is printed (one line each) and the exit status is 1 if there was o
   * the file is in the format that insert-release-data.py writes: sorted keys, two-space indent, one final
     newline;
   * tarball-hashes.json: releases newest first by version number (12.10 is newer than 12.9), no version twice,
-    and every file named newrelic-php5-<version>-<platform>.tar.gz;
+    every file named newrelic-php5-<version>-<platform>.tar.gz, no platform twice in a release, and `libc` set
+    exactly for the linux platforms (glibc for linux, musl for linux-musl);
   * daemon-image-digests.json: images newest first, no tag twice, no tag below first_image_version;
   * signing-key-fingerprints.json: no fingerprint twice, and each public_key_url is https on download.newrelic.com
     with the file name NEWRELIC_<PURPOSE>_<last 8 characters of the fingerprint>.public. The fingerprint is not
@@ -90,13 +92,23 @@ def check_order(versions, what, where):
     return problems
 
 
+LIBC = {"linux": "glibc", "linux-musl": "musl"}
+
+
 def check_tarball_hashes(data, where):
     problems = check_order([r["version"] for r in data["releases"]], "version", where)
     for release in data["releases"]:
+        platforms = set()
         for item in release["files"]:
             expected = "newrelic-php5-%s-%s.tar.gz" % (release["version"], item["platform"])
             if item["filename"] != expected:
-                problems.append("%s: the file %s of %s should be named %s" % (where, item["filename"], release["version"], expected))
+                problems.append("%s: the file %r of %r should be named %r" % (where, item["filename"], release["version"], expected))
+            if item["platform"] in platforms:
+                problems.append("%s: the platform %r is listed twice in %r" % (where, item["platform"], release["version"]))
+            platforms.add(item["platform"])
+            if item.get("libc") != LIBC.get(item["platform"]):
+                problems.append("%s: the file %r of %r has libc %r, expected %r (libc is set for the linux platforms only: glibc for linux, musl for linux-musl)"
+                                % (where, item["filename"], release["version"], item.get("libc"), LIBC.get(item["platform"])))
     return problems
 
 
@@ -106,7 +118,7 @@ def check_daemon_digests(data, where):
         first = version_key(data["first_image_version"])
         for image in data["images"]:
             if version_key(image["version"]) < first:
-                problems.append("%s: the tag %s is below first_image_version %s" % (where, image["version"], data["first_image_version"]))
+                problems.append("%s: the tag %r is below first_image_version %r" % (where, image["version"], data["first_image_version"]))
     except ValueError:
         problems.append("%s: first_image_version is not made of numbers separated by dots" % where)
     return problems
@@ -118,14 +130,14 @@ def check_fingerprints(data, where):
     for key in data["keys"]:
         fingerprint = key["fingerprint"]
         if fingerprint in seen:
-            problems.append("%s: the fingerprint %s is listed twice" % (where, fingerprint))
+            problems.append("%s: the fingerprint %r is listed twice" % (where, fingerprint))
         seen.add(fingerprint)
         url = urlsplit(key["public_key_url"])
         expected = "NEWRELIC_%s_%s.public" % (key["purpose"].upper(), fingerprint[-8:])
         if url.scheme != "https" or url.netloc != "download.newrelic.com" or url.query or url.fragment:
-            problems.append("%s: the public_key_url %s of %s is not an https URL on download.newrelic.com" % (where, key["public_key_url"], fingerprint))
+            problems.append("%s: the public_key_url %r of %r is not an https URL on download.newrelic.com" % (where, key["public_key_url"], fingerprint))
         elif url.path.rsplit("/", 1)[-1] != expected:
-            problems.append("%s: the public_key_url %s should end in %s" % (where, key["public_key_url"], expected))
+            problems.append("%s: the public_key_url %r should end in %r" % (where, key["public_key_url"], expected))
     return problems
 
 
@@ -150,7 +162,7 @@ def check_tree(directory):
             problems.append("%s: not a usable schema: %s" % (schema_path, str(error).splitlines()[0]))
             continue
         try:
-            with open(path) as handle:
+            with open(path, newline="") as handle:
                 text = handle.read()
             data = json.loads(text)
         except (OSError, ValueError) as error:
@@ -174,7 +186,8 @@ def main(argv):
         return 2
     problems = check_tree(directory)
     for problem in problems:
-        print("::error::" + problem)
+        # a value from a file must not start another line, which the runner would read as a workflow command
+        print("::error::" + problem.replace("\r", "\\r").replace("\n", "\\n"))
     if not problems:
         print("release-data is valid")
     return 1 if problems else 0
