@@ -383,10 +383,14 @@ integration-events-limits: bin/integration_runner
 
 .PHONY: gcov
 gcov: Makefile
-	cd agent; $(GCOV) $(GCOV_FLAGS) *.gcno
+# agent/*.gcno and axiom/tests/*.gcno may legitimately not exist (e.g. in CI
+# only the .gcno files from agent/.libs and axiom are carried over). Older
+# gcov releases exit 0 when the glob matches nothing, newer ones exit non-zero,
+# so ignore failures for these two.
+	-cd agent; $(GCOV) $(GCOV_FLAGS) *.gcno
 	cd agent; $(GCOV) -o .libs $(GCOV_FLAGS) .libs/*.gcno
 	cd axiom; $(GCOV) $(GCOV_FLAGS) *.gcno
-	cd axiom/tests; $(GCOV) $(GCOV_FLAGS) *.gcno
+	-cd axiom/tests; $(GCOV) $(GCOV_FLAGS) *.gcno
 
 # Reset code coverage line counts.
 .PHONY: coverage-clean
