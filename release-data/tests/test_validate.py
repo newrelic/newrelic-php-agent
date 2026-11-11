@@ -54,6 +54,7 @@ def key(purpose, fingerprint, created="2026-01-01"):
 APT = "1111111111111111111111111111111111112222"
 RPM = "3333333333333333333333333333333333334444"
 TARBALL = "5555555555555555555555555555555555556666"
+LEGACY = "B60A3EC9BC013B9C23790EC8B31B29E5548C16BF"
 
 
 def dump(data):
@@ -228,6 +229,71 @@ class ValidateTest(unittest.TestCase):
 
     def test_key_url_with_another_purpose(self):
         self.keys["keys"][0]["public_key_url"] = "https://download.newrelic.com/NEWRELIC_RPM_11112222.public"
+        self.write()
+        self.assertProblem("should end in 'NEWRELIC_APT_11112222.public'")
+
+    def test_legacy_key_is_listed_under_its_short_key_id(self):
+        legacy = key("legacy", LEGACY, created="2010-06-29")
+        legacy["public_key_url"] = "https://download.newrelic.com/548C16BF.gpg"
+        legacy["status"] = "retired"
+        self.keys["keys"].append(legacy)
+        self.write()
+        self.assertEqual(self.problems(), [])
+
+    def test_legacy_key_with_a_public_file_name(self):
+        legacy = key("legacy", LEGACY, created="2010-06-29")
+        legacy["status"] = "retired"
+        self.keys["keys"].append(legacy)
+        self.write()
+        self.assertProblem("should end in '548C16BF.gpg'")
+
+    def test_legacy_key_must_be_retired(self):
+        for status in (None, "active"):
+            with self.subTest(status):
+                legacy = key("legacy", LEGACY, created="2010-06-29")
+                legacy["public_key_url"] = "https://download.newrelic.com/548C16BF.gpg"
+                if status:
+                    legacy["status"] = status
+                self.keys["keys"] = self.keys["keys"][:3] + [legacy]
+                self.write()
+                self.assertProblem("the legacy key", "must have the status retired")
+
+    def test_status_must_be_active_or_retired(self):
+        self.keys["keys"][0]["status"] = "old"
+        self.write()
+        self.assertProblem("keys/0/status")
+
+    def test_rotation_the_old_key_retired_and_the_new_one_active(self):
+        old = self.keys["keys"][2]
+        old["status"] = "retired"
+        new = key("tarball", "7777777777777777777777777777777777778888", created="2027-01-01")
+        new["status"] = "active"
+        self.keys["keys"].append(new)
+        self.write()
+        self.assertEqual(self.problems(), [])
+
+    def test_two_active_tarball_keys(self):
+        self.keys["keys"].append(key("tarball", "7777777777777777777777777777777777778888", created="2027-01-01"))
+        self.write()
+        self.assertTrue(self.problems())
+
+    def test_two_active_apt_keys(self):
+        self.keys["keys"].append(key("apt", "7777777777777777777777777777777777778888", created="2027-01-01"))
+        self.write()
+        self.assertProblem("exactly one active key with the purpose apt, found 2")
+
+    def test_no_active_rpm_key(self):
+        self.keys["keys"][1]["status"] = "retired"
+        self.write()
+        self.assertProblem("exactly one active key with the purpose rpm, found 0")
+
+    def test_no_active_tarball_key(self):
+        self.keys["keys"][2]["status"] = "retired"
+        self.write()
+        self.assertTrue(self.problems())
+
+    def test_gpg_file_name_is_only_for_the_legacy_key(self):
+        self.keys["keys"][0]["public_key_url"] = "https://download.newrelic.com/11112222.gpg"
         self.write()
         self.assertProblem("should end in 'NEWRELIC_APT_11112222.public'")
 

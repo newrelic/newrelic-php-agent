@@ -129,15 +129,26 @@ def check_fingerprints(data, where):
     seen = set()
     for key in data["keys"]:
         fingerprint = key["fingerprint"]
+        # a key that is replaced is marked retired, not removed; the legacy key is retired
+        if key["purpose"] == "legacy" and key.get("status", "active") != "retired":
+            problems.append("%s: the legacy key %r must have the status retired" % (where, fingerprint))
         if fingerprint in seen:
             problems.append("%s: the fingerprint %r is listed twice" % (where, fingerprint))
         seen.add(fingerprint)
         url = urlsplit(key["public_key_url"])
-        expected = "NEWRELIC_%s_%s.public" % (key["purpose"].upper(), fingerprint[-8:])
+        # the legacy key was published under the name of its short key id, before the NEWRELIC_ names
+        if key["purpose"] == "legacy":
+            expected = "%s.gpg" % fingerprint[-8:]
+        else:
+            expected = "NEWRELIC_%s_%s.public" % (key["purpose"].upper(), fingerprint[-8:])
         if url.scheme != "https" or url.netloc != "download.newrelic.com" or url.query or url.fragment:
             problems.append("%s: the public_key_url %r of %r is not an https URL on download.newrelic.com" % (where, key["public_key_url"], fingerprint))
         elif url.path.rsplit("/", 1)[-1] != expected:
             problems.append("%s: the public_key_url %r should end in %r" % (where, key["public_key_url"], expected))
+    for purpose in ("apt", "rpm", "tarball"):
+        active = [k for k in data["keys"] if k["purpose"] == purpose and k.get("status", "active") == "active"]
+        if len(active) != 1:
+            problems.append("%s: there must be exactly one active key with the purpose %s, found %d" % (where, purpose, len(active)))
     return problems
 
 

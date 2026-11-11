@@ -7,7 +7,8 @@
       "fingerprint": "2EA7DB7738A22D92945E8EC732FA4C172DAD550E",
       "name": "APT repository signing key (2025)",
       "public_key_url": "https://download.newrelic.com/NEWRELIC_APT_2DAD550E.public",
-      "purpose": "apt"
+      "purpose": "apt",
+      "status": "active"
     },
     {
       "created": "2026-01-21",
@@ -15,7 +16,8 @@
       "fingerprint": "277EF696D5058AB8103416A8E4801651BD2E199C",
       "name": "RPM repository signing key (2026)",
       "public_key_url": "https://download.newrelic.com/php_agent/NEWRELIC_RPM_BD2E199C.public",
-      "purpose": "rpm"
+      "purpose": "rpm",
+      "status": "active"
     },
     {
       "created": "2026-11-06",
@@ -23,7 +25,17 @@
       "fingerprint": "7F952A2DFAC77DB3AE9F8449B0B877AD4CF4D051",
       "name": "New Relic PHP Agent Tarball Signing Key (2026)",
       "public_key_url": "https://download.newrelic.com/php_agent/NEWRELIC_TARBALL_4CF4D051.public",
-      "purpose": "tarball"
+      "purpose": "tarball",
+      "status": "active"
+    },
+    {
+      "created": "2010-06-29",
+      "expires": "never",
+      "fingerprint": "B60A3EC9BC013B9C23790EC8B31B29E5548C16BF",
+      "name": "Legacy package signing key (retired)",
+      "public_key_url": "https://download.newrelic.com/548C16BF.gpg",
+      "purpose": "legacy",
+      "status": "retired"
     }
   ]
 }

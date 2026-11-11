@@ -80,13 +80,19 @@ docker pull newrelic/php-daemon@sha256:<the digest>
 
 ### `signing-key-fingerprints.json`
 
-`{"first_signed_version": "12.13.0", "keys": [{"purpose": "apt" | "rpm" | "tarball", "name", "fingerprint", "created", "expires",
-"public_key_url"}, ...]}`. `fingerprint` is 40 upper-case hex digits without spaces. `expires` is a date or `never`.
+`{"first_signed_version": "12.13.0", "keys": [{"purpose": "apt" | "rpm" | "tarball" | "legacy", "name", "fingerprint", "created", "expires",
+"public_key_url", "status": "active" | "retired"}, ...]}`. `fingerprint` is 40 upper-case hex digits without spaces. `expires` is a date or `never`.
 `first_signed_version` is the first version whose tarballs were signed when they were built: the numbers at the start of a snapshot
 version (`12.13.0.320SNAPSHOT`) are compared with it. Older versions that are in `tarball-hashes.json` were signed later.
 
-Exactly one key has the purpose `tarball` (the schema enforces it). The tools that read this file take that key, so a
-key rotation lifts the limit in the schema in the same pull request that changes them.
+`status` is `active` or `retired`; a key without it is active. Exactly one key with each of the purposes `apt`, `rpm` and
+`tarball` is active (the schema and `validate.py` enforce it). A rotation adds the new key as active and changes the status of
+the old key to `retired`; the old entry is not removed, because it is the published fingerprint for everything that key signed
+and that can still be downloaded. The tools that read the key of a purpose take the active one.
+
+The entry with the purpose `legacy` is a retired key. New releases are signed with the active keys above. It is listed so that
+releases made before them can still be checked against a published fingerprint. Its public key file keeps the name of its short
+key id (`548C16BF.gpg`).
 
 ```
 jq -r '.keys[] | select(.purpose == "tarball") | .public_key_url' signing-key-fingerprints.json
@@ -106,7 +112,7 @@ The other pull request workflows ignore `release-data/**`, so the workflow
   twice in a release, and `libc` set exactly for the linux platforms (`glibc` for `linux`, `musl` for `linux-musl`);
 * `daemon-image-digests.json`: images newest first, no tag twice, no tag below `first_image_version`;
 * `signing-key-fingerprints.json`: no fingerprint twice; every `public_key_url` is an https URL on `download.newrelic.com` with the
-  file name `NEWRELIC_<PURPOSE>_<last 8 characters of the fingerprint>.public`. The key at that address is not fetched, so a
+  file name `NEWRELIC_<PURPOSE>_<last 8 characters of the fingerprint>.public` (`<last 8 characters>.gpg` for the `legacy` key). The key at that address is not fetched, so a
   wrong but well-formed fingerprint is still the approver's check.
 
 The tests of the validator are in [`tests/`](tests/): `python3 -m unittest discover -s release-data/tests` (needs `jsonschema`).
