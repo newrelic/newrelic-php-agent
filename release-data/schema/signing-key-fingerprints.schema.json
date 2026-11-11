@@ -63,8 +63,8 @@
             "enum": ["apt", "legacy", "rpm", "tarball"]
           },
           "status": {
-            "description": "active (the default when the field is absent) or retired. A retired key is no longer used for new releases; it stays listed so that older releases can still be checked against a published fingerprint.",
-            "enum": ["active", "retired"]
+            "description": "active (the default when the field is absent), retired or revoked. A retired key is no longer used for new releases; it stays listed so that older releases can still be checked against a published fingerprint. A revoked key was withdrawn because it may have been compromised: nothing it signed is evidence, and it stays listed so that this is on record.",
+            "enum": ["active", "retired", "revoked"]
           }
         }
       }

@@ -129,9 +129,9 @@ def check_fingerprints(data, where):
     seen = set()
     for key in data["keys"]:
         fingerprint = key["fingerprint"]
-        # a key that is replaced is marked retired, not removed; the legacy key is retired
-        if key["purpose"] == "legacy" and key.get("status", "active") != "retired":
-            problems.append("%s: the legacy key %r must have the status retired" % (where, fingerprint))
+        # a key that is replaced is marked retired (or revoked), not removed; the legacy key is not active
+        if key["purpose"] == "legacy" and key.get("status", "active") == "active":
+            problems.append("%s: the legacy key %r must have the status retired or revoked" % (where, fingerprint))
         if fingerprint in seen:
             problems.append("%s: the fingerprint %r is listed twice" % (where, fingerprint))
         seen.add(fingerprint)

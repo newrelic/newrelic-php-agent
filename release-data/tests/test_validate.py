@@ -256,10 +256,31 @@ class ValidateTest(unittest.TestCase):
                     legacy["status"] = status
                 self.keys["keys"] = self.keys["keys"][:3] + [legacy]
                 self.write()
-                self.assertProblem("the legacy key", "must have the status retired")
+                self.assertProblem("the legacy key", "must have the status retired or revoked")
 
-    def test_status_must_be_active_or_retired(self):
-        self.keys["keys"][0]["status"] = "old"
+    def test_legacy_key_may_be_revoked(self):
+        legacy = key("legacy", LEGACY, created="2010-06-29")
+        legacy["public_key_url"] = "https://download.newrelic.com/548C16BF.gpg"
+        legacy["status"] = "revoked"
+        self.keys["keys"].append(legacy)
+        self.write()
+        self.assertEqual(self.problems(), [])
+
+    def test_rotation_after_a_compromise_the_old_key_revoked(self):
+        self.keys["keys"][2]["status"] = "revoked"
+        new = key("tarball", "7777777777777777777777777777777777778888", created="2027-01-01")
+        new["status"] = "active"
+        self.keys["keys"].append(new)
+        self.write()
+        self.assertEqual(self.problems(), [])
+
+    def test_a_revoked_key_is_not_the_active_key(self):
+        self.keys["keys"][1]["status"] = "revoked"
+        self.write()
+        self.assertProblem("exactly one active key with the purpose rpm, found 0")
+
+    def test_status_must_be_active_retired_or_revoked(self):
+        self.keys["keys"][0]["status"] = "compromised"
         self.write()
         self.assertProblem("keys/0/status")
 

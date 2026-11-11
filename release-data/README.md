@@ -81,14 +81,17 @@ docker pull newrelic/php-daemon@sha256:<the digest>
 ### `signing-key-fingerprints.json`
 
 `{"first_signed_version": "12.13.0", "keys": [{"purpose": "apt" | "rpm" | "tarball" | "legacy", "name", "fingerprint", "created", "expires",
-"public_key_url", "status": "active" | "retired"}, ...]}`. `fingerprint` is 40 upper-case hex digits without spaces. `expires` is a date or `never`.
+"public_key_url", "status": "active" | "retired" | "revoked"}, ...]}`. `fingerprint` is 40 upper-case hex digits without spaces. `expires` is a date or `never`.
 `first_signed_version` is the first version whose tarballs were signed when they were built: the numbers at the start of a snapshot
 version (`12.13.0.320SNAPSHOT`) are compared with it. Older versions that are in `tarball-hashes.json` were signed later.
 
-`status` is `active` or `retired`; a key without it is active. Exactly one key with each of the purposes `apt`, `rpm` and
+`status` is `active`, `retired` or `revoked`; a key without it is active. Exactly one key with each of the purposes `apt`, `rpm` and
 `tarball` is active (the schema and `validate.py` enforce it). A rotation adds the new key as active and changes the status of
 the old key to `retired`; the old entry is not removed, because it is the published fingerprint for everything that key signed
-and that can still be downloaded. The tools that read the key of a purpose take the active one.
+and that can still be downloaded. A `retired` key was replaced in the normal way, and what it signed while it was active is
+still good. A `revoked` key was withdrawn because it may have been compromised: nothing it signed is evidence, and a verifier
+must reject it. Its entry stays so that this is on record, and the files it signed are signed again with the active key. The
+tools that read the key of a purpose take the active one.
 
 The entry with the purpose `legacy` is a retired key. New releases are signed with the active keys above. It is listed so that
 releases made before them can still be checked against a published fingerprint. Its public key file keeps the name of its short
