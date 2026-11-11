@@ -2803,6 +2803,12 @@ char* nr_txn_create_w3c_traceparent_header(nrtxn_t* txn,
     header = nr_distributed_trace_create_w3c_traceparent_header(
         trace_id, span_id,
         nr_distributed_trace_is_sampled(txn->distributed_trace));
+
+    /*
+     * The segment's id is going into the header, so mark the segment to make
+     * it more likely to be kept when span events are limited.
+     */
+    nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_DT);
   }
 
 end:
@@ -2827,6 +2833,14 @@ char* nr_txn_create_w3c_tracestate_header(const nrtxn_t* txn,
 
   if (txn->options.span_events_enabled) {
     span_id = nr_segment_ensure_id(segment, txn);
+
+    /*
+     * The segment's id is going into the header, so mark the segment to make
+     * it more likely to be kept when span events are limited.
+     */
+    if (span_id) {
+      nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_DT);
+    }
   }
 
   if (txn->options.analytics_events_enabled) {

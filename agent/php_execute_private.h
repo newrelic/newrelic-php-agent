@@ -40,11 +40,11 @@
  *      transaction at it*: NRPRG(txn) can legitimately be NULL.
  *
  *   b) nr_php_user_instrumentation_from_opcache(), from nr_php_txn_begin()
- *      (agent/php_txn.c). When opcache.preload is in use, this walks the
- *      opcache script list against the same tables as transactions start, so a
- *      given magic file may be offered again on later transaction starts, over
- *      the life of the process. Here NRPRG(txn) is always non-NULL and freshly
- *      created.
+ *      (agent/php_txn.c). When opcache.preload is in use, this walks opcache's
+ *      list of preloaded scripts against the same tables as transactions
+ *      start, so a given magic file may be offered again on later transaction
+ *      starts, over the life of the process. Here NRPRG(txn) is always
+ *      non-NULL and freshly created.
  *
  * So a callback may run:
  *
@@ -128,10 +128,10 @@
  * Do not assume any class, interface, function or constant exists. Only the
  * magic file itself is known to have executed, and nothing else about the
  * library's load order is guaranteed. At call site (b) the filename comes from
- * the opcache script list, so nothing has necessarily executed in this request
- * at all - code that reaches into userland (zend_eval_string(), nr_php_call(),
- * class or global lookups, as *_version() callbacks do) must tolerate the
- * target being absent and degrade rather than fail.
+ * the list of preloaded scripts, so nothing has necessarily executed in this
+ * request at all - code that reaches into userland (zend_eval_string(),
+ * nr_php_call(), class or global lookups, as *_version() callbacks do) must
+ * tolerate the target being absent and degrade rather than fail.
  *
  * Tolerate being called more than once. Wraprec registration is already
  * idempotent (nr_php_user_instrument_wraprec_hashmap_add() reuses an existing
