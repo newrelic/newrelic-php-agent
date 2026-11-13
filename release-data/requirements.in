@@ -1,3 +1,3 @@
 # The only dependency of validate.py. Regenerate release-data/requirements.txt with hashes after a change:
 #   pip-compile --generate-hashes --strip-extras --output-file=release-data/requirements.txt release-data/requirements.in
-jsonschema==4.23.0
+jsonschema==4.26.0
