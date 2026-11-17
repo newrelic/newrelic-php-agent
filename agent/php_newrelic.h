@@ -14,6 +14,7 @@
 #include "nr_segment.h"
 #include "nr_txn.h"
 #include "php_extension.h"
+#include "php_objtable.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
 #include "util_vector.h"
@@ -474,6 +475,73 @@ typedef struct _shared_globals_t {
   nrphpcufafn_t
       cufa_callback;  // The current call_user_func_array callback, if any
 
+  /*
+   * The datastore instance of each pgsql connection object (PHP 8.1+), kept
+   * for as long as the object lives. It is shared by all Fibers: the pgsql
+   * default link is, too.
+   */
+  nr_php_objtable_t* pgsql_instances;
+
+  /*
+   * The SQL of each prepared statement of each pgsql connection object
+   * (PHP 8.1+), by statement name, kept for as long as the connection object
+   * lives. A statement can be prepared in one transaction and executed in a
+   * later one. Unlike pgsql_instances, a connect keeps an existing entry; it
+   * marks the connection as the last one, which a call with no connection
+   * uses.
+   */
+  nr_php_objtable_t* pgsql_statements;
+
+  /*
+   * The statements (PHP 8.1+) of a call with no connection when no connection
+   * was marked as the last one: the connect happened while the agent was not
+   * recording. It is dropped when a connect marks a connection as the last
+   * one and when the default link is closed. The type is nr_php_pgsql_
+   * statements_t, which php_pgsql.c defines.
+   */
+  void* pgsql_default_statements;
+
+  /*
+   * The datastore instance of each Predis node connection object (PHP 8.0+),
+   * kept for as long as the object lives.
+   */
+  nr_php_objtable_t* predis_instances;
+
+  /*
+   * The scalar constructor options of each PDO connection, kept for as long as
+   * the PDO object lives (before PHP 8.0 until the next connection that has
+   * the same handle). The explain connection needs them in a later
+   * transaction.
+   */
+  nr_php_objtable_t* pdo_options;
+
+  /*
+   * The SQL of each oci8 statement, by resource id. A statement resource can
+   * be used in a later transaction than the one that parsed it. Entries of
+   * statements that were freed are dropped when a new statement is parsed.
+   */
+  nr_hashmap_t* oci_statements;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * The SQL of each mysqli statement object (PHP 8.0+), kept for as long as
+   * the object lives. A statement prepared in one transaction can be executed
+   * in a later one, for example when it is prepared at FrankenPHP worker
+   * start.
+   */
+  nr_php_objtable_t* mysqli_statement_sql;
+
+  /*
+   * PHP 8.0 and later: the metadata of every mysqli link, for the life of the
+   * request. The explain connection needs it in a later transaction. An entry
+   * is removed when its link is freed: mysqli_link_handles holds one value per
+   * link whose destructor removes the entry. Before 8.0 the metadata is kept
+   * per transaction (see txn_globals).
+   */
+  nr_mysqli_metadata_t* mysqli_links;
+  nr_php_objtable_t* mysqli_link_handles;
+#endif
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
@@ -522,7 +590,15 @@ typedef struct _ctx_globals_t {
   bool check_cufa;  // Whether we need to check cufa because we are
                     // instrumenting hooks, or whether we can skip cufa
 
-  nr_hashmap_t* predis_commands;
+  /*
+   * The start time of each Predis command that has been written, kept for as
+   * long as the command object lives (PHP 8.0 and later) so that a later
+   * command object that gets the freed object's handle cannot find it. Before
+   * PHP 8.0 the entries are keyed by handle. The time is an absolute time.
+   * Copied by pointer into the context of each Fiber, as the map it replaces
+   * was: a command written in one Fiber can be read in another.
+   */
+  nr_php_objtable_t* predis_command_starts;
 
   nr_segment_t* context_root;  // Pointer to the root segment of a fiber
 
@@ -569,7 +645,6 @@ typedef struct _txn_globals_t {
                                 // are currently in progress are stored here
   nr_mysqli_metadata_t* mysqli_links;  // MySQLi link metadata storage
   nr_hashmap_t* mysqli_queries;        // MySQLi query metadata storage
-  nr_hashmap_t* pdo_link_options;      // PDO link option storage
   int curl_ignore_setopt;  // Non-zero to disable curl_setopt instrumentation
   nr_hashmap_t* curl_metadata;        // curl metadata storage
   nr_hashmap_t* curl_multi_metadata;  // curl multi metadata storage

@@ -33,7 +33,7 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found traci
 */
 
 /*EXPECT_METRICS_DONT_EXIST
-External/127.0.0.1/all, 3
+External/127.0.0.1/all
 */
 
 /*EXPECT_SPAN_EVENTS

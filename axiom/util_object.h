@@ -72,6 +72,17 @@ extern nrobj_t* nro_new_ulong(uint64_t x);
 extern nrobj_t* nro_new_double(double x);
 extern nrobj_t* nro_new_string(const char* x);
 extern nrobj_t* nro_new_jstring(const char* x);
+
+/*
+ * Purpose : Create a string that holds a secret. Its memory is zeroed before
+ *           it is freed, whether the object is deleted, replaced in a hash or
+ *           array, or was a copy of another object (nro_copy keeps the flag).
+ *
+ * Notes   : This covers the copies this library makes. Copies held elsewhere
+ *           (the PHP engine, mysqlnd) are outside its control. The string is
+ *           a C string: it ends at the first NUL byte.
+ */
+extern nrobj_t* nro_new_secret_string(const char* x);
 extern nrobj_t* nro_new_hash(void);
 extern nrobj_t* nro_new_array(void);
 
@@ -113,6 +124,19 @@ extern nr_status_t nro_set_hash_string(nrobj_t* obj,
 extern nr_status_t nro_set_hash_jstring(nrobj_t* obj,
                                         const char* key,
                                         const char* value);
+
+/*
+ * Purpose : Remove a key and its value from a hash, in place. The value is
+ *           deleted the way nro_delete() does, so a secret string is zeroed.
+ *
+ * Returns : NR_SUCCESS, or NR_FAILURE if obj is not a hash or has no such key.
+ */
+extern nr_status_t nro_delete_hash_key(nrobj_t* obj, const char* key);
+
+/* As nro_set_hash_string(), for a secret (see nro_new_secret_string). */
+extern nr_status_t nro_set_hash_secret_string(nrobj_t* obj,
+                                              const char* key,
+                                              const char* value);
 
 extern nr_status_t nro_set_array_none(nrobj_t* obj, int idx);
 extern nr_status_t nro_set_array_boolean(nrobj_t* obj, int idx, int value);

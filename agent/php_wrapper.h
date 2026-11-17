@@ -287,13 +287,23 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   }                                                  \
   }
 
+/*
+ * Whether the transaction that was active when the wrapper started ended, or
+ * ended and another one started. A segment started by the wrapper is freed with
+ * its transaction, so a wrapper that started a segment of its own, and not the
+ * auto_segment, must not use it after NR_PHP_WRAPPER_CALL when this is true.
+ * It is only meaningful after NR_PHP_WRAPPER_CALL, and it needs the locals
+ * (txn and txn_start_time) that NR_PHP_WRAPPER_START declares.
+ */
+#define NR_PHP_WRAPPER_TXN_CHANGED \
+  (NRPRG(txn) != txn || nr_txn_start_time(NRPRG(txn)) != txn_start_time)
+
 #define NR_PHP_WRAPPER_CALL                                                 \
   if (!was_executed) {                                                      \
     zcaught = nr_zend_call_orig_execute(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);    \
     was_executed = 1;                                                       \
                                                                             \
-    if (nrunlikely(NRPRG(txn) != txn                                        \
-                   || nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {   \
+    if (nrunlikely(NR_PHP_WRAPPER_TXN_CHANGED)) {                           \
       nrl_verbosedebug(NRL_TXN,                                             \
                        "%s: transaction restarted during wrapped function " \
                        "call; clearing the segment pointer",                \

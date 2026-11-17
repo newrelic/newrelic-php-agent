@@ -14,7 +14,9 @@
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "php_mysqli.h"
+#include "php_oci.h"
 #include "php_pdo.h"
+#include "php_pgsql.h"
 #include "util_logging.h"
 #include "lib_guzzle4.h"
 
@@ -65,7 +67,6 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
-  nr_php_pdo_rshutdown();
   nr_php_mysqli_rshutdown();
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
@@ -136,6 +137,24 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG_CTX(mysql_last_conn));
   nr_free(NRPRG_CTX(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG_CTX(datastore_connections));
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * Only here: the engine has freed its objects and dropped its weak
+   * references by now, and no weak reference call is made.
+   */
+  nr_php_objtable_destroy(&NRPRG_SHARED(pgsql_instances));
+  nr_php_objtable_destroy(&NRPRG_SHARED(pgsql_statements));
+  nr_php_pgsql_default_statements_destroy();
+#endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_objtable_destroy(&NRPRG_SHARED(predis_instances));
+#endif
+  nr_php_objtable_destroy(&NRPRG_SHARED(pdo_options));
+  nr_php_oci_statements_destroy();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_objtable_destroy(&NRPRG_SHARED(mysqli_statement_sql));
+#endif
+  nr_php_mysqli_links_destroy();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
@@ -154,7 +173,7 @@ int nr_php_post_deactivate(void) {
 #else
   nr_free(NRPRG_CTX(predis_ctx));
 #endif /* OAPI */
-  nr_hashmap_destroy(&NRPRG_CTX(predis_commands));
+  nr_php_objtable_destroy(&NRPRG_CTX(predis_command_starts));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_reset_user_instrumentation();

@@ -425,8 +425,9 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
  *              checked in any way, and is assumed to be a valid Exception
  *              object.
  *
- * Returns : A zval for the stack trace, which the caller will need to
- *           delete reference to, or NULL if no trace is available.
+ * Returns : A zval for the stack trace, or NULL if no trace is available. If
+ *           the zval is non-NULL, the caller must release it with
+ *           Z_TRY_DELREF_P.
  */
 static zval* nr_php_error_exception_stack_trace(zval* exception TSRMLS_DC) {
   zval* trace;
@@ -435,10 +436,15 @@ static zval* nr_php_error_exception_stack_trace(zval* exception TSRMLS_DC) {
   if (NULL == trace || nr_php_is_zval_null(trace)) {
     return NULL;
   }
-  Z_ADDREF_P(trace);
+  /*
+   * The trace can be an immutable array, for example when a framework sets
+   * the property to a literal. Immutable arrays are not refcounted and may
+   * live in read-only memory, so only touch the refcount when there is one.
+   */
+  Z_TRY_ADDREF_P(trace);
 
   if (!nr_php_is_zval_valid_array(trace)) {
-    Z_DELREF_P(trace);
+    Z_TRY_DELREF_P(trace);
     return NULL;
   }
   return trace;
@@ -807,7 +813,9 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
   nr_free(klass);
   nr_free(message);
   nr_free(stack_json);
-  Z_DELREF_P(stack_trace);
+  if (stack_trace) {
+    Z_TRY_DELREF_P(stack_trace);
+  }
 
   return NR_SUCCESS;
 }

@@ -1,0 +1,79 @@
+<?php
+/*
+ * Copyright 2026 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+A transaction that a command ends and starts again while
+WebdisConnection::executeCommand() runs SHALL NOT break the agent, and the
+command SHALL NOT be recorded in either transaction.
+*/
+
+/*SKIPIF
+<?php
+require(realpath(dirname(__FILE__)) . '/predis.inc');
+*/
+
+/*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_WARNING
+*/
+
+/*EXPECT
+transaction restarted
+done
+*/
+
+/*EXPECT_METRICS_DONT_EXIST
+Datastore/operation/Redis/get
+*/
+
+// The use of freed memory that this test guards against is only detected
+// under valgrind. On PHP 7 the agent wraps WebdisConnection::executeCommand();
+// from PHP 8 it instruments the method with before and after hooks, so there
+// the test checks that the agent survives the transaction ending in the call.
+require_once(realpath(dirname(__FILE__)) . '/predis.inc');
+
+class EndsTransactionCommand extends Predis\Command\Command {
+  private $ended = false;
+
+  public function getId() {
+    if ($this->ended) {
+      return 'GET';
+    }
+    /*
+     * The agent reads the command's name too, before the call starts on PHP 7.
+     * The transaction ends only when executeCommand() asks, through
+     * getCommandId(), which is after the agent has started its segment.
+     */
+    foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+      if ('getCommandId' === $frame['function']) {
+        $this->ended = true;
+        newrelic_end_transaction();
+        newrelic_start_transaction(ini_get("newrelic.appname"));
+        echo "transaction restarted\n";
+        break;
+      }
+    }
+    return 'GET';
+  }
+}
+
+/*
+ * The connection is created without its constructor, which needs the phpiredis
+ * extension, and is never opened: executeCommand() only needs the command and a
+ * curl handle. The function its destructor calls is defined here.
+ */
+eval('namespace Predis\\Connection; function phpiredis_reader_destroy($reader) {}');
+
+$class = new ReflectionClass('Predis\Connection\WebdisConnection');
+$connection = $class->newInstanceWithoutConstructor();
+$resource = $class->getProperty('resource');
+$resource->setAccessible(true);
+$resource->setValue($connection, curl_init());
+
+try {
+  $connection->executeCommand(new EndsTransactionCommand(array("nr_key")));
+} catch (Throwable $e) {
+}
+echo "done\n";

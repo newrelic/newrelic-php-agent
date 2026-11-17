@@ -19,6 +19,7 @@
 #include "php_memcached.h"
 #include "php_mysql.h"
 #include "php_mysqli.h"
+#include "php_oci.h"
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "php_redis.h"
@@ -158,6 +159,39 @@ int nr_zend_call_old_handler(nrphpfn_t oldhandler,
     zcaught = 1;
   }
   zend_end_try();
+  return zcaught;
+}
+
+int nr_zend_call_old_handler_segment(nr_segment_t** segment,
+                                     nrphpfn_t oldhandler,
+                                     INTERNAL_FUNCTION_PARAMETERS) {
+  nrtime_t txn_start_time = 0;
+  bool zcaught;
+
+  if (segment && *segment) {
+    txn_start_time = nr_txn_start_time((*segment)->txn);
+  }
+
+  zcaught
+      = nr_zend_call_old_handler(oldhandler, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The function can run PHP code, such as an error handler, a callback or a
+   * __toString() method, and that code can end the transaction. The segment
+   * is freed with the transaction, and a transaction started afterwards is
+   * not the one the segment belongs to. The start time identifies a
+   * transaction, as it does for user function wrappers. The address of the
+   * transaction is not compared: a new transaction can get the address of the
+   * one that was freed, so the address alone cannot tell them apart.
+   */
+  if (segment && *segment
+      && nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_TXN,
+                     "transaction ended or restarted during an internal "
+                     "function call; clearing the segment pointer");
+    *segment = NULL;
+  }
+
   return zcaught;
 }
 
@@ -533,8 +567,8 @@ NR_INNER_WRAPPER(mysql_query) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   instance = nr_php_mysql_retrieve_datastore_instance(mysql TSRMLS_CC);
 
@@ -584,8 +618,8 @@ NR_INNER_WRAPPER(mysql_db_query) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   instance = nr_php_mysql_retrieve_datastore_instance(mysql TSRMLS_CC);
   nr_datastore_instance_set_database_name(instance, dbstr);
@@ -614,7 +648,17 @@ NR_INNER_WRAPPER(mysqli_close) {
       != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                   ZEND_NUM_ARGS() TSRMLS_CC, "|o",
                                   &mysqli_obj)) {
+    /*
+     * mysqli::close() takes no argument: the connection being closed is the
+     * object the method is called on.
+     */
+    if (NULL == mysqli_obj) {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
+    if (nr_php_mysqli_zval_is_link(mysqli_obj)) {
+      nr_php_mysqli_metadata_remove(mysqli_obj);
+    }
   }
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -649,8 +693,16 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zend_long port = 0;
   zval* mysqli_obj = NULL;
   int zcaught = 0;
+  zend_object* previous_exception = EG(exception);
+  int keep_saved = 0;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
@@ -679,8 +731,12 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
   if (nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
     mysqli_obj = return_value;
-  } else {
+  } else if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli_connect")) {
     /*
+     * Not for the function mysqli_connect(): when it fails it returns false,
+     * and the object in scope is then whatever object called it, such as a
+     * mysqli subclass that is connected to another server.
+     *
      * We have to get the object instance the constructor has been called on,
      * but because of the way MySQLi object instantiation is handled (with a
      * custom create_object handler), the zval returned by
@@ -695,23 +751,49 @@ NR_INNER_WRAPPER(mysqli_construct) {
     }
   }
 
-  nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
-                                        database TSRMLS_CC);
+  /*
+   * From PHP 8.5 a constructor called on a link that is still open throws
+   * and leaves the connection as it was. What the call was given is then not
+   * what the link uses, so the saved data and the datastore instance of a link
+   * the agent already knows are kept.
+   */
+  keep_saved = (NULL != EG(exception)) && (EG(exception) != previous_exception)
+               && mysqli_obj && nr_php_mysqli_metadata_known(mysqli_obj);
 
-  if (mysqli_obj && (0 == NRTXNGLOBAL(generating_explain_plan))) {
+  if (!keep_saved) {
+    nr_php_mysqli_save_datastore_instance(mysqli_obj, host, port, socket,
+                                          database TSRMLS_CC);
+  }
+
+  if (!keep_saved && mysqli_obj
+      && (0 == NRTXNGLOBAL(generating_explain_plan))) {
     char* host_term = host ? nr_strndup(host, host_len) : NULL;
     char* username_term = username ? nr_strndup(username, username_len) : NULL;
     char* password_term = password ? nr_strndup(password, password_len) : NULL;
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, 0);
+    /*
+     * PHP reuses the handle of a freed object, so a new link must not inherit
+     * what was saved for an earlier one (its password, TLS settings and
+     * options). A link the agent has already seen keeps them: mysqli::connect()
+     * runs on an existing link, and a subclass can set options before it
+     * connects through the parent constructor. A new link that took a freed
+     * link's handle is not known. Before PHP 8.0 no link is known, so a
+     * constructor called again on the same object drops what was saved.
+     */
+    if ((0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect"))
+        && !nr_php_mysqli_metadata_known(mysqli_obj)) {
+      nr_php_mysqli_metadata_remove(mysqli_obj);
+    }
+
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, 0);
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -731,18 +813,20 @@ NR_INNER_WRAPPER(mysqli_construct) {
 NR_INNER_WRAPPER(mysqli_options) {
   zval* mysqli_obj = NULL;
   zend_long option;
-  char* value = NULL;
-  nr_string_len_t value_len = 0;
+  zval* value_zv = NULL;
   int zcaught = 0;
 
+  /*
+   * The value is taken as a zval rather than a string: under strict_types=1 a
+   * string parameter rejects the integers and booleans that most options take,
+   * and the option would then never reach the explain connection.
+   */
   if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "ols", &mysqli_obj,
-                                  &option, &value, &value_len)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "olz", &mysqli_obj, &option, &value_zv)) {
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
-                                    &value, &value_len)) {
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "lz", &option, &value_zv)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -753,16 +837,87 @@ NR_INNER_WRAPPER(mysqli_options) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-  if (value && (0 == NRTXNGLOBAL(generating_explain_plan))
+  if (value_zv && (0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
       && nr_php_is_zval_true(return_value)) {
-    char* value_term = nr_strndup(value, value_len);
+    char* value_term = nr_php_mysqli_option_to_string(value_zv);
 
-    nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
-                                  Z_OBJ_HANDLE_P(mysqli_obj), option,
-                                  value_term);
+    if (value_term) {
+      nr_php_mysqli_metadata_set_option(mysqli_obj, option, value_term);
+    }
 
     nr_free(value_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_ssl_set ( object $link, ?string $key, ?string $certificate,
+ *                         ?string $ca_certificate, ?string $ca_path,
+ *                         ?string $cipher_algos )
+ *   bool mysqli::ssl_set ( ?string $key, ?string $certificate,
+ *                          ?string $ca_certificate, ?string $ca_path,
+ *                          ?string $cipher_algos )
+ *
+ * The settings are kept with the link metadata so they can be replayed on the
+ * connection that is opened to get an explain plan.
+ */
+NR_INNER_WRAPPER(mysqli_ssl_set) {
+  zval* mysqli_obj = NULL;
+  char* key = NULL;
+  nr_string_len_t key_len = 0;
+  char* cert = NULL;
+  nr_string_len_t cert_len = 0;
+  char* ca = NULL;
+  nr_string_len_t ca_len = 0;
+  char* capath = NULL;
+  nr_string_len_t capath_len = 0;
+  char* cipher = NULL;
+  nr_string_len_t cipher_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os!s!s!s!s!", &mysqli_obj, &key, &key_len,
+                                  &cert, &cert_len, &ca, &ca_len, &capath,
+                                  &capath_len, &cipher, &cipher_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s!s!s!s!s!", &key, &key_len, &cert,
+                                    &cert_len, &ca, &ca_len, &capath,
+                                    &capath_len, &cipher, &cipher_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
+      && nr_php_is_zval_true(return_value)) {
+    char* key_term = key ? nr_strndup(key, key_len) : NULL;
+    char* cert_term = cert ? nr_strndup(cert, cert_len) : NULL;
+    char* ca_term = ca ? nr_strndup(ca, ca_len) : NULL;
+    char* capath_term = capath ? nr_strndup(capath, capath_len) : NULL;
+    char* cipher_term = cipher ? nr_strndup(cipher, cipher_len) : NULL;
+
+    nr_php_mysqli_metadata_set_ssl(mysqli_obj, key_term, cert_term, ca_term,
+                                   capath_term, cipher_term);
+
+    nr_free(key_term);
+    nr_free(cert_term);
+    nr_free(ca_term);
+    nr_free(capath_term);
+    nr_free(cipher_term);
   }
 
   if (zcaught) {
@@ -791,8 +946,8 @@ static void nr_php_instrument_datastore_operation_call(
   };
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_segment_datastore_end(&segment, &params);
 
@@ -880,14 +1035,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
-  /* PHP 8.1 and later will report a deprecation warning if null is sent where
-   * a non-null argument value is expected.  For these PHP versions we use the
-   * same argument type specification as the mysqli::real_connect() extension
-   * uses to avoid creating this deprecation warning.
-   * For older PHPs continue to use the same specification string as previously
-   * to minimize any chances of introducing new problems.
+  /*
+   * From PHP 7.4 a null host, user or password is replaced by the
+   * mysqli.default_* settings, so the parse must leave a null as it is: "s"
+   * would turn it into an empty string in the call frame, and mysqli would
+   * log in as the empty user. From PHP 8.1 a null sent where a non-null
+   * argument value is expected also reports a deprecation warning. For these
+   * PHP versions we use the same argument type specification as the
+   * mysqli::real_connect() extension uses. PHP 7.2 and 7.3 treat a null user
+   * as an empty string, so they keep the previous specification.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   bool port_is_null = 1;
   const char* proc_type_spec = "o|s!s!s!s!l!s!l";
   const char* oo_type_spec = "|s!s!s!s!l!s!l";
@@ -946,16 +1104,77 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, flags);
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, flags);
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_change_user ( object $link, string $user, string $password,
+ *                             ?string $database )
+ *   bool mysqli::change_user ( string $user, string $password,
+ *                              ?string $database )
+ *
+ * The explain connection has to log in as the user the application is
+ * currently using, so the stored credentials are replaced when it succeeds.
+ */
+NR_INNER_WRAPPER(mysqli_change_user) {
+  zval* mysqli_obj = NULL;
+  char* user = NULL;
+  nr_string_len_t user_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  char* database = NULL;
+  nr_string_len_t database_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "oss|s!", &mysqli_obj, &user, &user_len,
+                                  &password, &password_len, &database,
+                                  &database_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "ss|s!", &user, &user_len, &password,
+                                    &password_len, &database, &database_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (user && (0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj)
+      && nr_php_is_zval_true(return_value)) {
+    char* user_term = nr_strndup(user, user_len);
+    char* password_term = nr_strndup(password, password_len);
+    char* database_term = database ? nr_strndup(database, database_len) : NULL;
+
+    nr_php_mysqli_metadata_set_user(mysqli_obj, user_term, password_term,
+                                    database_term);
+
+    nr_free(user_term);
+    nr_secure_zero(password_term, nr_strlen(password_term));
+    nr_free(password_term);
+    nr_free(database_term);
   }
 
   if (zcaught) {
@@ -1002,8 +1221,7 @@ NR_INNER_WRAPPER(mysqli_select_db) {
       && nr_php_is_zval_true(return_value)) {
     char* database_term = nr_strndup(database, database_len);
 
-    nr_mysqli_metadata_set_database(NRTXNGLOBAL(mysqli_links),
-                                    Z_OBJ_HANDLE_P(mysqli_obj), database_term);
+    nr_php_mysqli_metadata_set_database(mysqli_obj, database_term);
 
     nr_free(database_term);
   }
@@ -1052,8 +1270,8 @@ NR_INNER_WRAPPER(mysqli_general_query) {
   }
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (nrlikely(NULL != segment)) {
     nr_datastore_instance_t* instance = NULL;
@@ -1083,6 +1301,88 @@ NR_INNER_WRAPPER(mysqli_general_query) {
     /* NOTREACHED */
   }
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+/*
+ * Handle
+ *   mysqli_result|bool mysqli_execute_query ( mysqli $mysql, string $query,
+ *                                             ?array $params = null )
+ *   mysqli_result|bool mysqli::execute_query ( string $query,
+ *                                              ?array $params = null )
+ *
+ * The call prepares, binds, executes and fetches in one step, so there is no
+ * statement object to keep: the query and its parameters are the arguments.
+ *
+ * The second half of this wrapper follows the one of mysqli_general_query()
+ * (the segment, the instance, the explain plan and the end of the segment). The
+ * two differ in how they read their arguments and in the explain call, which
+ * here takes the parameters. A function shared by both would need those two
+ * differences as arguments, and would be harder to follow than the two copies.
+ * A change to the part that is the same should be made in both.
+ */
+NR_INNER_WRAPPER(mysqli_execute_query) {
+  char* sqlstr = NULL;
+  nr_string_len_t sqlstrlen = 0;
+  zval* params = NULL;
+  zval* mysqli_obj = NULL;
+  bool zcaught = false;
+  nr_segment_t* segment = NULL;
+
+  /*
+   * A call that PHP rejects, such as one with parameters that are not an
+   * array, fails both parses here and is recorded as "(unknown sql)", the same
+   * as a call to mysqli_query() with bad arguments is. A call whose parameters
+   * parse but which PHP then rejects, such as an array with a key, is recorded
+   * with its SQL although nothing reached the server.
+   */
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                  "os|a!", &mysqli_obj, &sqlstr, &sqlstrlen,
+                                  &params)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                    "s|a!", &sqlstr, &sqlstrlen, &params)) {
+      sqlstr = "(unknown sql)";
+      sqlstrlen = nr_strlen(sqlstr);
+      params = NULL;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (nrlikely(NULL != segment)) {
+    nr_datastore_instance_t* instance = NULL;
+    nr_explain_plan_t* plan = NULL;
+
+    /*
+     * Set the stop time now so that we don't include the explain plan time.
+     */
+    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj);
+
+    if ((0 == NRTXNGLOBAL(generating_explain_plan))
+        && nr_php_mysqli_zval_is_link(mysqli_obj)) {
+      plan = nr_php_explain_mysqli_query_params(
+          NRPRG(txn), mysqli_obj, sqlstr, sqlstrlen, params,
+          segment->start_time, segment->stop_time);
+    }
+
+    nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
+                               NR_DATASTORE_MYSQL, instance);
+
+    nr_explain_plan_destroy(&plan);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+#endif /* PHP 8.2+ */
 
 #define NR_PHP_PREPARED_STATEMENT_UNKNOWN "(prepared statement)"
 
@@ -1154,6 +1454,82 @@ static void nr_php_prepared_statement_save(const zval* obj,
   }
 }
 
+/*
+ * The SQL of a PDO statement is its read-only property queryString, which
+ * lasts as long as the statement. Nothing is saved: a saved copy keyed by the
+ * statement would be lost when the transaction restarts and could be found by
+ * a later statement that takes the same handle.
+ */
+static const char* nr_php_pdo_statement_sql(zval* stmt_obj, int* sqlstrlen) {
+  zval* query = nr_php_get_zval_object_property(stmt_obj, "queryString");
+
+  if (nr_php_is_zval_non_empty_string(query)) {
+    *sqlstrlen = Z_STRLEN_P(query);
+    return Z_STRVAL_P(query);
+  }
+
+  *sqlstrlen = nr_strlen(NR_PHP_PREPARED_STATEMENT_UNKNOWN);
+  return NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+}
+
+/*
+ * Purpose : Save the SQL of a mysqli statement. From PHP 8.0 the SQL is kept
+ *           for the life of the statement object, so a statement prepared in
+ *           one transaction can be executed in a later one. Before PHP 8.0 it
+ *           is kept for the transaction, as the prepared statements of the
+ *           other extensions are.
+ *
+ * Params  : 1. The statement object.
+ *           2. The SQL, or NULL to forget the SQL saved for the statement (from
+ *              PHP 8.0).
+ *           3. The length of the SQL.
+ */
+static void nr_php_mysqli_statement_save(const zval* stmt,
+                                         const char* sql,
+                                         nr_string_len_t sql_len) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_sql_set(stmt, sql, sql_len);
+#else
+  nr_php_prepared_statement_save(stmt, "mysqli", sql, sql_len);
+#endif
+}
+
+/*
+ * Purpose : Find the SQL saved for a mysqli statement.
+ *
+ * Params  : 1. The statement object.
+ *
+ * Returns : The SQL, which stays owned by where it is saved, or
+ *           NR_PHP_PREPARED_STATEMENT_UNKNOWN if none was saved.
+ */
+static const char* nr_php_mysqli_statement_find(const zval* stmt) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  const char* sql = nr_php_mysqli_statement_sql_get(stmt);
+
+  return sql ? sql : NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+#else
+  return nr_php_prepared_statement_find(stmt, "mysqli");
+#endif
+}
+
+/*
+ * Purpose : Save the link a mysqli statement was prepared on, so that its
+ *           explain plan can be made in a later transaction. From PHP 8.0
+ *           only.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. The link it was prepared on.
+ */
+static void nr_php_mysqli_statement_link_save(const zval* stmt,
+                                              const zval* link) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_mysqli_statement_link_set(stmt, link);
+#else
+  (void)stmt;
+  (void)link;
+#endif
+}
+
 NR_INNER_WRAPPER(pdostatement_execute) {
   zval* stmt_obj = NULL;
   zval* parameters = NULL;
@@ -1172,13 +1548,12 @@ NR_INNER_WRAPPER(pdostatement_execute) {
 
   stmt_obj = NR_PHP_INTERNAL_FN_THIS();
 
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "pdo" TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
+  sqlstr = nr_php_pdo_statement_sql(stmt_obj, &sqlstrlen);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_pdo_end_segment_sql(segment, sqlstr, sqlstrlen, stmt_obj, parameters,
                              true TSRMLS_CC);
@@ -1275,6 +1650,25 @@ NR_INNER_WRAPPER(mysqli_stmt_bind_param) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * A statement that was prepared in an earlier transaction has no entry in
+   * this one. The parameters bound now are used to explain it in this
+   * transaction, so the entry is made when the statement has a link and SQL
+   * saved.
+   */
+  if (!nr_php_mysqli_query_exists(Z_OBJ_HANDLE_P(mysqli_stmt_obj))) {
+    nr_mysqli_metadata_link_handle_t link_handle;
+
+    if ((NULL != nr_php_mysqli_statement_sql_get(mysqli_stmt_obj))
+        && (NR_SUCCESS
+            == nr_php_mysqli_statement_link_get(mysqli_stmt_obj,
+                                                &link_handle))) {
+      nr_php_mysqli_query_ensure(Z_OBJ_HANDLE_P(mysqli_stmt_obj));
+    }
+  }
+#endif
+
   nr_php_mysqli_query_set_bind_params(
       Z_OBJ_HANDLE_P(mysqli_stmt_obj), Z_STRVAL_P(types), Z_STRLEN_P(types),
       argc - args_to_skip, &argv[args_to_skip] TSRMLS_CC);
@@ -1313,26 +1707,38 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
       nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
     }
   }
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
-  sqlstrlen = nr_strlen(sqlstr);
-
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (nrlikely(NULL != segment)) {
     nr_explain_plan_t* plan = NULL;
 
     segment->stop_time = nr_txn_now_rel(NRPRG(txn));
 
+    /*
+     * The explain plan uses the link and the query that were kept for the
+     * statement in the transaction that prepared it, so a statement prepared
+     * in an earlier transaction gets none.
+     */
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
-      plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
-                                        params, segment->start_time,
-                                        segment->stop_time TSRMLS_CC);
+      plan = nr_php_explain_mysqli_stmt(
+          NRPRG(txn), stmt_obj, Z_OBJ_HANDLE_P(stmt_obj), params,
+          segment->start_time, segment->stop_time);
     }
+
+    /*
+     * The SQL is looked up here, after the call and the explain, and used at
+     * once. execute() converts its parameters to strings, which can run an
+     * object's __toString(), and the explain runs PHP code too: code that
+     * prepares the statement again replaces the SQL in the table and frees the
+     * string that was there before.
+     */
+    sqlstr = nr_php_mysqli_statement_find(stmt_obj);
+    sqlstrlen = nr_strlen(sqlstr);
 
     nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
                                NR_DATASTORE_MYSQL, NULL TSRMLS_CC);
@@ -1369,8 +1775,17 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
     }
   }
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(return_value, extension, sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+
+  /*
+   * This function serves several extensions. Only mysqli keeps the SQL with
+   * the statement object (from PHP 8.0); the others use the table of prepared
+   * statements of the transaction.
+   */
+  if (0 == nr_strcmp(extension, "mysqli")) {
+    nr_php_mysqli_statement_save(return_value, sqlstr, sqlstrlen);
+  } else {
+    nr_php_prepared_statement_save(return_value, extension, sqlstr, sqlstrlen);
+  }
 
   /* Record the current query link and SQL string if the right conditions exist
    * Note if the SQL string is not explainable then the previous recorded query
@@ -1383,6 +1798,7 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
       && nr_php_mysqli_zval_is_stmt(return_value)
       && nr_php_mysqli_zval_is_link(conn_obj)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value), conn_obj);
+    nr_php_mysqli_statement_link_save(return_value, conn_obj);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
       nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
@@ -1403,14 +1819,36 @@ NR_INNER_WRAPPER(mysqli_prepare) {
                                   "mysqli");
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 /*
- * Handle
- *   PDOStatement PDO::prepare( string $query [, array $options ])
+ * Purpose : Tell whether the constructor of a mysqli_stmt prepared its
+ *           statement. When mysqli throws on errors the constructor throws,
+ *           and otherwise it returns an object that is not prepared and has
+ *           the error number of the failed prepare.
+ *
+ * Params  : 1. The statement object that the constructor made.
+ *
+ * Returns : 1 if the statement is prepared, 0 if not or if an exception is
+ *           pending.
+ *
+ * Notes   : The property is read here and not with
+ *           nr_php_get_zval_object_property(): mysqli computes its properties
+ *           and returns them in storage that belongs to the caller.
  */
-NR_INNER_WRAPPER(pdo_prepare) {
-  nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper,
-                                  "pdo");
+static int nr_php_mysqli_stmt_construct_prepared(zval* stmt) {
+  zval rv;
+  zval* error_number;
+
+  if (NULL != EG(exception)) {
+    return 0;
+  }
+
+  error_number = zend_read_property(Z_OBJCE_P(stmt), ZVAL_OR_ZEND_OBJECT(stmt),
+                                    "errno", sizeof("errno") - 1, 1, &rv);
+
+  return (IS_LONG == Z_TYPE_P(error_number)) && (0 == Z_LVAL_P(error_number));
 }
+#endif
 
 /*
  * Handle
@@ -1444,21 +1882,65 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
   }
 
   if (sqlstr) {
-    nr_php_prepared_statement_save(this_obj, "mysqli", sqlstr,
-                                   sqlstrlen TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    /*
+     * A prepare that failed in the constructor leaves no SQL. Before PHP 8.0
+     * (the other arm) the statement is saved whether or not the prepare
+     * worked, as it always was.
+     */
+    nr_php_mysqli_statement_save(
+        this_obj,
+        nr_php_mysqli_stmt_construct_prepared(this_obj) ? sqlstr : NULL,
+        sqlstrlen);
+#else
+    nr_php_mysqli_statement_save(this_obj, sqlstr, sqlstrlen);
+#endif
   }
 
+  /*
+   * A constructor returns nothing, so the statement is the object it was
+   * called on and not return_value.
+   */
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_is_zval_valid_object(return_value)
-      && nr_php_mysqli_zval_is_stmt(this_obj TSRMLS_CC)
-      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
-    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
-                                 mysqli_obj TSRMLS_CC);
+      && nr_php_is_zval_valid_object(this_obj)
+      && nr_php_mysqli_zval_is_stmt(this_obj)
+      && nr_php_mysqli_zval_is_link(mysqli_obj)) {
+    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(this_obj), mysqli_obj);
+    nr_php_mysqli_statement_link_save(this_obj, mysqli_obj);
 
     if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
-      nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
-                                    sqlstrlen TSRMLS_CC);
+      nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(this_obj), sqlstr,
+                                    sqlstrlen);
     }
+  }
+}
+
+/*
+ * Handle
+ *   object mysqli_init ()
+ *
+ * Creates a link that has not connected yet: options and TLS settings are set
+ * on it before it does.
+ *
+ * The method mysqli::init() is not wrapped: it re-initializes an object that
+ * may already carry options and TLS settings, which real_connect() must keep.
+ * A subclass that never calls the parent constructor and reuses the handle of
+ * a freed link is a known gap before PHP 8.0; from 8.0 the saved data is
+ * dropped when the link is freed.
+ */
+NR_INNER_WRAPPER(mysqli_init) {
+  int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                         INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(return_value)) {
+    /* A new link must not inherit what was saved for an earlier one. */
+    nr_php_mysqli_metadata_remove(return_value);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
   }
 }
 
@@ -1490,6 +1972,7 @@ NR_INNER_WRAPPER(mysqli_stmt_init) {
   if (nr_php_mysqli_zval_is_stmt(return_value TSRMLS_CC)) {
     nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
                                  mysqli_obj TSRMLS_CC);
+    nr_php_mysqli_statement_link_save(return_value, mysqli_obj);
   }
 
   if (zcaught) {
@@ -1524,8 +2007,25 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
   }
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(mysqli_stmt_obj, "mysqli", sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * A prepare that fails leaves the statement unusable: drop the SQL of the
+   * earlier prepare instead of keeping it.
+   */
+  nr_php_mysqli_statement_save(
+      mysqli_stmt_obj, (IS_TRUE == Z_TYPE_P(return_value)) ? sqlstr : NULL,
+      sqlstrlen);
+
+  /*
+   * The statement was made by stmt_init() and is prepared now: it belongs to
+   * the connection and the database the link has at this moment.
+   */
+  if (IS_TRUE == Z_TYPE_P(return_value)) {
+    nr_php_mysqli_statement_link_refresh(mysqli_stmt_obj);
+  }
+#else
+  nr_php_mysqli_statement_save(mysqli_stmt_obj, sqlstr, sqlstrlen);
+#endif
 
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_stmt(mysqli_stmt_obj TSRMLS_CC)
@@ -1811,6 +2311,9 @@ NR_INNER_WRAPPER(pg_execute) {
   int rv;
   int zcaught = 0;
   nr_segment_t* segment = NULL;
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  char* query_before_call = NULL;
+#endif
 
   rv = FAILURE;
   argc = ZEND_NUM_ARGS();
@@ -1833,19 +2336,56 @@ NR_INNER_WRAPPER(pg_execute) {
       break;
   }
 
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  /*
+   * A copy of the SQL as it is before the call, for when the call removes the
+   * statement: an error handler that closes the connection while pg_execute()
+   * warns deletes the statements of the connection.
+   */
   if (SUCCESS == rv) {
+    const char* saved
+        = nr_php_pgsql_statement_find(conn, stmtname, stmtname_len);
+
+    if (saved) {
+      query_before_call = nr_strdup(saved);
+    }
+  }
+#endif
+
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The statement and the instance are looked up after the call, and used
+   * before any PHP code can run again. pg_execute() converts its parameters
+   * to strings, which can run an object's __toString(), and that code can
+   * prepare the statement again or connect again: the table frees what it held
+   * before.
+   */
+  if (SUCCESS == rv) {
+#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
     char* key;
+#endif
 
     /*
-     * Note: The instrumentation for pg_prepare/pg_execute relies on the
-     * user to be consistent and either pass the connection to both functions,
-     * or pass the connection to neither. If they mix-and-match, we will not
-     * generate the same key for lookup as for insert.
+     * Before PHP 8.1 the instrumentation for pg_prepare/pg_execute relies on
+     * the user to be consistent and either pass the connection to both
+     * functions, or pass the connection to neither. If they mix-and-match, we
+     * will not generate the same key for lookup as for insert.
      */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+    query = nr_php_pgsql_statement_find(conn, stmtname, stmtname_len);
+    if (NULL == query) {
+      query = query_before_call;
+    }
+#else
     key = nr_php_prepared_statement_make_pgsql_key(conn, stmtname,
                                                    stmtname_len);
     query = nr_php_prepared_statement_find_internal(key TSRMLS_CC);
     nr_free(key);
+#endif
 
     instance = nr_php_pgsql_retrieve_datastore_instance(conn TSRMLS_CC);
   }
@@ -1854,12 +2394,12 @@ NR_INNER_WRAPPER(pg_execute) {
     query = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
   }
 
-  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  nr_free(query_before_call);
+#endif
 
   if (zcaught) {
     zend_bailout();
@@ -1905,7 +2445,21 @@ NR_INNER_WRAPPER(pg_prepare) {
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-  if ((SUCCESS == rv) && (query_len > 0)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  /*
+   * The SQL is kept for the life of the connection object. A successful
+   * prepare returns a result object. A prepare that fails returns false or
+   * throws, and leaves the statement name as it was, so it saves nothing.
+   */
+  if ((SUCCESS == rv) && (query_len > 0)
+      && (IS_OBJECT == Z_TYPE_P(return_value))) {
+    nr_php_pgsql_statement_save(conn, stmtname, stmtname_len, query, query_len);
+  }
+#else
+  /* Before PHP 8.1 a successful prepare returns a resource, a failed one false.
+   */
+  if ((SUCCESS == rv) && (query_len > 0)
+      && (IS_RESOURCE == Z_TYPE_P(return_value))) {
     char* key = NULL;
 
     /*
@@ -1919,6 +2473,7 @@ NR_INNER_WRAPPER(pg_prepare) {
     nr_php_prepared_statement_save_internal(key, query, query_len TSRMLS_CC);
     nr_free(key);
   }
+#endif
 }
 
 /*
@@ -1962,16 +2517,18 @@ NR_INNER_WRAPPER(pg_query) {
     }
   }
 
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
   /*
+   * The instance is looked up after the call: an error handler that runs
+   * during the call can close the connection and free what was found before.
    * If pgsql_link is not provided, pgsql uses the last connection made by
    * pg_connect or pg_pconnect. The retrieve method handles this case.
    */
   instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
-
-  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
-
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_POSTGRES, instance TSRMLS_CC);
@@ -2034,8 +2591,8 @@ NR_INNER_WRAPPER(pg_query_params) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_POSTGRES, NULL TSRMLS_CC);
@@ -2088,8 +2645,8 @@ NR_INNER_WRAPPER(sqlite_query_function) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_SQLITE, NULL TSRMLS_CC);
@@ -2140,8 +2697,8 @@ NR_INNER_WRAPPER(sqlite_exec_or_query) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_SQLITE, NULL TSRMLS_CC);
@@ -2173,8 +2730,8 @@ NR_INNER_WRAPPER(sqlite3) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_SQLITE, NULL TSRMLS_CC);
@@ -2208,8 +2765,8 @@ NR_INNER_WRAPPER(sqlite3_querysingle) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_SQLITE, NULL TSRMLS_CC);
@@ -2268,6 +2825,53 @@ NR_INNER_WRAPPER(pdo_construct) {
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+/*
+ * Handle
+ *   static PDO::connect (string $dsn, ?string $username = null,
+ *                        ?string $password = null, ?array $options = null)
+ *
+ * PDO::connect() and the connect() methods of the driver subclasses create the
+ * connection without calling the constructor, so the options have to be
+ * persisted here as well. Our interest is the same as in pdo_construct: the
+ * options are the only part of the connection metadata that the pdo_dbh_t
+ * structure does not hold.
+ */
+NR_INNER_WRAPPER(pdo_connect) {
+  char* dsn = NULL;
+  nr_string_len_t dsn_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  zval* options = NULL;
+  char* username = NULL;
+  nr_string_len_t username_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|s!s!a!", &dsn, &dsn_len,
+          &username, &username_len, &password, &password_len, &options)) {
+    options = NULL;
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The new connection is the return value. nr_php_pdo_options_save checks
+   * both the PDO object and the options array for validity.
+   */
+  if (0 == zcaught) {
+    nr_php_pdo_options_save(return_value, options);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+#endif
+
 /*
  * Handle
  *   PDO::exec (string)
@@ -2289,8 +2893,8 @@ NR_INNER_WRAPPER(pdo_exec) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   this_obj = NR_PHP_INTERNAL_FN_THIS();
 
@@ -2333,8 +2937,8 @@ NR_INNER_WRAPPER(pdo_query) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_pdo_end_segment_sql(segment, sqlstr, sqlstrlen, return_value, NULL,
                              true TSRMLS_CC);
@@ -2611,8 +3215,8 @@ NR_INNER_WRAPPER(mssql_query) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_MSSQL, NULL TSRMLS_CC);
@@ -2671,8 +3275,8 @@ NR_INNER_WRAPPER(mongocollection_15) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_segment_datastore_end(&segment, &params);
 
   nr_free(params.operation);
@@ -2733,8 +3337,13 @@ NR_INNER_WRAPPER(oci_parse) {
     return;
   }
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_php_prepared_statement_save(return_value, "oci", sqlstr,
-                                 sqlstrlen TSRMLS_CC);
+
+  /*
+   * The statement is a resource. The SQL is kept for the life of the
+   * statement, and not for the transaction, as a statement that was parsed in
+   * one transaction can be executed in a later one.
+   */
+  nr_php_oci_statement_sql_set(return_value, sqlstr, sqlstrlen);
 
   return;
 }
@@ -2759,13 +3368,16 @@ NR_INNER_WRAPPER(oci_execute) {
     return;
   }
 
-  sqlstr = nr_php_prepared_statement_find(stmt_obj, "oci" TSRMLS_CC);
+  sqlstr = nr_php_oci_statement_sql_get(stmt_obj);
+  if (NULL == sqlstr) {
+    sqlstr = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
+  }
   sqlstrlen = nr_strlen(sqlstr);
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, NULL,
                              NR_DATASTORE_ORACLE, NULL TSRMLS_CC);
@@ -2849,8 +3461,8 @@ NR_INNER_WRAPPER(file_get_contents) {
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   nr_php_file_get_contents_add_headers(context, segment TSRMLS_CC);
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   external_params.encoded_response_header
       = nr_php_file_get_contents_response_header(TSRMLS_C);
@@ -2959,8 +3571,8 @@ NR_INNER_WRAPPER(httprequest_send) {
   nr_php_httprequest_send_request_headers(this_var, segment TSRMLS_CC);
   external_params.uri = nr_php_httprequest_send_get_url(this_var TSRMLS_CC);
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   external_params.encoded_response_header
       = nr_php_httprequest_send_response_header(this_var TSRMLS_CC);
@@ -3013,8 +3625,8 @@ NR_INNER_WRAPPER(soapclient_dorequest) {
 
   segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  zcaught = nr_zend_call_old_handler_segment(&segment, nr_wrapper->oldhandler,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_segment_external_end(&segment, &external_params);
 
   nr_free(external_params.uri);
@@ -3117,23 +3729,38 @@ NR_OUTER_WRAPPER(mysql_unbuffered_query)
 NR_OUTER_WRAPPER(mysql_db_query)
 
 NR_OUTER_WRAPPER(mysqli_close)
+NR_OUTER_WRAPPER(mysqli_init)
 NR_OUTER_WRAPPER(mysqli_connect)
 NR_OUTER_WRAPPER(mysqli_multi_query)
 NR_OUTER_WRAPPER(mysqli_options)
 NR_OUTER_WRAPPER(mysqli_prepare)
 NR_OUTER_WRAPPER(mysqli_query)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+NR_OUTER_WRAPPER(mysqli_execute_query)
+#endif
 NR_OUTER_WRAPPER(mysqli_real_connect)
+NR_OUTER_WRAPPER(mysqli_ssl_set)
+NR_OUTER_WRAPPER(mysqli_change_user)
+NR_OUTER_WRAPPER(mysqli_set_opt)
 NR_OUTER_WRAPPER(mysqli_real_query)
 NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
 NR_OUTER_WRAPPER(mysqli_commit)
 
+NR_OUTER_WRAPPER(mysqliC_close)
 NR_OUTER_WRAPPER(mysqliC_construct)
 NR_OUTER_WRAPPER(mysqliC_multi_query)
 NR_OUTER_WRAPPER(mysqliC_options)
 NR_OUTER_WRAPPER(mysqliC_prepare)
 NR_OUTER_WRAPPER(mysqliC_query)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+NR_OUTER_WRAPPER(mysqliC_execute_query)
+#endif
 NR_OUTER_WRAPPER(mysqliC_real_connect)
+NR_OUTER_WRAPPER(mysqliC_ssl_set)
+NR_OUTER_WRAPPER(mysqliC_change_user)
+NR_OUTER_WRAPPER(mysqliC_connect)
+NR_OUTER_WRAPPER(mysqliC_set_opt)
 NR_OUTER_WRAPPER(mysqliC_real_query)
 NR_OUTER_WRAPPER(mysqliC_select_db)
 NR_OUTER_WRAPPER(mysqliC_stmt_init)
@@ -3141,6 +3768,7 @@ NR_OUTER_WRAPPER(mysqliC_commit)
 
 NR_OUTER_WRAPPER(mysqli_stmt_bind_param)
 NR_OUTER_WRAPPER(mysqli_stmt_execute)
+NR_OUTER_WRAPPER(mysqli_execute)
 NR_OUTER_WRAPPER(mysqli_stmt_prepare)
 
 NR_OUTER_WRAPPER(mysqli_stmtC_construct)
@@ -3490,6 +4118,7 @@ NR_OUTER_WRAPPER(pg_pconnect)
 NR_OUTER_WRAPPER(pg_execute)
 NR_OUTER_WRAPPER(pg_prepare)
 NR_OUTER_WRAPPER(pg_query)
+NR_OUTER_WRAPPER(pg_exec)
 NR_OUTER_WRAPPER(pg_query_params)
 
 NR_OUTER_WRAPPER(sqlite_query)
@@ -3505,9 +4134,11 @@ NR_OUTER_WRAPPER(sqlite3_querysingle)
 NR_OUTER_WRAPPER(sqlite3_exec)
 
 NR_OUTER_WRAPPER(pdo_construct)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+NR_OUTER_WRAPPER(pdo_connect)
+#endif
 NR_OUTER_WRAPPER(pdo_query)
 NR_OUTER_WRAPPER(pdo_exec)
-NR_OUTER_WRAPPER(pdo_prepare)
 
 NR_OUTER_WRAPPER(pdostmt_execute)
 
@@ -3607,16 +4238,26 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysql_db_query", mysql_db_query, mysql_db_query, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli_close", mysqli_close, mysqli_close, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_init", mysqli_init, mysqli_init, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_connect", mysqli_connect, mysqli_construct, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_multi_query", mysqli_multi_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_options", mysqli_options, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_prepare", mysqli_prepare, mysqli_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_query", mysqli_query, mysqli_general_query, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  NR_INTERNAL_WRAPREC("mysqli_execute_query", mysqli_execute_query,
+                      mysqli_execute_query, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("mysqli_real_query", mysqli_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_real_connect", mysqli_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_ssl_set", mysqli_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_change_user", mysqli_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli_set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli_set_opt", mysqli_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_select_db", mysqli_select_db, mysqli_select_db, 0,
                       0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
@@ -3625,6 +4266,7 @@ void nr_php_generate_internal_wrap_records(void) {
 
   NR_INTERNAL_WRAPREC("mysqli::__construct", mysqliC_construct,
                       mysqli_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::close", mysqliC_close, mysqli_close, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli::multi_query", mysqliC_multi_query,
                       mysqli_general_query, 0, 0)
@@ -3632,8 +4274,20 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli::prepare", mysqliC_prepare, mysqli_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::query", mysqliC_query, mysqli_general_query, 0,
                       0)
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  NR_INTERNAL_WRAPREC("mysqli::execute_query", mysqliC_execute_query,
+                      mysqli_execute_query, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("mysqli::real_connect", mysqliC_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::ssl_set", mysqliC_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::change_user", mysqliC_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli::connect() is an alias of mysqli_connect(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::connect", mysqliC_connect, mysqli_construct, 0,
+                      0)
+  /* mysqli::set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::set_opt", mysqliC_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::real_query", mysqliC_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::select_db", mysqliC_select_db, mysqli_select_db,
@@ -3646,6 +4300,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       mysqli_stmt_bind_param, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_execute", mysqli_stmt_execute,
                       mysqli_stmt_execute, 0, 0)
+  /* mysqli_execute() is an alias of mysqli_stmt_execute(), with its own entry.
+   */
+  NR_INTERNAL_WRAPREC("mysqli_execute", mysqli_execute, mysqli_stmt_execute, 0,
+                      0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_prepare", mysqli_stmt_prepare,
                       mysqli_stmt_prepare, 0, 0)
 
@@ -4278,6 +4936,8 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("pg_execute", pg_execute, pg_execute, 0, 0)
   NR_INTERNAL_WRAPREC("pg_prepare", pg_prepare, pg_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("pg_query", pg_query, pg_query, 0, 0)
+  /* pg_exec() is an alias of pg_query(), with its own entry. */
+  NR_INTERNAL_WRAPREC("pg_exec", pg_exec, pg_query, 0, 0)
   NR_INTERNAL_WRAPREC("pg_query_params", pg_query_params, pg_query_params, 0, 0)
 
   NR_INTERNAL_WRAPREC("sqlite_query", sqlite_query, sqlite_query_function, 0, 0)
@@ -4310,6 +4970,13 @@ void nr_php_generate_internal_wrap_records(void) {
                       0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct,
                       0, 0)
+
+  NR_INTERNAL_WRAPREC("pdo::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\firebird::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::connect", pdo_connect, pdo_connect, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdo::query", pdo_query, pdo_query, 0, 0)
 #if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
@@ -4326,14 +4993,6 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("pdo\\odbc::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\pgsql::exec", pdo_exec, pdo_exec, 0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::exec", pdo_exec, pdo_exec, 0, 0)
-#endif
-  NR_INTERNAL_WRAPREC("pdo::prepare", pdo_prepare, pdo_prepare, 0, 0)
-#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
-  NR_INTERNAL_WRAPREC("pdo\\firebird::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\mysql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\odbc::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\pgsql::prepare", pdo_prepare, pdo_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\sqlite::prepare", pdo_prepare, pdo_prepare, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdostatement::execute", pdostmt_execute,
                       pdostatement_execute, 0, 0)

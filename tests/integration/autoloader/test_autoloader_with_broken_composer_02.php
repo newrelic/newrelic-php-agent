@@ -24,7 +24,7 @@ Supportability/library/Autoloader/detected, 1
 */
 
 /*EXPECT_METRICS_DONT_EXIST
-Supportability/library/Composer/detected, 1
+Supportability/library/Composer/detected
 */
 
 /*EXPECT_TRACED_ERRORS null*/

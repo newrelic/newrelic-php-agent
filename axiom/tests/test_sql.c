@@ -125,7 +125,13 @@ static void sql_obfuscate_testcase_fn(const char* testname,
                                       const char* expected,
                                       const char* file,
                                       int line) {
-  char* output = nr_sql_obfuscate(sql);
+  /*
+   * The input is copied into an exactly sized allocation so that valgrind can
+   * see reads past the end of it. A string literal would have readable bytes
+   * after its NUL, hiding them.
+   */
+  char* input = sql ? nr_strdup(sql) : NULL;
+  char* output = nr_sql_obfuscate(input);
   char* idempotent = output ? nr_sql_obfuscate(output) : 0;
 
   test_pass_if_true(testname, 0 == nr_strcmp(expected, output),
@@ -137,6 +143,7 @@ static void sql_obfuscate_testcase_fn(const char* testname,
 
   nr_free(idempotent);
   nr_free(output);
+  nr_free(input);
 }
 
 static void test_sql_obfuscate(void) {
@@ -170,6 +177,15 @@ static void test_sql_obfuscate(void) {
   sql_obfuscate_testcase("escaped quotes",
                          "SELECT * FROM test WHERE foo IN (1,\"\\\"\",'\\'')",
                          "SELECT * FROM test WHERE foo IN (?,?,?)");
+
+  sql_obfuscate_testcase("trailing backslash in a single quote string",
+                         "SELECT 'abc\\", "SELECT ?");
+
+  sql_obfuscate_testcase("trailing backslash in a double quote string",
+                         "SELECT \"abc\\", "SELECT ?");
+
+  sql_obfuscate_testcase("backslash before the closing quote at end of input",
+                         "SELECT 'abc\\'", "SELECT ?");
 
   sql_obfuscate_testcase("stuttered quotes",
                          "SELECT * FROM test WHERE foo IN (1,\"\"\"\",'''',14)",
@@ -284,6 +300,74 @@ static void test_sql_obfuscate(void) {
       "stuttered quotes with comments",
       "SELECT * FROM test WHERE foo IN (1,\"--,/*\"\"\",'''/*',14)",
       "SELECT * FROM test WHERE foo IN (?,?,?,?)");
+
+  /*
+   * PostgreSQL dollar quoted string constants.
+   */
+  sql_obfuscate_testcase("untagged dollar quote",
+                         "SELECT * FROM test WHERE password = $$PASSWORD$$",
+                         "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase(
+      "tagged dollar quote",
+      "SELECT * FROM test WHERE password = $tag$PASSWORD$tag$",
+      "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase("dollar quote tag with digits and underscores",
+                         "SELECT $_t1$PASSWORD$_t1$", "SELECT ?");
+
+  /* The tag below is $e$ with an acute accent, which PostgreSQL permits. */
+  sql_obfuscate_testcase("dollar quote with a non-ASCII tag",
+                         "SELECT $\xc3\xa9$PASSWORD$\xc3\xa9$", "SELECT ?");
+
+  sql_obfuscate_testcase("empty untagged dollar quote", "$$$$", "?");
+  sql_obfuscate_testcase("empty tagged dollar quote", "$t$$t$", "?");
+
+  sql_obfuscate_testcase("dollar quote containing digits", "$$abc123$$", "?");
+
+  sql_obfuscate_testcase("dollar quote containing quote and comment characters",
+                         "$$it's -- not /* a comment$$", "?");
+
+  sql_obfuscate_testcase("dollar quote with a mismatched closing tag",
+                         "SELECT $a$PASSWORD$b$", "SELECT ?");
+
+  sql_obfuscate_testcase("multiple dollar quotes",
+                         "SELECT $$PASSWORD$$, $t$PASSWORD$t$", "SELECT ?, ?");
+
+  sql_obfuscate_testcase("unterminated dollar quote",
+                         "SELECT * FROM test WHERE password = $$PASSWORD",
+                         "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase("unterminated tagged dollar quote",
+                         "SELECT * FROM test WHERE password = $tag$PASSWORD",
+                         "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase("positional parameters",
+                         "SELECT * FROM test WHERE a = $1 AND b = $2",
+                         "SELECT * FROM test WHERE a = $? AND b = $?");
+
+  sql_obfuscate_testcase("dollar sign within an identifier",
+                         "SELECT a$b FROM test WHERE c$d = 1",
+                         "SELECT a$b FROM test WHERE c$d = ?");
+
+  sql_obfuscate_testcase("dollar quote after a number",
+                         "SELECT * FROM test WHERE y IN (5$$PASSWORD$$)",
+                         "SELECT * FROM test WHERE y IN (?\?)");
+
+  sql_obfuscate_testcase("dollar quote after the jsonb exists operator",
+                         "SELECT * FROM test WHERE data?$$PASSWORD$$",
+                         "SELECT * FROM test WHERE data?\?");
+
+  sql_obfuscate_testcase("tagged delimiter inside an identifier",
+                         "SELECT * FROM a$b$c WHERE id = 5",
+                         "SELECT * FROM a?");
+
+  sql_obfuscate_testcase("untagged delimiter inside an identifier",
+                         "SELECT a$$b FROM test WHERE id = 5", "SELECT a?");
+
+  sql_obfuscate_testcase("delimiter inside an identifier after a digit",
+                         "SELECT * FROM a1$b$c WHERE id = 5",
+                         "SELECT * FROM a?\?");
 
   /*
    * Monstrous integers don't cause us to topple over.

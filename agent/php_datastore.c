@@ -166,6 +166,12 @@ char* nr_php_datastore_make_key(const zval* conn, const char* extension) {
   return key;
 }
 
+void nr_php_datastore_instance_dtor(void* instance) {
+  nr_datastore_instance_t* i = instance;
+
+  nr_datastore_instance_destroy(&i);
+}
+
 int nr_php_datastore_has_conn(const char* key TSRMLS_DC) {
   if (NULL == key) {
     return 0;

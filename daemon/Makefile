@@ -73,4 +73,4 @@ test:
 
 .PHONY: race
 race:
-	$(GO) test $(GOFLAGS) -race $(shell go list ./... | grep -v '/infinite_tracing')
+	$(GO) test $(GOFLAGS) -race ./...

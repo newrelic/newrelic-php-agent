@@ -50,6 +50,12 @@ extern char* nr_php_datastore_make_key(const zval* conn, const char* extension);
 extern int nr_php_datastore_has_conn(const char* key TSRMLS_DC);
 
 /*
+ * Purpose : Destroy a datastore instance. Suitable as the value destructor of
+ *           an object table.
+ */
+extern void nr_php_datastore_instance_dtor(void* instance);
+
+/*
  * Purpose : Store a datastore instance metadata in the datastore connections
  *           hashmap.
  *

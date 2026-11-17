@@ -5,10 +5,11 @@
  */
 
 /*DESCRIPTION
-Test detection of autoloader when Composer is used but Composer installation
-is broken - one of the methods used by the agent throws an Error.
-Supportability metric for Autoloader library should be present but not for
-Composer library. Package harvest should be empty. No errors should be generated.
+Test detection of autoloader when Composer is used but Composer installation is
+broken - one of the methods used by the agent throws an Error. Supportability
+metrics for the Autoloader and Composer libraries should be present: the Composer
+files exist, only the Composer API fails. Package harvest should be empty. No
+errors should be generated.
 */
 
 /*INI
@@ -22,9 +23,6 @@ null
 
 /*EXPECT_METRICS_EXIST
 Supportability/library/Autoloader/detected, 1
-*/
-
-/*EXPECT_METRICS_DONT_EXIST
 Supportability/library/Composer/detected, 1
 */
 

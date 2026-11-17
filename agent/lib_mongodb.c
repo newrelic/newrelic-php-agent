@@ -198,6 +198,12 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
 
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   NR_PHP_WRAPPER_CALL;
+
+  /* The operation can run PHP code that ends the transaction. */
+  if (nrunlikely(NR_PHP_WRAPPER_TXN_CHANGED)) {
+    segment = NULL;
+  }
+
   nr_segment_datastore_end(&segment, &params);
 
 leave:

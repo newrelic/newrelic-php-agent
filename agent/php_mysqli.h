@@ -15,14 +15,160 @@
 #include "php_agent.h"
 
 /*
- * Purpose : Duplicate a MySQLi link based on the metadata in
- *           NRPRG (mysqli_links).
+ * Purpose : The store of the metadata of the MySQLi links: kept for the
+ *           request on PHP 8.0 and later, per transaction before.
+ */
+extern nr_mysqli_metadata_t* nr_php_mysqli_links(void);
+
+/*
+ * Purpose : Create and destroy the request-lifetime store and the table that
+ *           drops an entry when its link is freed (PHP 8.0 and later; no-ops
+ *           before). Create in RINIT, destroy in post-deactivate after the
+ *           engine has freed its objects.
+ */
+extern void nr_php_mysqli_links_create(void);
+extern void nr_php_mysqli_links_destroy(void);
+
+/*
+ * Purpose : Whether link metadata is worth keeping in this transaction: only
+ *           when an explain plan can be produced.
+ */
+extern int nr_php_mysqli_metadata_wanted(void);
+
+/*
+ * Purpose : Save or read the metadata of a link, as the functions of
+ *           nr_mysqli_metadata.h do. The setters save nothing when
+ *           nr_php_mysqli_metadata_wanted() is false. remove() also drops the
+ *           link's entry in the table.
+ */
+extern void nr_php_mysqli_metadata_remove(const zval* link);
+
+/*
+ * Purpose : Whether the agent has saved metadata for this link object. A new
+ *           object that took the handle of a freed link is not known, because
+ *           the table drops an entry when its object is freed.
+ *
+ * Notes   : Always false before PHP 8.0, which cannot tell when a link is
+ *           freed.
+ */
+extern int nr_php_mysqli_metadata_known(const zval* link);
+extern nr_status_t nr_php_mysqli_metadata_get(const zval* link,
+                                              nr_mysqli_metadata_link_t* out);
+extern nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
+                                                      const char* host,
+                                                      const char* user,
+                                                      const char* password,
+                                                      const char* database,
+                                                      uint16_t port,
+                                                      const char* socket,
+                                                      long flags);
+extern nr_status_t nr_php_mysqli_metadata_set_database(const zval* link,
+                                                       const char* database);
+extern nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
+                                                   const char* user,
+                                                   const char* password,
+                                                   const char* database);
+extern nr_status_t nr_php_mysqli_metadata_set_option(const zval* link,
+                                                     long option,
+                                                     const char* value);
+extern nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
+                                                  const char* key,
+                                                  const char* cert,
+                                                  const char* ca,
+                                                  const char* capath,
+                                                  const char* cipher);
+
+/*
+ * Purpose : Duplicate a MySQLi link based on the metadata saved for it.
  *
  * Params  : 1. The mysqli object to duplicate.
  *
  * Returns : The new mysqli object, or NULL if an error occurred.
  */
-extern zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC);
+extern zval* nr_php_mysqli_link_duplicate(const zval* orig);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * Purpose : Create the table that holds the SQL of each mysqli statement
+ *           object. Call it once per request, before any statement exists;
+ *           destroy it with nr_php_objtable_destroy() in post-deactivate.
+ */
+extern void nr_php_mysqli_statement_sql_create_table(void);
+
+/*
+ * Purpose : Save the SQL of a mysqli statement object, replacing the SQL
+ *           saved for it earlier. The entry is dropped when the object is
+ *           freed.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. The SQL. NULL or empty removes the entry.
+ *           3. The length of the SQL.
+ */
+extern void nr_php_mysqli_statement_sql_set(const zval* stmt,
+                                            const char* sql,
+                                            nr_string_len_t sql_len);
+
+/*
+ * Purpose : Get the SQL saved for a mysqli statement object.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *
+ * Returns : The SQL, which stays owned by the table, or NULL if none was
+ *           saved.
+ */
+extern const char* nr_php_mysqli_statement_sql_get(const zval* stmt);
+
+/*
+ * Purpose : Save the link a statement object was prepared on: the handle of
+ *           the link and the epoch of its connection. The entry is dropped
+ *           when the object is freed.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. The link. If the agent has no complete metadata for it, a link
+ *              saved earlier is forgotten.
+ */
+extern void nr_php_mysqli_statement_link_set(const zval* stmt,
+                                             const zval* link);
+
+/*
+ * Purpose : Save again the connection and the database that the link of a
+ *           statement object has now. A statement made with stmt_init() is
+ *           prepared later, and the application can select another database
+ *           in between.
+ *
+ * Params  : 1. The mysqli_stmt object. Nothing is done if no link was saved
+ *              for it, or if the link has no complete metadata any more.
+ */
+extern void nr_php_mysqli_statement_link_refresh(const zval* stmt);
+
+/*
+ * Purpose : Get the handle of the link a statement object was prepared on, if
+ *           the link still has the connection the statement was prepared on.
+ *
+ * Params  : 1. The mysqli_stmt object.
+ *           2. Receives the handle of the link.
+ *
+ * Returns : NR_SUCCESS, or NR_FAILURE if the statement has no link saved, the
+ *           link was freed, its connection was replaced (the same handle can
+ *           belong to another link by then), or the application selected
+ *           another database on the link after the statement was prepared.
+ */
+extern nr_status_t nr_php_mysqli_statement_link_get(
+    const zval* stmt,
+    nr_mysqli_metadata_link_handle_t* handle);
+#endif
+
+/*
+ * Purpose : Duplicate a MySQLi link from the metadata saved for the handle of
+ *           a link, without the link object.
+ *
+ * Params  : 1. The handle of the link.
+ *
+ * Returns : The new mysqli object, or NULL if the link has no complete
+ *           metadata or an error occurred.
+ */
+extern zval* nr_php_mysqli_link_duplicate_handle(
+    nr_mysqli_metadata_link_handle_t handle);
 
 /*
  * Purpose : Get the MySQLi link that was used to prepare a statement.
@@ -56,6 +202,37 @@ extern char* nr_php_mysqli_query_get_query(
  */
 extern nr_status_t nr_php_mysqli_query_rebind(nr_php_object_handle_t handle,
                                               zval* dest TSRMLS_DC);
+
+/*
+ * Purpose : Whether the transaction has an entry for a statement object.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : true if the transaction has an entry, false if not.
+ */
+extern bool nr_php_mysqli_query_exists(nr_php_object_handle_t handle);
+
+/*
+ * Purpose : Whether the transaction has bound parameters for a statement
+ *           object.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : true if parameters are saved for the statement, false if not.
+ */
+extern bool nr_php_mysqli_query_has_bind(nr_php_object_handle_t handle);
+
+/*
+ * Purpose : Make sure the transaction has an entry for a statement object, so
+ *           that bound parameters can be saved for a statement that was
+ *           prepared in an earlier transaction.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : NR_SUCCESS if the transaction has an entry for the statement now,
+ *           or NR_FAILURE if no entry could be made.
+ */
+extern nr_status_t nr_php_mysqli_query_ensure(nr_php_object_handle_t handle);
 
 /*
  * Purpose : Save the parameters bound to a MySQLi statement.
@@ -94,7 +271,8 @@ extern nr_status_t nr_php_mysqli_query_set_link(
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  */
-extern nr_status_t nr_php_mysqli_query_clear_query(nr_php_object_handle_t handle);
+extern nr_status_t nr_php_mysqli_query_clear_query(
+    nr_php_object_handle_t handle);
 
 /*
  * Purpose : Save the SQL used to prepare a MySQLi statement.
@@ -168,5 +346,16 @@ extern void nr_php_mysqli_remove_datastore_instance(
  *           that must be cleaned up prior to postdeactivate
  */
 extern void nr_php_mysqli_rshutdown();
+
+/*
+ * Purpose : Turn the value of a mysqli_options() call into the string that is
+ *           replayed on the explain connection.
+ *
+ * Params  : 1. The value the application gave.
+ *
+ * Returns : A new string, or NULL for a value that is not captured (an array,
+ *           a resource or an object). The caller frees it.
+ */
+extern char* nr_php_mysqli_option_to_string(zval* value);
 
 #endif /* PHP_MYSQLI_HDR */

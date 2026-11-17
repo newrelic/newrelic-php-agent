@@ -24,6 +24,30 @@ if ("" != $MYSQL_SOCKET) {
   $MYSQL_SERVER = $MYSQL_HOST . ":" . $MYSQL_PORT;
 }
 
+/*
+ * A MySQL server with TLS (see tests/tls). The tests that need it are skipped
+ * when MYSQL_TLS_HOST is not set. The users are created by tests/tls/init.sql
+ * and the certificates by tests/tls/generate-certs.sh.
+ */
+$MYSQL_TLS_HOST  = isset_or('MYSQL_TLS_HOST', '');
+$MYSQL_TLS_PORT  = isset_or('MYSQL_TLS_PORT', 3306);
+$MYSQL_TLS_DB    = isset_or('MYSQL_TLS_DB', 'database');
+$MYSQL_TLS_CERTS = isset_or('MYSQL_TLS_CERTS', dirname(__FILE__) . '/../tls/certs');
+
+/*
+ * An Oracle Database (Oracle Database Free in the container-registry image
+ * database/free works). The tests that need it are skipped when the oci8
+ * extension is not loaded or ORACLE_HOST is not set. The extension needs
+ * Oracle Instant Client, which requires glibc, so it is not available in the
+ * musl builder images.
+ */
+$ORACLE_HOST    = isset_or('ORACLE_HOST', '');
+$ORACLE_PORT    = isset_or('ORACLE_PORT', 1521);
+$ORACLE_SERVICE = isset_or('ORACLE_SERVICE', 'FREEPDB1');
+$ORACLE_USER    = isset_or('ORACLE_USER', 'system');
+$ORACLE_PASSWD  = isset_or('ORACLE_PASSWD', '');
+$ORACLE_CONNECT = $ORACLE_HOST . ':' . $ORACLE_PORT . '/' . $ORACLE_SERVICE;
+
 $MEMCACHE_HOST = isset_or('MEMCACHE_HOST', '127.0.0.1');
 $MEMCACHE_PORT = isset_or('MEMCACHE_PORT', '11211');
 
