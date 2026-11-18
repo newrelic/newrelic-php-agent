@@ -1,0 +1,22 @@
+{
+  "releases": [
+    {
+      "date": "2026-11-17",
+      "files": [
+        {
+          "filename": "newrelic-php5-12.13.0.43-linux-musl.tar.gz",
+          "libc": "musl",
+          "platform": "linux-musl",
+          "sha256": "a7ac17752e5f686a31ac8bfc887cb256f24560a5c124183e22856906a521ed62"
+        },
+        {
+          "filename": "newrelic-php5-12.13.0.43-linux.tar.gz",
+          "libc": "glibc",
+          "platform": "linux",
+          "sha256": "dca19d0a845b78dc9fc5e412c215d6534b0232428ab6e0eec05d9d82091e4f21"
+        }
+      ],
+      "version": "12.13.0.43"
+    }
+  ]
+}
