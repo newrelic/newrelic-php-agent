@@ -202,8 +202,8 @@ EXPORT_DYNAMIC := -Wl,-export-dynamic
 #
 # We also need to manipulate $(NEWRELIC_SHARED_LIBADD) when this is
 # build on OS X: its linker doesn't support allowing multiple definitions, and
-# the PCRE symbols in the embed library collide with nrpcre-pic. It's a mess.
-# Instead, we'll skip linking against nrpcre-pic, and use OS X's own PCRE
+# the PCRE symbols in the embed library collide with nrpcre2-8-pic. It's a mess.
+# Instead, we'll skip linking against nrpcre2-8-pic, and use OS X's own PCRE
 # shared library to fill in the blanks.
 #
 # If the build machine doesn't do builds on OS X, the following workaround
@@ -211,8 +211,8 @@ EXPORT_DYNAMIC := -Wl,-export-dynamic
 #
 TEST_NEWRELIC_SHARED_LIBADD := $(NEWRELIC_SHARED_LIBADD)
 ifeq (Darwin,$(shell uname))
-	ifneq (,$(findstring -lnrpcre-pic,$(TEST_NEWRELIC_SHARED_LIBADD)))
-		TEST_NEWRELIC_SHARED_LIBADD := $(filter-out -lnrpcre-pic,$(TEST_NEWRELIC_SHARED_LIBADD)) /usr/lib/libpcre.dylib
+	ifneq (,$(findstring -lnrpcre2-8-pic,$(TEST_NEWRELIC_SHARED_LIBADD)))
+		TEST_NEWRELIC_SHARED_LIBADD := $(filter-out -lnrpcre2-8-pic,$(TEST_NEWRELIC_SHARED_LIBADD)) /usr/lib/libpcre2-8.dylib
 	endif
 	EXPORT_DYNAMIC := -Wl,-export_dynamic
 endif

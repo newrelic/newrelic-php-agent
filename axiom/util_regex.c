@@ -22,19 +22,19 @@
  *           3. The PCRE option to set if the NR_REGEX option is set.
  *           4. The NR_REGEX option to check.
  */
-static inline void nr_regex_handle_option(int* pcre_option_set,
+static inline void nr_regex_handle_option(uint32_t* pcre_option_set,
                                           int nr_option_set,
-                                          int pcre_option,
+                                          uint32_t pcre_option,
                                           int nr_option) {
   if (nr_option_set & nr_option) {
     *pcre_option_set |= pcre_option;
   }
 }
 
-nr_regex_t* nr_regex_create(const char* pattern, int options, int do_study) {
-  const char* err = NULL;
-  int erroffset = 0;
-  int pcre_options = 0;
+nr_regex_t* nr_regex_create(const char* pattern, int options, int jit_compile) {
+  int err_code = 0;
+  PCRE2_SIZE erroffset = 0;
+  uint32_t pcre_options = 0;
   nr_regex_t* regex;
 
   if (NULL == pattern) {
@@ -46,39 +46,45 @@ nr_regex_t* nr_regex_create(const char* pattern, int options, int do_study) {
   /*
    * Transform NR_REGEX_* options into PCRE ones.
    */
-  nr_regex_handle_option(&pcre_options, options, PCRE_ANCHORED,
+  nr_regex_handle_option(&pcre_options, options, PCRE2_ANCHORED,
                          NR_REGEX_ANCHORED);
-  nr_regex_handle_option(&pcre_options, options, PCRE_CASELESS,
+  nr_regex_handle_option(&pcre_options, options, PCRE2_CASELESS,
                          NR_REGEX_CASELESS);
-  nr_regex_handle_option(&pcre_options, options, PCRE_DOLLAR_ENDONLY,
+  nr_regex_handle_option(&pcre_options, options, PCRE2_DOLLAR_ENDONLY,
                          NR_REGEX_DOLLAR_ENDONLY);
-  nr_regex_handle_option(&pcre_options, options, PCRE_DOTALL, NR_REGEX_DOTALL);
-  nr_regex_handle_option(&pcre_options, options, PCRE_MULTILINE,
+  nr_regex_handle_option(&pcre_options, options, PCRE2_DOTALL, NR_REGEX_DOTALL);
+  nr_regex_handle_option(&pcre_options, options, PCRE2_MULTILINE,
                          NR_REGEX_MULTILINE);
 
   /*
    * Compile the regular expression.
    */
-  regex->code = pcre_compile(pattern, pcre_options, &err, &erroffset, NULL);
+  regex->code = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
+                              pcre_options, &err_code, &erroffset, NULL);
   if (NULL == regex->code) {
-    nrl_verbosedebug(NRL_MISC, "%s: regex compilation error %s at offset %d",
-                     __func__, err, erroffset);
+    PCRE2_UCHAR err[256] = {0};
+
+    pcre2_get_error_message(err_code, err, sizeof(err));
+    nrl_verbosedebug(NRL_MISC, "%s: regex compilation error %s at offset %zu",
+                     __func__, (const char*)err, (size_t)erroffset);
 
     nr_regex_destroy(&regex);
     return NULL;
   }
 
   /*
-   * Study it, if asked.
+   * JIT compile the pattern, if asked.
+   * JIT is not available on every platform, and pcre2_match falls back to the
+   * interpreter if the pattern is not JIT compiled, so a failure here is not
+   * fatal.
    */
-  if (do_study) {
-    err = NULL;
-    regex->extra = pcre_study(regex->code, 0, &err);
-    if ((NULL == regex->extra) && (NULL != err)) {
-      nrl_verbosedebug(NRL_MISC, "%s: regex study error %s", __func__, err);
-
-      nr_regex_destroy(&regex);
-      return NULL;
+  if (jit_compile) {
+    err_code = pcre2_jit_compile(regex->code, PCRE2_JIT_COMPLETE);
+    if (0 != err_code) {
+      nrl_verbosedebug(NRL_MISC,
+                       "%s: regex jit compilation error %d; using "
+                       "interpreter",
+                       __func__, err_code);
     }
   }
 
@@ -100,8 +106,7 @@ void nr_regex_destroy(nr_regex_t** regex_ptr) {
 
   regex = *regex_ptr;
 
-  pcre_free_study(regex->extra);
-  pcre_free(regex->code);
+  pcre2_code_free(regex->code);
   nr_memset((void*)regex, 0, sizeof(nr_regex_t));
   nr_realfree((void**)regex_ptr);
 }
@@ -110,20 +115,35 @@ nr_status_t nr_regex_match(const nr_regex_t* regex,
                            const char* str,
                            int str_len) {
   int rc;
+  pcre2_match_data* match_data;
 
   if ((NULL == regex) || (NULL == str) || (str_len < 0)) {
     return NR_FAILURE;
   }
 
-  rc = pcre_exec(regex->code, regex->extra, str, str_len, 0, 0, NULL, 0);
+  /*
+   * PCRE2 always needs a match data block, even if the caller doesn't care
+   * about the offsets.
+   */
+  match_data = pcre2_match_data_create_from_pattern(regex->code, NULL);
+  if (NULL == match_data) {
+    nrl_verbosedebug(NRL_MISC, "%s: unable to allocate match data", __func__);
+    return NR_FAILURE;
+  }
+
+  rc = pcre2_match(regex->code, (PCRE2_SPTR)str, (PCRE2_SIZE)str_len, 0, 0,
+                   match_data, NULL);
+  pcre2_match_data_free(match_data);
+
   if (rc >= 0) {
     return NR_SUCCESS;
-  } else if (PCRE_ERROR_NOMATCH == rc) {
+  } else if (PCRE2_ERROR_NOMATCH == rc) {
     return NR_FAILURE;
   }
 
   nrl_verbosedebug(
-      NRL_MISC, "%s: pcre_exec returned %d; expected >=0 or PCRE_ERROR_NOMATCH",
+      NRL_MISC,
+      "%s: pcre2_match returned %d; expected >=0 or PCRE2_ERROR_NOMATCH",
       __func__, rc);
   return NR_FAILURE;
 }
@@ -143,23 +163,24 @@ nr_regex_substrings_t* nr_regex_match_capture(const nr_regex_t* regex,
     return NULL;
   }
 
-  rc = pcre_exec(regex->code, regex->extra, str, str_len, 0, 0, ss->ovector,
-                 ss->ovector_size);
+  rc = pcre2_match(regex->code, (PCRE2_SPTR)str, (PCRE2_SIZE)str_len, 0, 0,
+                   ss->match_data, NULL);
   if (rc < 0) {
-    if (PCRE_ERROR_NOMATCH != rc) {
+    if (PCRE2_ERROR_NOMATCH != rc) {
       nrl_verbosedebug(
           NRL_MISC,
-          "%s: pcre_exec returned %d; expected >0 or PCRE_ERROR_NOMATCH",
+          "%s: pcre2_match returned %d; expected >0 or PCRE2_ERROR_NOMATCH",
           __func__, rc);
     }
 
     nr_regex_substrings_destroy(&ss);
     return NULL;
   } else if (0 == rc) {
-    nrl_verbosedebug(NRL_MISC,
-                     "%s: pcre_exec returned 0 (too many matches); expected >0 "
-                     "or PCRE_ERROR_NOMATCH",
-                     __func__);
+    nrl_verbosedebug(
+        NRL_MISC,
+        "%s: pcre2_match returned 0 (too many matches); expected >0 "
+        "or PCRE2_ERROR_NOMATCH",
+        __func__);
 
     /*
      * We want this case to blow up: although we know the regular expression
@@ -177,25 +198,24 @@ nr_regex_substrings_t* nr_regex_match_capture(const nr_regex_t* regex,
 }
 
 int nr_regex_capture_count(const nr_regex_t* regex) {
-  int count;
+  uint32_t count = 0;
   int retval;
 
   if (NULL == regex) {
     return -1;
   }
 
-  retval = pcre_fullinfo(regex->code, regex->extra, PCRE_INFO_CAPTURECOUNT,
-                         (void*)&count);
+  retval = pcre2_pattern_info(regex->code, PCRE2_INFO_CAPTURECOUNT, &count);
   if (0 != retval) {
-    nrl_verbosedebug(NRL_MISC, "%s: pcre_fullinfo returned %d; expected 0",
+    nrl_verbosedebug(NRL_MISC, "%s: pcre2_pattern_info returned %d; expected 0",
                      __func__, retval);
     return -1;
   }
 
-  return count;
+  return (int)count;
 }
 
-nr_regex_substrings_t* nr_regex_substrings_create(pcre* code, int count) {
+nr_regex_substrings_t* nr_regex_substrings_create(pcre2_code* code, int count) {
   nr_regex_substrings_t* ss;
 
   if (count < 0 || NULL == code) {
@@ -206,8 +226,18 @@ nr_regex_substrings_t* nr_regex_substrings_create(pcre* code, int count) {
   ss->code = code;
   ss->subject = NULL;
   ss->capture_count = count;
-  ss->ovector_size = (count + 1) * 3;
-  ss->ovector = (int*)nr_calloc(ss->ovector_size, sizeof(int));
+
+  /*
+   * The match data block owns the ovector: it holds one start/end pair for
+   * the whole match plus one for each subpattern.
+   */
+  ss->match_data = pcre2_match_data_create((uint32_t)count + 1, NULL);
+  if (NULL == ss->match_data) {
+    nr_free(ss);
+    return NULL;
+  }
+  ss->ovector = pcre2_get_ovector_pointer(ss->match_data);
+  ss->ovector_size = (count + 1) * 2;
 
   return ss;
 }
@@ -221,7 +251,7 @@ void nr_regex_substrings_destroy(nr_regex_substrings_t** ss_ptr) {
 
   ss = *ss_ptr;
   nr_free(ss->subject);
-  nr_free(ss->ovector);
+  pcre2_match_data_free(ss->match_data);
   nr_realfree((void**)ss_ptr);
 }
 
@@ -241,7 +271,7 @@ char* nr_regex_substrings_get(const nr_regex_substrings_t* ss, int index) {
   }
 
   /*
-   * Although PCRE provides a pcre_copy_substring function, we'll use
+   * Although PCRE2 provides a pcre2_substring_copy_bynumber function, we'll use
    * nr_strndup so that we definitely use our own allocator and the returned
    * string is OK to nr_free.
    */
@@ -256,8 +286,8 @@ char* nr_regex_substrings_get_named(const nr_regex_substrings_t* ss,
     return NULL;
   }
 
-  offset = pcre_get_stringnumber(ss->code, name);
-  if (PCRE_ERROR_NOSUBSTRING == offset) {
+  offset = pcre2_substring_number_from_name(ss->code, (PCRE2_SPTR)name);
+  if (offset < 0) {
     return NULL;
   }
 
@@ -272,14 +302,20 @@ nr_status_t nr_regex_substrings_get_offsets(const nr_regex_substrings_t* ss,
     return NR_FAILURE;
   }
 
-  offsets[0] = ss->ovector[index * 2];
-  offsets[1] = ss->ovector[index * 2 + 1];
+  offsets[0] = (int)ss->ovector[index * 2];
+  offsets[1] = (int)ss->ovector[index * 2 + 1];
 
   return NR_SUCCESS;
 }
 
 const char* nr_regex_pcre_version(void) {
-  return pcre_version();
+  static char version[32];
+
+  if (pcre2_config(PCRE2_CONFIG_VERSION, version) < 0) {
+    return "unknown";
+  }
+
+  return version;
 }
 
 char* nr_regex_quote(const char* str, size_t str_len, size_t* quoted_len) {

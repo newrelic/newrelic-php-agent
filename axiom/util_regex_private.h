@@ -10,14 +10,12 @@
 #ifndef UTIL_REGEX_PRIVATE_HDR
 #define UTIL_REGEX_PRIVATE_HDR
 
-#undef pcre
-#undef pcre_extra
-#undef pcre_compile
-#undef pcre_study
-#undef pcre_free
-#undef pcre_copy_substring
-#undef pcre_exec
-#include <pcre.h>
+/*
+ * PCRE2 is built for a specific code unit width; we only deal with 8 bit
+ * strings.
+ */
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #include "util_regex.h"
 
@@ -25,8 +23,7 @@
  * The structure wrapping compiled regular expressions.
  */
 struct _nr_regex_t {
-  pcre* code;        /* compiled regular expression */
-  pcre_extra* extra; /* extra study data, if requested, or NULL */
+  pcre2_code* code;  /* compiled regular expression */
   int capture_count; /* the number of subpatterns that may be captured */
 };
 
@@ -34,11 +31,12 @@ struct _nr_regex_t {
  * The structure wrapping found substrings from a regular expression match.
  */
 struct _nr_regex_substrings_t {
-  pcre* code;        /* a copy of the compiled regular expression */
+  pcre2_code* code;  /* the compiled regular expression (not owned) */
   char* subject;     /* a copy of the subject that was matched */
   int capture_count; /* the number of subpatterns that were captured */
-  int* ovector;      /* the ovector array returned by PCRE */
-  int ovector_size;  /* the number of elements in ovector */
+  pcre2_match_data* match_data; /* the match data block; owns ovector */
+  PCRE2_SIZE* ovector;          /* the ovector array returned by PCRE2 */
+  int ovector_size;             /* the number of elements in ovector */
 };
 
 /*
@@ -54,12 +52,13 @@ extern int nr_regex_capture_count(const nr_regex_t* regex);
 /*
  * Purpose : Create a substrings object.
  *
- * Params  : 1. The PCRE code object used in the regular expression.
+ * Params  : 1. The PCRE2 code object used in the regular expression.
  *           2. The number of subpatterns matched. This may be 0 if there were
  *              no subpatterns.
  *
  * Returns : A new substrings object.
  */
-extern nr_regex_substrings_t* nr_regex_substrings_create(pcre* code, int count);
+extern nr_regex_substrings_t* nr_regex_substrings_create(pcre2_code* code,
+                                                         int count);
 
 #endif /* UTIL_REGEX_PRIVATE_HDR */
