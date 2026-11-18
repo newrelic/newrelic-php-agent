@@ -7,6 +7,8 @@ on:
       - main
       - dev
   pull_request:
+    paths-ignore:
+      - 'release-data/**'
   schedule:
     - cron: '0 0 * * 0' # Every Sunday at 12:00 AM
 

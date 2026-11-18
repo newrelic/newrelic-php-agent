@@ -1,0 +1,14 @@
+{
+  "first_image_version": "9.2.0",
+  "images": [
+    {
+      "digest": "sha256:1aa4f2cfac149738fca7df2880ff7e7130d79ee100cccdc9395956522d8187b4",
+      "platforms": {
+        "linux/amd64": "sha256:e8b9002209d8ea2757a7f9bedba41ebf837ab5f5fd1c35d28344333b1ffa0d31",
+        "linux/arm64": "sha256:a2723a8be783bc34ee4adb45aa6d16125760457d4d11d1a3a861163d47a3413d"
+      },
+      "pushed": "2026-11-17T20:57:11.284988Z",
+      "version": "12.13.0"
+    }
+  ]
+}
