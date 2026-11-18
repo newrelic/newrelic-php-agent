@@ -74,6 +74,9 @@ typedef struct _nrphpglobals_t {
   char* apache_add;    /* Additional Apache version information */
   int is_apache;       /* 1 if the process is Apache, 0 otherwise */
   int apache_threaded; /* 1 if a threaded MPM is in use, 0 otherwise */
+#ifdef ZTS
+  int is_frankenphp;   /* 1 if the process is FrankenPHP, 0 otherwise */
+#endif
   int preload_framework_library_detection; /* Enables preloading framework and
                                               library detection */
   int composer_api_per_process_detection;  /* Enables per-process VM package

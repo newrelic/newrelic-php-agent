@@ -110,6 +110,15 @@ typedef struct _nruserfn_t {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   char* wordpress_plugin_theme;
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  // Custom fcall_begin and fcall_end handlers. Set both or neither: if both
+  // are set, they are used instead of the default ones,
+  // nr_php_observer_fcall_begin and nr_php_observer_fcall_end. If only one is
+  // set, both defaults are used, because the defaults work as a pair. Custom
+  // handlers replace the defaults entirely: the function gets no segment
+  // unless the custom handlers start and stop one themselves.
+  zend_observer_fcall_handlers fcall_handlers;
+#endif
 } nruserfn_t;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
