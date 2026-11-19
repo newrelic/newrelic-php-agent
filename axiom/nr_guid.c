@@ -14,7 +14,8 @@ char* nr_guid_create(nr_random_t* rnd) {
   size_t i;
 
   for (i = 0; i < NR_GUID_SIZE; i++) {
-    unsigned long r = nr_random_range(rnd, 0xf);
+    /* The upper bound is exclusive: 16 makes all of hex_digits reachable. */
+    unsigned long r = nr_random_range(rnd, 16);
 
     guid[i] = hex_digits[r];
   }
