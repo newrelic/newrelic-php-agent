@@ -11,6 +11,7 @@
 #include "util_number_converter.h"
 #include "util_strings.h"
 #include "util_time.h"
+#include "util_glibc_compat.h"
 
 nrtime_t nr_parse_time(const char* str) {
   char* ep;

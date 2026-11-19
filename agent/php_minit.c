@@ -35,6 +35,7 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 #include "util_threads.h"
+#include "util_glibc_compat.h"
 
 #include "php_observer.h"
 

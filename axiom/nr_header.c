@@ -19,6 +19,7 @@
 #include "util_obfuscate.h"
 #include "util_object.h"
 #include "util_strings.h"
+#include "util_glibc_compat.h"
 
 /*
  * Purpose : Determine if the given string contains only base 64 characters.

@@ -20,6 +20,7 @@
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_url.h"
+#include "util_glibc_compat.h"
 
 /*
  * This file deals with INI variables.

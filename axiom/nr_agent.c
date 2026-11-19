@@ -25,6 +25,7 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 #include "util_time.h"
+#include "util_glibc_compat.h"
 
 typedef enum _nr_socket_type_t {
   NR_LISTEN_TYPE_TCP,

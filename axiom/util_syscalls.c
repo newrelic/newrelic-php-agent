@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "util_syscalls.h"
+#include "util_glibc_compat.h"
 
 int nr_accept(int sock, struct sockaddr* address, socklen_t* address_len_p) {
   return (accept)(sock, address, address_len_p);
@@ -182,7 +183,7 @@ int nr_socket(int dmn, int stp, int prt) {
 }
 
 int nr_stat(const char* path, struct stat* statbuf) {
-  return (stat)(path, statbuf);
+  return stat(path, statbuf);
 }
 
 int nr_unlink(const char* name) {

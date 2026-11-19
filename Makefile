@@ -229,7 +229,7 @@ bin/newrelic-install: agent/newrelic-install.sh Makefile VERSION | bin/
 	chmod 755 $@
 
 bin/newrelic-iutil: agent/install-util.c Makefile VERSION | bin/
-	$(CC) -DNR_VERSION="\"$(AGENT_VERSION)\"" $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS)
+	$(CC) -DNR_VERSION="\"$(AGENT_VERSION)\"" -Iaxiom $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 
 #
