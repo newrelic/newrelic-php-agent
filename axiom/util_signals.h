@@ -9,6 +9,8 @@
 #ifndef UTIL_SIGNALS_HDR
 #define UTIL_SIGNALS_HDR
 
+#include <signal.h>
+
 /*
  * Purpose : Re-raises the given signal with the default signal handler
  *           provided by the operating system. Useful to ensure core dumps are
@@ -58,5 +60,17 @@ extern void nr_signal_tracer_common(int sig);
  * Purpose : Install a handler for a variety of fatal signals.
  */
 extern void nr_signal_handler_install(void (*handler)(int sig));
+
+/*
+ * Purpose : Install a handler for the same fatal signals as
+ *           nr_signal_handler_install, one that is given the details of the
+ *           signal (SA_SIGINFO), such as si_code, which tells a signal that a
+ *           fault raised from one that was sent with kill().
+ *
+ * Params  : 1. The handler, which must not be NULL.
+ */
+extern void nr_signal_handler_install_siginfo(void (*handler)(int sig,
+                                                              siginfo_t* info,
+                                                              void* context));
 
 #endif /* UTIL_SIGNALS_HDR */

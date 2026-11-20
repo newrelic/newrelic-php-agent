@@ -33,6 +33,7 @@
  */
 static char* argv;
 static int fake_daemon_fd = -1;
+int tlib_php_use_fake_daemon_fd = 1;
 static zend_llist global_vars;
 static char* ini;
 static char* logfile;
@@ -146,7 +147,7 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
    * If you see flatbuffers on stdout when running tests, that's a bug!
    */
   fake_daemon_fd = nr_dup(1);
-  nr_set_daemon_fd(fake_daemon_fd);
+  nr_set_daemon_fd(tlib_php_use_fake_daemon_fd ? fake_daemon_fd : -1);
 
   sapi_module_struct tlib_module;
 

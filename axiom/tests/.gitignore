@@ -41,6 +41,7 @@ test_analytics_events
 test_apdex
 test_app
 test_app_harvest
+test_app_harvest_threads
 test_async_context
 test_attributes
 test_base64

@@ -273,8 +273,9 @@ void nr_cmd_appinfo_process_harvest_timing(nr_flatbuffers_table_t* reply,
   sampling_target = nr_flatbuffers_table_read_u16(
       reply, APP_REPLY_FIELD_SAMPLING_TARGET, 10);
 
-  nr_app_harvest_init(&app->harvest, connect_timestamp,
-                      harvest_frequency * NR_TIME_DIVISOR, sampling_target);
+  nr_app_update_harvest_config(app, connect_timestamp,
+                               harvest_frequency * NR_TIME_DIVISOR,
+                               sampling_target);
 }
 
 nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,

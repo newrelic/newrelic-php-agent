@@ -13,6 +13,7 @@
  * PHP specific.
  */
 
+#include <signal.h>
 #include <stdbool.h>
 
 #ifndef PHP_AGENT_HDR
@@ -101,9 +102,35 @@ extern zval* nr_php_backtrace(TSRMLS_D);
  * Purpose : Write a dump of the current VM position to a file descriptor.
  *
  * Params  : 1. The destination file descriptor.
- *           2. The maximum number of execution frames to write.
+ *           2. The maximum number of execution frames to write, or zero or
+ *              less for no limit. A line says when frames were left out.
  */
 extern void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC);
+
+/*
+ * Purpose : Write the PHP stack of the current thread to fd, for the fatal
+ *           signal handler, unless it cannot be read: a thread that has no PHP
+ *           state (thread-safe PHP) gets a line that says so, and a read that
+ *           faults is caught and gets a line that says that it failed.
+ *
+ * Params  : 1. The destination file descriptor.
+ *
+ * Returns : Nothing. The caller reraises the signal it is handling.
+ */
+extern void nr_php_guarded_backtrace_fd(int fd);
+
+/*
+ * Purpose : Tell a fault from a signal that was sent. The fatal signal handler
+ *           uses it while the PHP stack is read, to jump back only for a fault
+ *           of the read.
+ *
+ * Params  : 1. The signal number.
+ *           2. The details of the signal (si_code); NULL is taken for a fault.
+ *
+ * Returns : True for a SIGSEGV or SIGBUS that the kernel raised, false for any
+ *           other signal and for one that was sent (kill(), raise(), ...).
+ */
+extern bool nr_php_signal_is_fault(int sig, const siginfo_t* info);
 
 /*
  * Purpose : Same as nr_php_backtrace_to_json but designed as a callback
@@ -219,6 +246,28 @@ extern int nr_php_object_has_concrete_method(zval* object,
  */
 extern nr_status_t nr_php_txn_begin(const char* appnames,
                                     const char* license TSRMLS_DC);
+
+/*
+ * Purpose : Populate the nr_app_info_t fields that identify an application
+ *           for matching/creation: the fields nr_app_info_valid() requires
+ *           to be non-NULL (appname, license, environment, lang, version,
+ *           redirect_collector), plus high_security and the
+ *           trace_observer_host/port fields nr_app_match() actually
+ *           compares. Any two calls with the same (appnames, license) pair
+ *           must resolve to the same identity fields, or nr_app_match()
+ *           will fail to match a search key against an app that should be
+ *           the same one.
+ *
+ * Params  : 1. Out parameter: the nr_app_info_t to populate. NOT zeroed by
+ *              this function -- caller must nr_memset() it first.
+ *           2. The requested application name(s) (may include rollups),
+ *              or NULL/empty to fall back to a configured default.
+ *           3. The requested license key, or NULL/empty to fall back to
+ *              a configured default (see nr_php_use_license()).
+ */
+extern void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
+                                                   const char* appnames,
+                                                   const char* license);
 
 /*
  * Purpose : Perform the transaction ending tasks that have to be performed at

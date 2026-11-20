@@ -386,6 +386,15 @@ void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC) {
 
     i++;
     if ((limit > 0) && (i >= limit)) {
+      if (ex) {
+        /* say that the trace is cut, so that a deep stack does not look
+         * complete */
+        nr_write(fd,
+                 NR_PSTR("... (more frames not shown: the trace stops after "));
+        nr_itoa(scratch, sizeof(scratch), limit);
+        nr_write(fd, scratch, nr_strlen(scratch));
+        nr_write(fd, NR_PSTR(" frames)\n"));
+      }
       break;
     }
   }

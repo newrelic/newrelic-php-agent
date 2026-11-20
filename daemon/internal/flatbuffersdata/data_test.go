@@ -209,6 +209,28 @@ func TestFlatbuffersTxnData(t *testing.T) {
 
 }
 
+func TestFlatbuffersThreadID(t *testing.T) {
+	const wantThreadID uint64 = 42
+
+	txn := Txn{Name: "txn", ThreadID: wantThreadID}
+	data, err := txn.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msg := protocol.GetRootAsMessage(data, 0)
+	var tbl flatbuffers.Table
+	if !msg.Data(&tbl) {
+		t.Fatal("missing message body")
+	}
+	var tx protocol.Transaction
+	tx.Init(tbl.Bytes, tbl.Pos)
+
+	if got := tx.ThreadId(); got != wantThreadID {
+		t.Errorf("ThreadId() = %d, want %d", got, wantThreadID)
+	}
+}
+
 func TestMinimumFlatbufferSize(t *testing.T) {
 	buf := flatbuffers.NewBuilder(0)
 	protocol.MessageStart(buf)
