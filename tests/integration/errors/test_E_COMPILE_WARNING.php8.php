@@ -31,7 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Private methods cannot be final as they are never overridden by other classes",
+      "PHP Error 'E_COMPILE_WARNING' with message 'Private methods cannot be final as they are never overridden by other classes' in __FILE__:??",
       "E_COMPILE_WARNING",
       {
         "stack_trace": [],
@@ -57,7 +57,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_COMPILE_WARNING",
-        "error.message": "Private methods cannot be final as they are never overridden by other classes",
+        "error.message": "PHP Error 'E_COMPILE_WARNING' with message 'Private methods cannot be final as they are never overridden by other classes' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

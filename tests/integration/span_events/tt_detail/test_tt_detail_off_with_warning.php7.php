@@ -59,7 +59,7 @@ display_errors=1
       },
       {},
       {
-        "error.message": "I'm covered in bees!!!",
+        "error.message": "PHP Error 'E_USER_WARNING' with message 'I'm covered in bees!!!' in __FILE__:??",
         "error.class": "E_USER_WARNING"
       }
     ]
@@ -80,7 +80,7 @@ display_errors=1
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_WARNING",
-        "error.message": "I'm covered in bees!!!",
+        "error.message": "PHP Error 'E_USER_WARNING' with message 'I'm covered in bees!!!' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

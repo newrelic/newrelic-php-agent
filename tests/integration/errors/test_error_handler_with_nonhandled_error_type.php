@@ -34,7 +34,7 @@ Deprecated: Let this serve as a deprecation in.*
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Let this serve as a deprecation",
+      "PHP Error 'E_USER_DEPRECATED' with message 'Let this serve as a deprecation' in __FILE__:??",
       "E_USER_DEPRECATED",
       {
         "stack_trace": "??",
@@ -60,7 +60,7 @@ Deprecated: Let this serve as a deprecation in.*
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_DEPRECATED",
-        "error.message": "Let this serve as a deprecation",
+        "error.message": "PHP Error 'E_USER_DEPRECATED' with message 'Let this serve as a deprecation' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -90,7 +90,7 @@ log_errors=0
       },
       {},
       {
-        "error.message": "foo",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'foo' in __FILE__:??",
         "error.class": "E_USER_ERROR"
       }
     ]

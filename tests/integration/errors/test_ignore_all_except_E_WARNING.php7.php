@@ -37,7 +37,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Division by zero",
+      "PHP Error 'E_WARNING' with message 'Division by zero' in __FILE__:??",
       "E_WARNING",
       {
         "stack_trace": [
@@ -65,7 +65,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_WARNING",
-        "error.message": "Division by zero",
+        "error.message": "PHP Error 'E_WARNING' with message 'Division by zero' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -34,7 +34,7 @@ Stack trace:
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Cannot re-assign $this",
+      "PHP Error 'E_COMPILE_ERROR' with message 'Cannot re-assign $this' in __FILE__:??",
       "E_COMPILE_ERROR",
       {
         "stack_trace": [],
@@ -60,7 +60,7 @@ Stack trace:
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_COMPILE_ERROR",
-        "error.message": "Cannot re-assign $this",
+        "error.message": "PHP Error 'E_COMPILE_ERROR' with message 'Cannot re-assign $this' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -21,7 +21,7 @@ newrelic.special.expensive_node_min = 0
     [
       "??",
       "OtherTransaction/php__FILE__",
-      "Do you really want to report me?",
+      "PHP Error 'E_USER_ERROR' with message 'Do you really want to report me?' in __FILE__:??",
       "E_USER_ERROR",
       {
         "stack_trace": [
@@ -65,7 +65,7 @@ newrelic.special.expensive_node_min = 0
       },
       {
         "errorType": "E_USER_ERROR",
-        "errorMessage": "Do you really want to report me?"
+        "errorMessage": "PHP Error 'E_USER_ERROR' with message 'Do you really want to report me?' in __FILE__:??"
       }
     ]
   ]

@@ -25,7 +25,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Sample E_USER_WARNING",
+      "PHP Error 'E_USER_WARNING' with message 'Sample E_USER_WARNING' in __FILE__:??",
       "E_USER_WARNING",
       {
         "stack_trace": [
@@ -53,7 +53,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_WARNING",
-        "error.message": "Sample E_USER_WARNING",
+        "error.message": "PHP Error 'E_USER_WARNING' with message 'Sample E_USER_WARNING' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -47,7 +47,7 @@ Exercise the instrumentation for the dl() function.
     [
       "??",
       "OtherTransaction/php__FILE__",
-      "dl(): Temporary module name should contain only filename",
+      "PHP Error 'E_WARNING' with message 'dl(): Temporary module name should contain only filename' in __FILE__:??",
       "E_WARNING",
       {
         "stack_trace": [

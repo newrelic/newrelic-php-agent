@@ -79,7 +79,7 @@ stack => \[" in trigger_error called at .*test_error_group_callback_error_web.ph
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_ERROR",
-        "error.message": "I'M COVERED IN BEES",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'I'M COVERED IN BEES' in __FILE__:??",
         "transactionName": "WebTransaction\/Uri__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",
@@ -113,7 +113,7 @@ stack => \[" in trigger_error called at .*test_error_group_callback_error_web.ph
     [
       "??",
       "WebTransaction\/Uri__FILE__",
-      "I'M COVERED IN BEES",
+      "PHP Error 'E_USER_ERROR' with message 'I'M COVERED IN BEES' in __FILE__:??",
       "E_USER_ERROR",
       {
         "stack_trace": [

@@ -24,7 +24,7 @@ newrelic.error_collector.attributes.enabled = false
     [
       "??",
       "OtherTransaction/php__FILE__",
-      "Do you really want to report me?",
+      "PHP Error 'E_USER_ERROR' with message 'Do you really want to report me?' in __FILE__:??",
       "E_USER_ERROR",
       {
         "stack_trace": [

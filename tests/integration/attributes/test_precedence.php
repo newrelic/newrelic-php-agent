@@ -30,7 +30,7 @@ newrelic.analytics_events.capture_attributes = false
     [
       "??",
       "OtherTransaction/php__FILE__",
-      "Do you really want to report me?",
+      "PHP Error 'E_USER_ERROR' with message 'Do you really want to report me?' in __FILE__:??",
       "E_USER_ERROR",
       {
         "stack_trace": [
@@ -74,7 +74,7 @@ newrelic.analytics_events.capture_attributes = false
       },
       {
         "errorType": "E_USER_ERROR",
-        "errorMessage": "Do you really want to report me?"
+        "errorMessage": "PHP Error 'E_USER_ERROR' with message 'Do you really want to report me?' in __FILE__:??"
       }
     ]
   ]

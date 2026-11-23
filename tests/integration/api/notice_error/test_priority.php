@@ -15,7 +15,7 @@ The agent should prioritize traced errors based on their severity.
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "highest priority",
+      "PHP Error 'E_USER_WARNING' with message 'highest priority' in __FILE__:??",
       "E_USER_WARNING",
       {
         "stack_trace": [
@@ -43,7 +43,7 @@ The agent should prioritize traced errors based on their severity.
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_WARNING",
-        "error.message": "highest priority",
+        "error.message": "PHP Error 'E_USER_WARNING' with message 'highest priority' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

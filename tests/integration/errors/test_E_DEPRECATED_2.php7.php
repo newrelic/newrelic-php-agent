@@ -35,7 +35,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "mktime(): You should be using the time() function instead",
+      "PHP Error 'E_DEPRECATED' with message 'mktime(): You should be using the time() function instead' in __FILE__:??",
       "E_DEPRECATED",
       {
         "stack_trace": [
@@ -63,7 +63,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_DEPRECATED",
-        "error.message": "mktime(): You should be using the time() function instead",
+        "error.message": "PHP Error 'E_DEPRECATED' with message 'mktime(): You should be using the time() function instead' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",
