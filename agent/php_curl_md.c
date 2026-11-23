@@ -318,6 +318,54 @@ nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC) {
   return metadata->segment;
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7 */
+nr_segment_t* nr_php_curl_multi_md_take_segment(const zval* mh) {
+  nr_php_curl_multi_md_t* multi_metadata;
+  nr_segment_t* segment;
+
+  if (!check_curl_handle(mh)) {
+    return NULL;
+  }
+
+  multi_metadata = get_curl_multi_metadata(mh);
+  if (nrunlikely(NULL == multi_metadata)) {
+    return NULL;
+  }
+
+  segment = multi_metadata->segment;
+  multi_metadata->segment = NULL;
+
+  if (nr_txn_start_time(NRPRG(txn)) != multi_metadata->txn_start_time) {
+    return NULL;
+  }
+
+  return segment;
+}
+#endif
+
+nr_segment_t* nr_php_curl_md_take_segment(const zval* ch) {
+  nr_php_curl_md_t* metadata;
+  nr_segment_t* segment;
+
+  if (!check_curl_handle(ch)) {
+    return NULL;
+  }
+
+  metadata = get_curl_metadata(ch);
+  if (nrunlikely(NULL == metadata)) {
+    return NULL;
+  }
+
+  segment = metadata->segment;
+  metadata->segment = NULL;
+
+  if (nr_txn_start_time(NRPRG(txn)) != metadata->txn_start_time) {
+    return NULL;
+  }
+
+  return segment;
+}
+
 void nr_curl_rshutdown(TSRMLS_D) {
   /*
    * This frees curl multi metadata stored in the transaction.
