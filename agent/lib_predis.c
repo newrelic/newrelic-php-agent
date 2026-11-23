@@ -711,7 +711,8 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
      * pipeline, we'll concatenate the object ID onto the base context name
      * generated in the executePipeline() instrumentation.
      */
-    async_context = nr_formatf("%s." NR_UINT64_FMT, ctx, index);
+    async_context = nr_formatf("%s." NR_UINT64_FMT, ctx,
+                               (uint64_t)Z_OBJ_HANDLE_P(command));
   }
 
   /*
