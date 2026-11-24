@@ -641,9 +641,10 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-/* Prior to PHP8 these error_filename and error_lineno were only used to pass
- * on to the error handler that the agent overwrote.  With PHP8+, these values
- * are currently unused since the agent is already recording the stack trace.
+/*
+ * The error_filename and error_lineno locate the error. They are part of the
+ * recorded error message because the stack trace does not include the frame
+ * that the executor is in.
  */
 void nr_php_error_cb(int type,
                      zend_string* error_filename,
@@ -667,6 +668,7 @@ void nr_php_error_cb(int type,
   char* msg = NULL;
   char* file = NULL;
   char* klass = NULL;
+  char* error_message = NULL;
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (nr_php_should_record_error(type, format TSRMLS_CC)) {
@@ -694,26 +696,49 @@ void nr_php_error_cb(int type,
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = nr_php_error_get_type_string(type);
-    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true, msg,
-                        errclass, stack_json);
+
+#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
+    file = nr_strdup(error_filename);
+#else
+    if (NULL != error_filename) {
+      file = nr_strndup(ZSTR_VAL(error_filename), ZSTR_LEN(error_filename));
+    }
+#endif
+
+    /*
+     * The format follows the one used for exceptions in
+     * nr_php_error_record_exception().
+     */
+    if ((NULL != file) && ('\0' != file[0]) && (0 != error_lineno)) {
+      if (NULL != msg) {
+        error_message = nr_formatf("PHP Error '%s' with message '%s' in %s:%ld",
+                                   errclass, msg, file, (long)error_lineno);
+      } else {
+        error_message = nr_formatf("PHP Error '%s' in %s:%ld", errclass, file,
+                                   (long)error_lineno);
+      }
+    } else if (NULL != msg) {
+      error_message
+          = nr_formatf("PHP Error '%s' with message '%s'", errclass, msg);
+    } else {
+      error_message = nr_formatf("PHP Error '%s'", errclass);
+    }
+    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
+                        error_message, errclass, stack_json);
 
     /*
      * Error Fingerprinting Callback
      */
     if (is_error_callback_set()) {
-#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
-      file = nr_strdup(error_filename);
-#else
-      file = nr_strndup(ZSTR_VAL(error_filename), ZSTR_LEN(error_filename));
-#endif
       klass = nr_strdup(errclass);
 
       nr_php_error_call_error_group_callback(NRPRG(txn), klass, msg, file,
                                              stack_json);
 
-      nr_free(file);
       nr_free(klass);
     }
+    nr_free(error_message);
+    nr_free(file);
     nr_free(msg);
     nr_free(stack_json);
   }

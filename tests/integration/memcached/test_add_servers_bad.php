@@ -37,7 +37,7 @@ are added via Memcached::addServers()
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_WARNING",
-        "error.message": "Memcached::addServers(): could not add entry #2 to the server list",
+        "error.message": "PHP Error 'E_WARNING' with message 'Memcached::addServers(): could not add entry #2 to the server list' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

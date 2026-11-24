@@ -99,7 +99,7 @@ opcache.jit=function
       },
       {},
       {
-        "error.message": "foo",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'foo' in __FILE__:??",
         "error.class": "E_USER_ERROR"
       }
     ]

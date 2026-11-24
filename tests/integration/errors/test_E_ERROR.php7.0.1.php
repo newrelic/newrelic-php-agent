@@ -25,7 +25,7 @@ if (version_compare(PHP_VERSION, "7.4", ">=")) {
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Method C::__toString() must not throw an exception, caught Exception: ",
+      "PHP Error 'E_ERROR' with message 'Method C::__toString() must not throw an exception, caught Exception: '",
       "E_ERROR",
       {
         "stack_trace": [
@@ -52,7 +52,7 @@ if (version_compare(PHP_VERSION, "7.4", ">=")) {
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_ERROR",
-        "error.message": "Method C::__toString() must not throw an exception, caught Exception: ",
+        "error.message": "PHP Error 'E_ERROR' with message 'Method C::__toString() must not throw an exception, caught Exception: '",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -31,7 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Incorrect parameters, correct ones expected",
+      "PHP Error 'E_USER_ERROR' with message 'Incorrect parameters, correct ones expected' in __FILE__:??",
       "E_USER_ERROR",
       {
         "stack_trace": "??",
@@ -57,7 +57,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_ERROR",
-        "error.message": "Incorrect parameters, correct ones expected",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'Incorrect parameters, correct ones expected' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -44,7 +44,7 @@ Tests newrelic_set_user_id() API:
     [
       "??",
       "OtherTransaction\/php__FILE__",
-      "I'M COVERED IN BEES",
+      "PHP Error 'E_USER_WARNING' with message 'I'M COVERED IN BEES' in __FILE__:??",
       "E_USER_WARNING",
       {
         "stack_trace": [
@@ -84,7 +84,7 @@ Tests newrelic_set_user_id() API:
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_WARNING",
-        "error.message": "I'M COVERED IN BEES",
+        "error.message": "PHP Error 'E_USER_WARNING' with message 'I'M COVERED IN BEES' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

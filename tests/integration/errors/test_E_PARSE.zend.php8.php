@@ -31,7 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "syntax error, unexpected token \"}\"",
+      "PHP Error 'E_PARSE' with message 'syntax error, unexpected token \"}\"' in __FILE__:??",
       "E_PARSE",
       {
         "stack_trace": [],
@@ -57,7 +57,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_PARSE",
-        "error.message": "syntax error, unexpected token \"}\"",
+        "error.message": "PHP Error 'E_PARSE' with message 'syntax error, unexpected token \"}\"' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

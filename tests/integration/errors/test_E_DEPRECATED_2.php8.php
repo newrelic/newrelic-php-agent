@@ -35,7 +35,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Required parameter $b follows optional parameter $a",
+      "PHP Error 'E_DEPRECATED' with message 'Required parameter $b follows optional parameter $a' in __FILE__:??",
       "E_DEPRECATED",
       {
         "stack_trace": "??",
@@ -61,7 +61,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_DEPRECATED",
-        "error.message": "Required parameter $b follows optional parameter $a",
+        "error.message": "PHP Error 'E_DEPRECATED' with message 'Required parameter $b follows optional parameter $a' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

@@ -33,7 +33,7 @@ the intrinsic's value is true for normal PHP errors.
       {},
       {
         "errorType": "E_USER_WARNING",
-        "errorMessage": "This is an error"
+        "errorMessage": "PHP Error 'E_USER_WARNING' with message 'This is an error' in __FILE__:??"
       }
     ]
   ]

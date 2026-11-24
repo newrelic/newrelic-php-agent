@@ -27,7 +27,7 @@ log_errors=0
     [
       "??",
       "OtherTransaction/php__FILE__",
-      "Function newrelic_accept_distributed_trace_payload_httpsafe() is deprecated.  Please see https://docs.newrelic.com/docs/agents/php-agent/features/distributed-tracing-php-agent#manual for more details.",
+      "PHP Error 'E_DEPRECATED' with message 'Function newrelic_accept_distributed_trace_payload_httpsafe() is deprecated.  Please see https://docs.newrelic.com/docs/agents/php-agent/features/distributed-tracing-php-agent#manual for more details.' in __FILE__:??",
       "E_DEPRECATED",
       {
         "stack_trace": [
@@ -55,7 +55,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_DEPRECATED",
-        "error.message": "Function newrelic_accept_distributed_trace_payload_httpsafe() is deprecated.  Please see https://docs.newrelic.com/docs/agents/php-agent/features/distributed-tracing-php-agent#manual for more details.",
+        "error.message": "PHP Error 'E_DEPRECATED' with message 'Function newrelic_accept_distributed_trace_payload_httpsafe() is deprecated.  Please see https://docs.newrelic.com/docs/agents/php-agent/features/distributed-tracing-php-agent#manual for more details.' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

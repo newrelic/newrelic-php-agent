@@ -31,7 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Unterminated comment starting line ??",
+      "PHP Error 'E_COMPILE_WARNING' with message 'Unterminated comment starting line ??' in __FILE__:??",
       "E_COMPILE_WARNING",
       {
         "stack_trace": [],
@@ -57,7 +57,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_COMPILE_WARNING",
-        "error.message": "Unterminated comment starting line ??",
+        "error.message": "PHP Error 'E_COMPILE_WARNING' with message 'Unterminated comment starting line ??' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",

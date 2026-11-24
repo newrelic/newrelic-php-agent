@@ -52,7 +52,7 @@ zend_extension=opcache.so
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_ERROR",
-        "error.message": "foo",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'foo' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "databaseDuration": "??",
@@ -135,7 +135,7 @@ zend_extension=opcache.so
       },
       {},
       {
-        "error.message": "foo",
+        "error.message": "PHP Error 'E_USER_ERROR' with message 'foo' in __FILE__:??",
         "error.class": "E_USER_ERROR"
       }
     ],

@@ -740,6 +740,90 @@ static void test_error_cb_passes_dont_bail_through(TSRMLS_D) {
   zend_string_release(message);
   tlib_php_request_end();
 }
+
+static void call_error_cb(int type,
+                          const char* file,
+                          uint line,
+                          const char* text) {
+  zend_string* filename = zend_string_init(file, strlen(file), 0);
+  zend_string* message = zend_string_init(text, strlen(text), 0);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  nr_php_error_cb(type, filename, line, message);
+#else
+  nr_php_error_cb(type, ZSTR_VAL(filename), line, message);
+#endif
+
+  zend_string_release(filename);
+  zend_string_release(message);
+}
+
+static void test_error_cb_records_file_and_line(TSRMLS_D) {
+  nrphperrfn_t saved_cb;
+
+  tlib_php_request_start();
+
+  saved_cb = NR_PHP_PROCESS_GLOBALS(orig_error_cb);
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = stub_error_cb;
+
+  call_error_cb(E_WARNING, "/app/test.php", 42, "boom");
+
+  tlib_pass_if_not_null("an error is recorded", NRPRG(txn)->error);
+  tlib_pass_if_str_equal(
+      "the message has the type, the message, the file and the line",
+      "PHP Error 'E_WARNING' with message 'boom' in /app/test.php:42",
+      nr_error_get_message(NRPRG(txn)->error));
+  tlib_pass_if_str_equal("the error class is the error type", "E_WARNING",
+                         nr_error_get_klass(NRPRG(txn)->error));
+
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = saved_cb;
+  tlib_php_request_end();
+}
+
+static void test_error_cb_no_line_leaves_out_location(TSRMLS_D) {
+  nrphperrfn_t saved_cb;
+
+  tlib_php_request_start();
+
+  saved_cb = NR_PHP_PROCESS_GLOBALS(orig_error_cb);
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = stub_error_cb;
+
+  call_error_cb(E_WARNING, "/app/test.php", 0, "boom");
+
+  tlib_pass_if_not_null("an error is recorded", NRPRG(txn)->error);
+  tlib_pass_if_str_equal("no location without a line",
+                         "PHP Error 'E_WARNING' with message 'boom'",
+                         nr_error_get_message(NRPRG(txn)->error));
+
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = saved_cb;
+  tlib_php_request_end();
+}
+
+/*
+ * An uncaught exception is recorded by the exception handler, with its own
+ * message. The error that PHP raises for it must not be recorded again.
+ */
+static void test_error_cb_skips_uncaught_exception(TSRMLS_D) {
+  nrphperrfn_t saved_cb;
+  int calls;
+
+  tlib_php_request_start();
+
+  saved_cb = NR_PHP_PROCESS_GLOBALS(orig_error_cb);
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = stub_error_cb;
+  stub_error_cb_calls = 0;
+
+  call_error_cb(E_ERROR, "/app/test.php", 7,
+                "Uncaught Exception: boom in /app/test.php:7");
+
+  tlib_pass_if_null("the error of an uncaught exception is not recorded",
+                    NRPRG(txn)->error);
+  calls = stub_error_cb_calls;
+  tlib_pass_if_int_equal("PHP's handler is still called", 1, calls);
+
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = saved_cb;
+  tlib_php_request_end();
+}
 #endif /* PHP >= 8.0 */
 
 void test_main(void* p NRUNUSED) {
@@ -765,6 +849,9 @@ void test_main(void* p NRUNUSED) {
   test_error_group_callback_released_at_request_end(TSRMLS_C);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   test_error_cb_passes_dont_bail_through(TSRMLS_C);
+  test_error_cb_records_file_and_line(TSRMLS_C);
+  test_error_cb_no_line_leaves_out_location(TSRMLS_C);
+  test_error_cb_skips_uncaught_exception(TSRMLS_C);
 #endif
 
   tlib_php_engine_destroy(TSRMLS_C);

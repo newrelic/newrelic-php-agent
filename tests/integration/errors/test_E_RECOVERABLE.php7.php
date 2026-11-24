@@ -29,7 +29,7 @@ if (version_compare(PHP_VERSION, "7.4", ">=")) {
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Object of class stdClass could not be converted to string",
+      "PHP Error 'E_RECOVERABLE_ERROR' with message 'Object of class stdClass could not be converted to string' in __FILE__:??",
       "E_RECOVERABLE_ERROR",
       {
         "stack_trace": [
@@ -57,7 +57,7 @@ if (version_compare(PHP_VERSION, "7.4", ">=")) {
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_RECOVERABLE_ERROR",
-        "error.message": "Object of class stdClass could not be converted to string",
+        "error.message": "PHP Error 'E_RECOVERABLE_ERROR' with message 'Object of class stdClass could not be converted to string' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",
