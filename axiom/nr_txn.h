@@ -1203,6 +1203,27 @@ extern char* nr_txn_get_current_span_id(nrtxn_t* txn,
 extern void nr_txn_finalize_parent_stacks(nrtxn_t* txn);
 
 /*
+ * Purpose : Set the stop time of the segments that are still open, without
+ *           ending them.
+ *
+ *           Every segment in the parent stacks maintained by the transaction,
+ *           other than the root, whose stop time is still 0 and which didn't
+ *           start after the given stop time, gets it. Nothing is ended or
+ *           removed from the parent stacks: nr_txn_finalize_parent_stacks()
+ *           ends them later, and nr_segment_end() keeps a stop time that is
+ *           already set.
+ *
+ *           With nr_txn_set_timing(), which moves only the root's stop time,
+ *           this lets a caller stop a transaction at a time before it ends,
+ *           with no segment left open past that time.
+ *
+ * Params  : 1. The transaction.
+ *           2. The stop time, relative to the start of the transaction.
+ */
+extern void nr_txn_set_open_segments_stop_time(nrtxn_t* txn,
+                                               nrtime_t stop_time);
+
+/*
  * Purpose : Returns the number of segments allocated for this transaction.
  *
  *           This number is the number of segments obtained by the slab

@@ -455,8 +455,47 @@ nr_php_frankenphp_mode_t nr_php_frankenphp_thread_mode(void) {
   return nr_php_frankenphp_thread.mode;
 }
 
+/*
+ * Says, for the warning that RINIT missed a worker thread, which signals RINIT
+ * saw.
+ */
+static const char* nr_php_frankenphp_run_signals(nr_php_frankenphp_run_t run) {
+  switch (run) {
+    case NR_PHP_FRANKENPHP_RUN_BOOTSTRAP:
+      return "both signals";
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC_WORKER_ENV_SET:
+      return "FRANKENPHP_WORKER=1 without a worker script's URI";
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC_NO_WORKER_ENV:
+      return "a worker script's URI without FRANKENPHP_WORKER=1";
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC:
+      break;
+  }
+
+  return "neither signal";
+}
+
 void nr_php_frankenphp_confirm_worker_thread(void) {
   nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
+
+  /*
+   * RINIT took a worker thread for classic mode, so a signal that the agent
+   * reads from FrankenPHP has drifted. The metric goes on the next
+   * transaction the thread sends, and the warning names what RINIT saw: the
+   * URI it kept, because FrankenPHP updates SG(request_info) for each worker
+   * request.
+   */
+  nr_php_frankenphp_thread.pending |= NR_PHP_FRANKENPHP_PENDING_MISSED_AT_RINIT;
+  if (nr_php_frankenphp_log_once(NR_PHP_FRANKENPHP_LOG_MISSED_AT_RINIT)) {
+    nrl_warning(
+        NRL_INIT,
+        "RINIT took a FrankenPHP worker thread for classic mode (" NRP_FMT_UQ
+        ", request URI " NRP_FMT
+        "); the agent records it as a worker thread from now on. The signals "
+        "that FrankenPHP gives for a worker script may have changed",
+        NRP_CONFIG(nr_php_frankenphp_run_signals(nr_php_frankenphp_thread.run)),
+        NRP_URL(nr_php_frankenphp_thread.rinit_uri));
+  }
+
   nr_php_frankenphp_decide_mode();
 }
 

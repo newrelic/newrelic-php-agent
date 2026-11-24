@@ -17,7 +17,12 @@ extern void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS);
  * Purpose : End the worker request transaction once frankenphp_handle_request
  *           has returned, if this call began one. A call that returns with no
  *           exception pending on a thread that RINIT took for classic mode
- *           makes it a worker thread, and discards its open transaction.
+ *           makes it a worker thread, and discards its open transaction. The
+ *           begin handler confirms the thread before the first request runs,
+ *           so that happens only when the call didn't reach a request handler
+ *           that the begin handler sees: for a request handler that it never
+ *           sees, and when the worker stops before its first request and the
+ *           call returns false without calling the request handler.
  */
 extern void nr_php_frankenphp_handle_request_end(void);
 
@@ -25,8 +30,9 @@ extern void nr_php_frankenphp_handle_request_end(void);
  * Purpose : Reset the worker request state that a bailout left behind: the
  *           flag that a transaction was begun, and the saved response
  *           headers. Also reset what the gate learned about the thread at
- *           RINIT, with nr_php_frankenphp_gate_rshutdown(), and whether the
- *           worker script has made its first call.
+ *           RINIT, with nr_php_frankenphp_gate_rshutdown(), whether the worker
+ *           script has made its first call, and the stop time that the
+ *           wrapper noted on a thread that RINIT took for classic mode.
  *
  *           First, on a worker thread outside a worker request, name the
  *           transaction that is still open after the phase it recorded, as

@@ -46,6 +46,8 @@ tlib_parallel_info_t parallel_info
 #include "zend_exceptions.h"
 #include "ext/spl/spl_exceptions.h"
 
+#include <unistd.h>
+
 #define BOOTSTRAP_TXN_NAME "OtherTransaction/Custom/frankenphp/worker/bootstrap"
 #define BETWEEN_REQUESTS_TXN_NAME \
   "OtherTransaction/Custom/" NR_PHP_FRANKENPHP_BETWEEN_REQUESTS_TXN_NAME
@@ -88,12 +90,32 @@ typedef struct {
    * FRANKENPHP_METRIC_PREFIX, joined with "\n".
    */
   char* frankenphp_metrics;
+  /* The duration, as every reader of the finished transaction gets it. */
+  nrtime_t duration;
+  /* The root segment's stop time, relative to the transaction's start. */
+  nrtime_t root_stop;
+  /* The largest stop time of a segment other than the root, or 0. */
+  nrtime_t max_segment_stop;
+  /*
+   * The version of COMPOSER_TEST_PACKAGE in the transaction's packages, which
+   * it has when it pulled the scan that seed_composer_scan() left, or NULL.
+   */
+  char* composer_package_version;
 } captured_txn_t;
 
 #define FRANKENPHP_METRIC_PREFIX "Supportability/PHP/FrankenPHP/"
 
+/* The package that seed_composer_scan() puts in the thread's scan. */
+#define COMPOSER_TEST_PACKAGE "vendor/package"
+
 static captured_txn_t captured[CAPTURE_MAX];
 static size_t captured_count = 0;
+
+/*
+ * While this isn't 0, the capture hook still captures, then decrements it and
+ * returns NR_FAILURE, as a failed send to the daemon does.
+ */
+static int capture_fail_count = 0;
 
 typedef struct {
   const nrtxn_t* txn;
@@ -125,6 +147,29 @@ static char* capture_segment_names(const nrtxn_t* txn) {
                      nr_buffer_len(collector.names));
   nr_buffer_destroy(&collector.names);
   return names;
+}
+
+typedef struct {
+  const nrtxn_t* txn;
+  nrtime_t max_stop;
+} segment_stop_collector_t;
+
+static nr_segment_iter_return_t collect_segment_stop(nr_segment_t* segment,
+                                                     void* userdata) {
+  segment_stop_collector_t* collector = (segment_stop_collector_t*)userdata;
+
+  if (segment != collector->txn->segment_root
+      && segment->stop_time > collector->max_stop) {
+    collector->max_stop = segment->stop_time;
+  }
+  return NR_SEGMENT_NO_POST_ITERATION_CALLBACK;
+}
+
+static nrtime_t capture_max_segment_stop(const nrtxn_t* txn) {
+  segment_stop_collector_t collector = {.txn = txn, .max_stop = 0};
+
+  nr_segment_iterate(txn->segment_root, collect_segment_stop, &collector);
+  return collector.max_stop;
 }
 
 static char* capture_frankenphp_metrics(const nrtxn_t* txn) {
@@ -172,10 +217,25 @@ static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
                        "Supportability/background_status_change_prevented"));
     c->queue_start = txn->status.http_x_start;
     c->frankenphp_metrics = capture_frankenphp_metrics(txn);
+    c->duration = nr_txn_duration(txn);
+    c->root_stop = txn->segment_root->stop_time;
+    c->max_segment_stop = capture_max_segment_stop(txn);
+    {
+      nr_php_package_t* package = nr_php_packages_get_package(
+          txn->php_packages, COMPOSER_TEST_PACKAGE);
+
+      c->composer_package_version
+          = (NULL == package) ? NULL : nr_strdup(package->package_version);
+    }
     nro_delete(attrs);
     nro_delete(agent_attrs);
   }
   captured_count += 1;
+
+  if (capture_fail_count > 0) {
+    capture_fail_count -= 1;
+    return NR_FAILURE;
+  }
   return NR_SUCCESS;
 }
 
@@ -189,9 +249,11 @@ static void capture_reset(void) {
     nr_free(captured[i].agent_attributes);
     nr_free(captured[i].segment_names);
     nr_free(captured[i].frankenphp_metrics);
+    nr_free(captured[i].composer_package_version);
   }
   nr_memset(captured, 0, sizeof(captured));
   captured_count = 0;
+  capture_fail_count = 0;
 }
 
 /* Whether the captured segment names include the given name. */
@@ -260,6 +322,23 @@ static struct {
   fake_observation_t on_entry[FAKE_MAX_CALLS];
   fake_observation_t after_call[FAKE_MAX_CALLS];
   bool exception_after_call[FAKE_MAX_CALLS];
+  /*
+   * How long a call that calls the callback sleeps first, in microseconds, as
+   * FrankenPHP blocks in waitForWorkerRequest until a request comes.
+   */
+  useconds_t wait_us;
+  /*
+   * The open transaction's relative time just before that sleep, which is
+   * after the agent's wrapper ran.
+   */
+  nrtime_t before_wait;
+  /*
+   * PHP code that a call that calls the callback runs first, or NULL. On the
+   * first call FrankenPHP shuts the bootstrap's request down before it waits
+   * for a request, and that can run user code, such as a session save
+   * handler, after the agent's wrapper ran.
+   */
+  const char* code_before_call;
 } fake;
 
 static void fake_reset(fake_mode_t mode) {
@@ -376,6 +455,19 @@ static ZEND_FUNCTION(frankenphp_handle_request) {
       || FAKE_CALL_WITH_REQUEST_DATA == fake.mode) {
     zval retval;
     zval arg;
+
+    if (NULL != fake.code_before_call) {
+      tlib_php_request_eval(fake.code_before_call);
+    }
+
+    /*
+     * FrankenPHP waits for a request before it sets the request up and calls
+     * the callback.
+     */
+    fake.before_wait = nr_txn_now_rel(NRPRG(txn));
+    if (fake.wait_us > 0) {
+      usleep(fake.wait_us);
+    }
 
     if (FAKE_CALL_AND_FINISH == fake.mode) {
       fake_start_web_request();
@@ -631,6 +723,24 @@ static void pass_if_unsupported_warnings(const char* msg,
   tlib_pass_if_size_t_equal(msg, expected, log_count(warning));
   nr_free(warning);
 }
+
+/*
+ * Whether the metric that says RINIT took a worker thread for classic mode is
+ * pending on the thread.
+ */
+static bool missed_at_rinit_pending(void) {
+  return 0
+         != (nr_php_frankenphp_thread_pending_metrics()
+             & NR_PHP_FRANKENPHP_PENDING_MISSED_AT_RINIT);
+}
+
+/*
+ * The warning that RINIT took a worker thread for classic mode, for a run
+ * with a worker script's URI and without FRANKENPHP_WORKER.
+ */
+#define MISSED_AT_RINIT_WARNING                                       \
+  "RINIT took a FrankenPHP worker thread for classic mode (a worker " \
+  "script's URI without FRANKENPHP_WORKER=1, request URI 'worker.php')"
 /* }}} */
 
 /*
@@ -1020,6 +1130,9 @@ static void test_agent_disabled_for_request(void) {
   tlib_pass_if_int_equal("disabled agent: the thread's role is still unknown",
                          NR_PHP_FRANKENPHP_THREAD_UNKNOWN,
                          nr_php_frankenphp_thread_role());
+  tlib_pass_if_false("disabled agent: MissedAtRINIT not pending",
+                     missed_at_rinit_pending(), "pending=%u",
+                     nr_php_frankenphp_thread_pending_metrics());
 
   request_end();
   engine_destroy();
@@ -2086,10 +2199,12 @@ static void test_loop_body_txn_named_by_framework_keeps_its_name(void) {
 /*
  * A thread that RINIT took for classic mode is a worker thread when a call to
  * frankenphp_handle_request returns with no exception pending: classic mode
- * throws before calling the request handler. Here RINIT misses the variable,
- * so the begin handler never begins a transaction, and only the return
+ * throws before calling the request handler. Here RINIT misses the variable.
+ * For a request handler that the begin handler never sees, only the return
  * confirms the thread. By then FrankenPHP has set up the first request, so the
- * open transaction has recorded it, and it is discarded.
+ * open transaction has recorded it, and it is discarded. The discard doesn't
+ * consume the metric that says RINIT missed the thread, so the thread's next
+ * transaction carries it.
  */
 static void test_confirmed_by_return(void) {
   size_t trampolines = 0;
@@ -2111,7 +2226,7 @@ static void test_confirmed_by_return(void) {
                       rejected_callables[i].expr);
 
     engine_create("");
-    request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+    request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
     tlib_php_request_eval(callable_setup);
     tlib_php_request_eval(code);
 
@@ -2125,6 +2240,10 @@ static void test_confirmed_by_return(void) {
     snprintf(msg, sizeof(msg), "confirmed, %s: nothing sent",
              rejected_callables[i].label);
     tlib_pass_if_size_t_equal(msg, 0, captured_count);
+    snprintf(msg, sizeof(msg), "confirmed, %s: MissedAtRINIT pending",
+             rejected_callables[i].label);
+    tlib_pass_if_true(msg, missed_at_rinit_pending(), "pending=%u",
+                      nr_php_frankenphp_thread_pending_metrics());
 
     request_end();
     engine_destroy();
@@ -2134,7 +2253,7 @@ static void test_confirmed_by_return(void) {
                             trampolines);
 
   engine_create("");
-  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "$cb();"
@@ -2146,6 +2265,9 @@ static void test_confirmed_by_return(void) {
                          nr_php_frankenphp_thread_role());
   tlib_pass_if_size_t_equal("confirmed, warmed-up closure: nothing sent", 0,
                             captured_count);
+  tlib_pass_if_true("confirmed, warmed-up closure: MissedAtRINIT pending",
+                    missed_at_rinit_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
   request_end();
   engine_destroy();
 
@@ -2154,7 +2276,7 @@ static void test_confirmed_by_return(void) {
    * The replacement has recorded the first request too, so it is discarded.
    */
   engine_create("");
-  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
   tlib_php_request_eval(
       "class AppnameT {"
       "  public function __call($name, $args) {"
@@ -2178,32 +2300,51 @@ static void test_confirmed_by_return(void) {
                          nr_php_frankenphp_thread_role());
   tlib_pass_if_size_t_equal("confirmed, set_appname: nothing sent", 0,
                             captured_count);
+  tlib_pass_if_true("confirmed, set_appname: MissedAtRINIT pending",
+                    missed_at_rinit_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
   request_end();
   engine_destroy();
 
   /*
-   * A handler that the begin handler sees. On a thread taken for classic mode
-   * it begins no transaction, so the first call is confirmed by its return as
-   * above, and the second call is the first worker request with a
-   * transaction of its own. Pinned: interim behaviour, not the desired one.
+   * A handler that the begin handler sees. The begin handler confirms the
+   * thread before the first request runs, so the RINIT transaction is sent as
+   * the bootstrap when request 1's handler begins, and request 1 has a
+   * transaction of its own. Captured: [0] the RINIT transaction, [1] request
+   * 1, [2] request 2.
    */
   engine_create("");
-  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);"
       "frankenphp_handle_request($cb);");
-  tlib_pass_if_size_t_equal("confirmed, plain closure: nothing sent by call 1",
-                            0, fake.on_entry[1].captured);
+  tlib_pass_if_size_t_equal(
+      "confirmed, plain closure: nothing sent on entry to call 1", 0,
+      fake.on_entry[0].captured);
+  tlib_pass_if_size_t_equal(
+      "confirmed, plain closure: the bootstrap sent during call 1", 1,
+      fake.after_call[0].captured);
+  tlib_pass_if_size_t_equal(
+      "confirmed, plain closure: request 1 sent when call 1 returned", 2,
+      fake.on_entry[1].captured);
   tlib_pass_if_true(
       "confirmed, plain closure: no transaction when call 2 is entered",
       fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
-  tlib_pass_if_size_t_equal("confirmed, plain closure: request 2 only", 1,
-                            captured_count);
-  tlib_fail_if_str_equal("confirmed, plain closure: not the bootstrap",
+  tlib_pass_if_size_t_equal(
+      "confirmed, plain closure: the bootstrap and two requests", 3,
+      captured_count);
+  tlib_pass_if_str_equal("confirmed, plain closure: the bootstrap",
                          BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("confirmed, plain closure: the bootstrap is background",
+                    captured[0].background, "background=%d",
+                    captured[0].background);
+  tlib_fail_if_str_equal("confirmed, plain closure: request 1",
+                         BOOTSTRAP_TXN_NAME, captured[1].name);
+  tlib_fail_if_str_equal("confirmed, plain closure: request 2",
+                         BOOTSTRAP_TXN_NAME, captured[2].name);
   request_end();
-  tlib_pass_if_size_t_equal("confirmed, plain closure: nothing more sent", 1,
+  tlib_pass_if_size_t_equal("confirmed, plain closure: nothing more sent", 3,
                             captured_count);
   engine_destroy();
 }
@@ -3248,11 +3389,11 @@ static void test_on_allows_technical_floor(void) {
 }
 
 /*
- * A thread that RINIT took for classic mode, on an unsupported version, and
- * that only the return of call 1 confirms as a worker thread. The RINIT
- * transaction, which holds request 1, is discarded then, so nothing is sent,
- * and the metric stays pending for the next transaction the thread sends.
- * The confirmation decides the mode, so call 2 begins no transaction either.
+ * A thread that RINIT took for classic mode, on an unsupported version. The
+ * begin handler confirms it as a worker thread before request 1 runs, and
+ * sends the RINIT transaction as the bootstrap, which consumes the pending
+ * metrics: the unsupported one and the one that says RINIT missed the thread.
+ * The confirmation decides the mode, so neither call begins a transaction.
  */
 static void test_canary_unsupported(void) {
   engine_create_version("", "v1.11.1");
@@ -3262,8 +3403,16 @@ static void test_canary_unsupported(void) {
   tlib_pass_if_int_equal("canary, unsupported: a worker thread",
                          NR_PHP_FRANKENPHP_THREAD_WORKER,
                          nr_php_frankenphp_thread_role());
-  tlib_pass_if_size_t_equal("canary, unsupported: nothing captured", 0,
+  tlib_pass_if_size_t_equal("canary, unsupported: the bootstrap only", 1,
                             captured_count);
+  tlib_pass_if_str_equal("canary, unsupported: named as the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  pass_if_carries("canary, unsupported: the bootstrap's unsupported metric",
+                  &captured[0], UNSUPPORTED_METRIC_V1_11_1);
+  pass_if_carries("canary, unsupported: the bootstrap's MissedAtRINIT",
+                  &captured[0], NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  tlib_pass_if_true("canary, unsupported: no transaction in call 1",
+                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
   tlib_pass_if_true("canary, unsupported: no transaction in call 2",
                     fake.after_call[1].txn_is_null, "NRPRG(txn) was not NULL");
   tlib_pass_if_null("canary, unsupported: no transaction left", NRPRG(txn));
@@ -3271,22 +3420,28 @@ static void test_canary_unsupported(void) {
                      "(string) $calls");
   pass_if_unsupported_warnings("canary, unsupported: the warning", 1, "v1.11.1",
                                "auto");
-  tlib_pass_if_true("canary, unsupported: the metric is still pending",
-                    unsupported_pending(), "pending=%u",
-                    nr_php_frankenphp_thread_pending_metrics());
+  tlib_pass_if_int_equal("canary, unsupported: the pending metrics consumed", 0,
+                         (int)nr_php_frankenphp_thread_pending_metrics());
 
   request_end();
-  tlib_pass_if_size_t_equal("canary, unsupported: nothing at the end", 0,
+  tlib_pass_if_size_t_equal("canary, unsupported: nothing more at the end", 1,
                             captured_count);
   engine_destroy();
 }
 
 /*
- * A thread that RINIT took for classic mode, under off. The confirmation at
- * the return of call 1 discards the RINIT transaction and decides the mode,
- * so from then on the thread records nothing.
+ * A thread that RINIT took for classic mode, under off. The begin handler
+ * confirms it as a worker thread during call 1, decides the mode and discards
+ * the RINIT transaction, so from then on the thread records nothing.
+ *
+ * A request handler that the begin handler never sees, here a __call
+ * trampoline, is confirmed only when call 1 returns, and the RINIT
+ * transaction is discarded then.
  */
 static void test_canary_with_setting_off(void) {
+  const callable_case_t* trampoline = NULL;
+  size_t i;
+
   engine_create(WORKER_MODE_INI("off"));
   request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
   tlib_pass_if_not_null("canary, off: a classic-mode transaction at RINIT",
@@ -3295,6 +3450,8 @@ static void test_canary_with_setting_off(void) {
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);");
+  tlib_pass_if_true("canary, off: no transaction in call 1",
+                    fake.after_call[0].txn_is_null, "NRPRG(txn) was not NULL");
   tlib_pass_if_null("canary, off: no transaction after call 1", NRPRG(txn));
 
   tlib_php_request_eval(
@@ -3309,6 +3466,37 @@ static void test_canary_with_setting_off(void) {
   request_end();
   tlib_pass_if_size_t_equal("canary, off: nothing captured at the end", 0,
                             captured_count);
+
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    if (nr_streq(rejected_callables[i].label, "__call trampoline")) {
+      trampoline = &rejected_callables[i];
+    }
+  }
+  tlib_pass_if_not_null("canary, off: a __call trampoline case", trampoline);
+  if (NULL != trampoline) {
+    char* code = nr_formatf("$cb = %s; frankenphp_handle_request($cb);",
+                            trampoline->expr);
+
+    request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    tlib_pass_if_false("canary, off, trampoline: the transaction in call 1",
+                       fake.after_call[0].txn_is_null, "NRPRG(txn) was NULL");
+    tlib_pass_if_null("canary, off, trampoline: no transaction after call 1",
+                      NRPRG(txn));
+    tlib_php_request_eval(
+        "$started = newrelic_start_transaction(ini_get('newrelic.appname'));");
+    pass_if_php_bool("canary, off, trampoline: start_transaction returns false",
+                     false, "$started");
+    request_end();
+    tlib_pass_if_size_t_equal("canary, off, trampoline: nothing captured", 0,
+                              captured_count);
+    tlib_pass_if_size_t_equal(
+        "canary, off, trampoline: the warning, once for both confirmations", 1,
+        log_count(MISSED_AT_RINIT_WARNING));
+    nr_free(code);
+  }
+
   engine_destroy();
 }
 
@@ -3344,6 +3532,532 @@ static void test_version_changes_on_minit(void) {
   pass_if_carries("then v1.11.1: unsupported", &captured[0],
                   UNSUPPORTED_METRIC_V1_11_1);
   request_end();
+
+  engine_destroy();
+}
+/* }}} */
+
+/* {{{ A worker thread that RINIT missed */
+
+/*
+ * Passes if the capture has none of the request data that
+ * FAKE_CALL_WITH_REQUEST_DATA gives request 1.
+ */
+static void pass_if_lacks_request_data(const char* label,
+                                       const captured_txn_t* c) {
+  char msg[160];
+
+  snprintf(msg, sizeof(msg), "%s: no request.uri from request 1", label);
+  tlib_pass_if_null(msg, nr_strstr(NRSAFESTR(c->agent_attributes),
+                                   "\"request.uri\":\"\\/r\""));
+  snprintf(msg, sizeof(msg), "%s: no request.parameters.id from request 1",
+           label);
+  tlib_pass_if_null(msg, nr_strstr(NRSAFESTR(c->agent_attributes),
+                                   "\"request.parameters.id\":\"1\""));
+}
+
+/*
+ * Passes if the capture is the transaction that the begin handler sent as
+ * the bootstrap of a thread that RINIT took for classic mode: named as the
+ * bootstrap, a background job, and carrying the metric that says RINIT
+ * missed the thread.
+ */
+static void pass_if_canary_bootstrap(const char* label,
+                                     const captured_txn_t* c) {
+  char msg[160];
+
+  snprintf(msg, sizeof(msg), "%s: named as the bootstrap", label);
+  tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, c->name);
+  snprintf(msg, sizeof(msg), "%s: background", label);
+  tlib_pass_if_true(msg, c->background, "background=%d", c->background);
+  snprintf(msg, sizeof(msg), "%s: MissedAtRINIT", label);
+  pass_if_carries(msg, c, NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+}
+
+/*
+ * A worker script whose bootstrap RINIT missed, with request data in
+ * requests 1 and 2 and a transaction started between them. bootstrap_code, if
+ * any, runs first, in the bootstrap.
+ */
+static void run_canary_with_request_data(const char* bootstrap_code) {
+  engine_create(REQUEST_DATA_INI);
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL_WITH_REQUEST_DATA);
+  if (NULL != bootstrap_code) {
+    tlib_php_request_eval(bootstrap_code);
+  }
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "frankenphp_handle_request($cb);");
+}
+
+/*
+ * FrankenPHP waits for a request inside frankenphp_handle_request, before it
+ * calls the request handler, and on a quiet thread that wait can last hours.
+ * The begin handler sends the RINIT transaction as the bootstrap, stopped
+ * when the agent's wrapper was called, not after the wait. The bootstrap's
+ * own work runs many times slower under valgrind, so the stop is compared
+ * with the time just before the wait, not with a fixed threshold. Without the
+ * stop time it would be at least 200 ms later.
+ */
+static void test_canary_bootstrap_duration_excludes_wait(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  fake.wait_us = 200000;
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("excludes the wait: the bootstrap and request 1", 2,
+                            captured_count);
+  tlib_pass_if_str_equal("excludes the wait: the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_pass_if_true("excludes the wait: stopped before the wait",
+                    captured[0].root_stop <= fake.before_wait,
+                    "root_stop=" NR_TIME_FMT " before_wait=" NR_TIME_FMT,
+                    captured[0].root_stop, fake.before_wait);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A worker loop inside a function, as in a framework's runtime: that
+ * function's segment is still open when frankenphp_handle_request is called.
+ * It stops when the bootstrap does, so that neither the segment nor its span
+ * carries the wait. The test above can't show this, because top-level code
+ * opens no segment.
+ */
+static void test_canary_duration_with_loop_in_function(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  fake.wait_us = 200000;
+
+  tlib_php_request_eval(
+      "function worker_loop($cb) { return frankenphp_handle_request($cb); }"
+      "worker_loop(function () { return 1; });");
+
+  tlib_pass_if_size_t_equal("loop in a function: the bootstrap and request 1",
+                            2, captured_count);
+  tlib_pass_if_str_equal("loop in a function: the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("loop in a function: the function's segment is in it",
+                    0 != captured[0].max_segment_stop,
+                    "max_segment_stop=" NR_TIME_FMT,
+                    captured[0].max_segment_stop);
+  tlib_pass_if_true("loop in a function: no segment stops after the bootstrap",
+                    captured[0].max_segment_stop <= captured[0].root_stop,
+                    "max_segment_stop=" NR_TIME_FMT " root_stop=" NR_TIME_FMT,
+                    captured[0].max_segment_stop, captured[0].root_stop);
+  tlib_pass_if_true("loop in a function: stopped before the wait",
+                    captured[0].root_stop <= fake.before_wait,
+                    "root_stop=" NR_TIME_FMT " before_wait=" NR_TIME_FMT,
+                    captured[0].root_stop, fake.before_wait);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * The wrapper's stop time is relative to the start of the transaction that
+ * was open then, and goes only on that one. User code can replace it before
+ * the request handler begins, as a session save handler that calls
+ * newrelic_set_appname() can while FrankenPHP shuts the bootstrap's request
+ * down. The replacement is sent as the bootstrap with the duration it has.
+ * The RINIT transaction is made to have begun 10 s earlier, so the stop time
+ * taken for it is at least 10 s, and it would stop the replacement 10 s after
+ * the replacement's own start.
+ */
+static void test_canary_stop_time_only_for_its_txn(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_pass_if_not_null("replaced in the call: a RINIT transaction",
+                        NRPRG(txn));
+  if (NULL != NRPRG(txn)) {
+    NRPRG(txn)->abs_start_time -= 10 * NR_TIME_DIVISOR;
+  }
+  fake.code_before_call
+      = "$replaced = newrelic_set_appname(ini_get('newrelic.appname'));";
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  pass_if_php_bool("replaced in the call: a replacement began", true,
+                   "$replaced");
+  tlib_pass_if_size_t_equal("replaced in the call: it and request 1", 2,
+                            captured_count);
+  tlib_pass_if_str_equal("replaced in the call: sent as the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("replaced in the call: not stopped by the old stop time",
+                    captured[0].root_stop < 10 * NR_TIME_DIVISOR,
+                    "root_stop=" NR_TIME_FMT, captured[0].root_stop);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A transaction that began while RINIT took the thread for classic mode is a
+ * web transaction, and once its name is frozen it can't become a background
+ * job. Sent as the bootstrap, it would carry request 1's HTTP status and
+ * response headers, so the begin handler's confirmation discards it. Its name
+ * is frozen when the worker script ended it early with
+ * newrelic_end_of_transaction(), also after newrelic_set_appname() began it in
+ * place of the RINIT transaction, and when the browser agent's footer froze it
+ * while it was still recording. Nothing is sent for the bootstrap, so the
+ * metric that says RINIT missed the thread stays pending, and request 1
+ * carries it: the transaction was discarded, not lost in some other way.
+ */
+static void test_canary_frozen_bootstrap_discarded(void) {
+  static const struct {
+    const char* label;
+    const char* code;
+    bool replaces;
+  } cases[] = {
+      {"ended early", "newrelic_end_of_transaction();", false},
+      {"replaced, then ended early",
+       "$replaced = newrelic_set_appname(ini_get('newrelic.appname'));"
+       "newrelic_end_of_transaction();",
+       true},
+      {"frozen by the footer",
+       "newrelic_get_browser_timing_header();"
+       "newrelic_get_browser_timing_footer();",
+       false},
+  };
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(cases); i++) {
+    const char* label = cases[i].label;
+    char msg[160];
+
+    request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+    tlib_php_request_eval(cases[i].code);
+
+    if (cases[i].replaces) {
+      snprintf(msg, sizeof(msg), "frozen canary, %s: a replacement began",
+               label);
+      pass_if_php_bool(msg, true, "$replaced");
+    }
+    snprintf(msg, sizeof(msg),
+             "frozen canary, %s: a web transaction with a frozen name", label);
+    tlib_pass_if_true(msg,
+                      NULL != NRPRG(txn) && NRTXN(status.path_is_frozen)
+                          && !NRTXN(status.background),
+                      "txn=%p", (void*)NRPRG(txn));
+
+    tlib_php_request_eval(
+        "$cb = function () { return 1; };"
+        "frankenphp_handle_request($cb);");
+
+    snprintf(msg, sizeof(msg), "frozen canary, %s: nothing sent in call 1",
+             label);
+    tlib_pass_if_size_t_equal(msg, 0, fake.after_call[0].captured);
+    snprintf(msg, sizeof(msg), "frozen canary, %s: request 1 only", label);
+    tlib_pass_if_size_t_equal(msg, 1, captured_count);
+    snprintf(msg, sizeof(msg),
+             "frozen canary, %s: request 1 isn't the bootstrap", label);
+    tlib_fail_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+    snprintf(msg, sizeof(msg), "frozen canary, %s: request 1's MissedAtRINIT",
+             label);
+    pass_if_carries(msg, &captured[0],
+                    NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+
+    request_end();
+  }
+  engine_destroy();
+}
+
+/*
+ * The pending metrics are consumed only by a transaction that was sent. Here
+ * the bootstrap's send fails, so request 1 carries them too, and its send
+ * consumes them. If they were cleared when the bootstrap was about to be sent,
+ * request 1 wouldn't carry them.
+ */
+static void test_pending_flags_survive_failed_send(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  capture_fail_count = 1;
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("failed send: the bootstrap and request 1", 2,
+                            captured_count);
+  tlib_pass_if_str_equal("failed send: the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  pass_if_carries("failed send: the bootstrap's MissedAtRINIT", &captured[0],
+                  NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  pass_if_carries("failed send: request 1's MissedAtRINIT", &captured[1],
+                  NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  tlib_pass_if_int_equal("failed send: consumed by request 1", 0,
+                         (int)nr_php_frankenphp_thread_pending_metrics());
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * RINIT misses the worker bootstrap, because FRANKENPHP_WORKER isn't set, and
+ * takes the thread for classic mode. The begin handler shows that it is a
+ * worker thread before request 1 runs. The RINIT transaction isn't ended on
+ * entry to the first call, as a worker thread's bootstrap is, but when
+ * request 1's handler begins. FrankenPHP has set up request 1 by then, so the
+ * transaction is ended without the request data that the superglobals hold.
+ * It is sent as the bootstrap, and carries the metric that says RINIT missed
+ * the thread. Request 1 has its own transaction. Captured: [0] the RINIT
+ * transaction, [1] request 1, [2] the between-requests transaction, [3]
+ * request 2.
+ */
+static void test_canary_bootstrap_uri_without_env(void) {
+  run_canary_with_request_data(NULL);
+
+  tlib_pass_if_size_t_equal("canary: nothing sent on entry to call 1", 0,
+                            fake.on_entry[0].captured);
+  tlib_pass_if_size_t_equal("canary: 4 transactions", 4, captured_count);
+  pass_if_canary_bootstrap("canary, the RINIT transaction", &captured[0]);
+  pass_if_lacks_request_data("canary, the RINIT transaction", &captured[0]);
+  pass_if_carries("canary, request 1: the worker-mode metric", &captured[1],
+                  VERSION_METRIC_1_13_1);
+  pass_if_lacks("canary, request 1: no MissedAtRINIT", &captured[1],
+                NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  pass_if_has_request_data("canary, request 1", &captured[1], 1);
+  tlib_pass_if_str_equal("canary: the between-requests transaction",
+                         BETWEEN_REQUESTS_TXN_NAME, captured[2].name);
+  tlib_fail_if_str_equal("canary, request 2: not the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[3].name);
+  pass_if_carries("canary, request 2: the worker-mode metric", &captured[3],
+                  VERSION_METRIC_1_13_1);
+  tlib_pass_if_size_t_equal("canary: the warning, once", 1,
+                            log_count(MISSED_AT_RINIT_WARNING));
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * newrelic_set_appname() in a bootstrap that RINIT missed discards the RINIT
+ * transaction, by default, and begins a replacement, which records the rest
+ * of the bootstrap. The replacement is sent as the bootstrap when request 1's
+ * handler begins, and carries the metric. Captured: [0] the replacement, [1]
+ * request 1, [2] the between-requests transaction, [3] request 2.
+ */
+static void test_canary_after_set_appname(void) {
+  run_canary_with_request_data(
+      "$replaced = newrelic_set_appname(ini_get('newrelic.appname'));");
+
+  pass_if_php_bool("canary after set_appname: a replacement began", true,
+                   "$replaced");
+  tlib_pass_if_size_t_equal("canary after set_appname: 4 transactions", 4,
+                            captured_count);
+  pass_if_canary_bootstrap("canary after set_appname, the replacement",
+                           &captured[0]);
+  pass_if_lacks_request_data("canary after set_appname, the replacement",
+                             &captured[0]);
+  pass_if_lacks("canary after set_appname, request 1: no MissedAtRINIT",
+                &captured[1], NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  tlib_pass_if_str_equal(
+      "canary after set_appname: the between-requests transaction",
+      BETWEEN_REQUESTS_TXN_NAME, captured[2].name);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A bootstrap that RINIT missed and that the worker script named keeps its
+ * name, and is a background job. It began while the thread was taken for
+ * classic mode, so it was not marked as one when it began: the begin handler's
+ * confirmation marks it. Without that it would be sent as
+ * WebTransaction/Custom/boot.
+ */
+static void test_canary_named_bootstrap(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+
+  tlib_php_request_eval(
+      "newrelic_name_transaction('boot');"
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("named canary: it and request 1", 2,
+                            captured_count);
+  tlib_pass_if_str_equal("named canary: keeps its name",
+                         "OtherTransaction/Custom/boot", captured[0].name);
+  tlib_pass_if_true("named canary: background", captured[0].background,
+                    "background=%d", captured[0].background);
+  pass_if_carries("named canary: MissedAtRINIT", &captured[0],
+                  NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+  tlib_fail_if_str_equal("named canary: request 1 is its own",
+                         "OtherTransaction/Custom/boot", captured[1].name);
+  tlib_fail_if_str_equal("named canary: request 1 isn't the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[1].name);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * RINIT began no transaction, because the app wasn't connected yet, as on a
+ * cold start. The confirmation still makes the metric pending, for the next
+ * transaction the thread sends. Here the app is still backing off when
+ * request 1 begins, so nothing is sent, and the metric stays pending.
+ */
+static void test_canary_without_rinit_txn(void) {
+  nr_status_t (*saved_appinfo_hook)(nrapp_t*) = NULL;
+
+  engine_create("");
+  saved_appinfo_hook = nr_cmd_appinfo_hook;
+  nr_cmd_appinfo_hook = mock_cmd_appinfo_unknown;
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_pass_if_null("no RINIT transaction: none at RINIT", NRPRG(txn));
+  nr_cmd_appinfo_hook = saved_appinfo_hook;
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_int_equal("no RINIT transaction: a worker thread",
+                         NR_PHP_FRANKENPHP_THREAD_WORKER,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_size_t_equal("no RINIT transaction: nothing sent", 0,
+                            captured_count);
+  tlib_pass_if_true("no RINIT transaction: MissedAtRINIT pending",
+                    missed_at_rinit_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A bootstrap that RINIT missed and that the worker script ignored is
+ * discarded by the confirmation, without being sent, so the metric stays
+ * pending, and request 1 carries it.
+ */
+static void test_canary_after_ignored_bootstrap(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+
+  tlib_php_request_eval(
+      "newrelic_ignore_transaction();"
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("ignored canary: nothing sent during call 1", 0,
+                            fake.after_call[0].captured);
+  tlib_pass_if_size_t_equal("ignored canary: request 1 only", 1,
+                            captured_count);
+  tlib_fail_if_str_equal("ignored canary: request 1 isn't the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  pass_if_carries("ignored canary: request 1's MissedAtRINIT", &captured[0],
+                  NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * Leaves in the thread's Composer entry what a successful scan leaves there:
+ * one package, collected, under a new epoch that no transaction has sent. The
+ * open transaction holds the entry, as every transaction does from its begin.
+ */
+static void seed_composer_scan(void) {
+  nr_composer_thread_entry_t* entry
+      = (NULL == NRPRG(txn)) ? NULL : NRPRG(txn)->composer_info.entry;
+
+  tlib_pass_if_not_null("seeded scan: the thread's Composer entry", entry);
+  if (NULL == entry) {
+    return;
+  }
+
+  nr_php_packages_destroy(&entry->packages);
+  entry->packages = nr_php_packages_create();
+  nr_php_packages_add_package(
+      entry->packages,
+      nr_php_package_create_with_source(COMPOSER_TEST_PACKAGE, "1.2.3",
+                                        NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  entry->status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  entry->epoch += 1;
+}
+
+/*
+ * The bootstrap scans the Composer packages once, when it loads the
+ * autoloader, and a worker thread doesn't scan again. When only the return of
+ * call 1 confirms a thread that RINIT took for classic mode, the RINIT
+ * transaction is discarded, and the scan must outlive it: the next transaction
+ * the thread sends, here one begun between calls 1 and 2, pulls it.
+ */
+static void test_confirmed_by_return_keeps_composer_scan(void) {
+  engine_create("");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  seed_composer_scan();
+  tlib_php_request_eval(callable_setup);
+
+  tlib_php_request_eval(
+      "$cb = [$t, 'anything'];"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_int_equal("composer scan: confirmed by the return",
+                         NR_PHP_FRANKENPHP_THREAD_WORKER,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_null("composer scan: the RINIT transaction discarded",
+                    NRPRG(txn));
+  tlib_pass_if_size_t_equal("composer scan: nothing sent in call 1", 0,
+                            captured_count);
+
+  tlib_php_request_eval(
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("composer scan: the next transaction", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("composer scan: it pulled the scan", "1.2.3",
+                         captured[0].composer_package_version);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * In classic mode frankenphp_handle_request throws before it calls the
+ * request handler, so the begin handler never runs and an exception is
+ * pending on return: nothing confirms the thread. Its transaction is still
+ * open after the call, and the request is recorded as one classic-mode
+ * transaction, with no FrankenPHP metrics.
+ */
+static void test_canary_not_fired_in_classic_mode(void) {
+  engine_create("");
+  request_start_web_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+
+  tlib_php_request_eval(
+      "$called = false;"
+      "try {"
+      "  frankenphp_handle_request(function () {"
+      "    $GLOBALS['called'] = true;"
+      "  });"
+      "} catch (RuntimeException $e) {}");
+
+  pass_if_php_bool("classic mode: the request handler wasn't called", false,
+                   "$called");
+  tlib_pass_if_int_equal("classic mode: still a classic-mode thread",
+                         NR_PHP_FRANKENPHP_THREAD_CLASSIC,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_not_null("classic mode: the transaction is still open",
+                        NRPRG(txn));
+  tlib_pass_if_size_t_equal("classic mode: nothing sent during the call", 0,
+                            captured_count);
+  tlib_pass_if_int_equal("classic mode: nothing pending", 0,
+                         (int)nr_php_frankenphp_thread_pending_metrics());
+
+  request_end();
+  tlib_pass_if_size_t_equal("classic mode: one transaction", 1, captured_count);
+  tlib_fail_if_str_equal("classic mode: not the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_pass_if_str_equal("classic mode: no FrankenPHP metrics", "",
+                         NRSAFESTR(captured[0].frankenphp_metrics));
 
   engine_destroy();
 }
@@ -3410,5 +4124,17 @@ void test_main(void* p NRUNUSED) {
   test_canary_unsupported();
   test_canary_with_setting_off();
   test_version_changes_on_minit();
+  test_canary_bootstrap_duration_excludes_wait();
+  test_canary_duration_with_loop_in_function();
+  test_canary_stop_time_only_for_its_txn();
+  test_canary_frozen_bootstrap_discarded();
+  test_pending_flags_survive_failed_send();
+  test_canary_bootstrap_uri_without_env();
+  test_canary_after_set_appname();
+  test_canary_named_bootstrap();
+  test_canary_without_rinit_txn();
+  test_canary_after_ignored_bootstrap();
+  test_confirmed_by_return_keeps_composer_scan();
+  test_canary_not_fired_in_classic_mode();
 #endif
 }

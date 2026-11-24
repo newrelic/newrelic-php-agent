@@ -260,6 +260,11 @@ extern nr_php_frankenphp_mode_t nr_php_frankenphp_thread_mode(void);
  * Purpose : Make the current thread a worker thread, once a call has shown
  *           that RINIT took it for classic mode wrongly, and decide its mode
  *           as RINIT does for a worker bootstrap.
+ *
+ *           It also makes the MissedAtRINIT metric pending, for the next
+ *           transaction the thread sends, and logs a warning, once per
+ *           process, with what RINIT saw: the run's classification and the
+ *           request URI.
  */
 extern void nr_php_frankenphp_confirm_worker_thread(void);
 

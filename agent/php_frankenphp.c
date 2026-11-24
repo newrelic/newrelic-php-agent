@@ -65,6 +65,34 @@ typedef struct _nr_php_frankenphp_worker_request_t {
    */
   char* content_type;
   int content_length;
+
+  /*
+   * When frankenphp_handle_request was called on a thread that RINIT took for
+   * classic mode, relative to the start of the transaction that was open and
+   * recording then, or 0. FrankenPHP waits for a request before it calls the
+   * request handler, and on a quiet thread that can take hours. When the
+   * begin handler shows that the thread is a worker thread, it sends that
+   * transaction as the bootstrap, stopped at this time instead of after the
+   * wait, unless it discards it, as nr_php_frankenphp_confirm_after_rinit
+   * says. A transaction that isn't recording gets none: one that
+   * newrelic_end_of_transaction() ended has its metrics, apdex and trace
+   * computed already, and moving its stop time would make its event and
+   * trace disagree with them. The begin handler discards it then, unless it
+   * is a background job, which is sent as it ended. The wrapper clears it on
+   * entry, so a call never reads what an earlier one left. RSHUTDOWN clears
+   * it too.
+   */
+  nrtime_t canary_stop_time;
+
+  /*
+   * The absolute start time of the transaction that canary_stop_time is
+   * relative to. User code can replace that transaction before the begin
+   * handler runs, while FrankenPHP shuts the bootstrap's request down, as a
+   * session save handler that calls newrelic_set_appname() can. The stop time
+   * means nothing for the replacement, so it is applied only to a transaction
+   * that started then. Set and cleared with canary_stop_time.
+   */
+  nrtime_t canary_txn_start;
 } nr_php_frankenphp_worker_request_t;
 
 static nrt_thread_local nr_php_frankenphp_worker_request_t
@@ -72,7 +100,9 @@ static nrt_thread_local nr_php_frankenphp_worker_request_t
     = {.in_progress = false,
        .requests_started = false,
        .content_type = NULL,
-       .content_length = -1};
+       .content_length = -1,
+       .canary_stop_time = 0,
+       .canary_txn_start = 0};
 
 static void nr_php_frankenphp_clear_response_headers(void) {
   nr_free(nr_php_frankenphp_worker_request.content_type);
@@ -139,6 +169,112 @@ static void nr_php_frankenphp_name_open_txn(bool requests_started) {
 static void nr_php_frankenphp_end_open_txn(bool requests_started) {
   nr_php_frankenphp_name_open_txn(requests_started);
   nr_php_txn_end(0, 0);
+}
+
+/*
+ * Ends the open transaction without the request data that its shutdown reads
+ * from the superglobals: the request URI and the request parameters. This
+ * runs in the middle of the worker script, once FrankenPHP has set up a
+ * worker request, so the superglobals hold that request's data, which isn't
+ * the transaction's. Telling nr_php_txn_end that it runs in post-deactivate
+ * skips that shutdown and nothing else. This doesn't run in post-deactivate,
+ * so the flag would mislead where it is passed; this name says why it is.
+ */
+static nr_status_t nr_php_frankenphp_txn_end_without_request_data(
+    int ignoretxn) {
+  return nr_php_txn_end(ignoretxn, 1);
+}
+
+/*
+ * Makes a thread that RINIT took for classic mode a worker thread, once a call
+ * has shown that it is one, and ends the transaction that is open.
+ *
+ * The request handler's begin handler can show it before the first worker
+ * request runs. Then the open transaction recorded only the worker bootstrap:
+ * it is the one RINIT began, or one that the worker script began in its
+ * place. It began while the thread was taken for classic mode, so it wasn't
+ * marked as a background job when it began. While its name isn't frozen, it
+ * is sent as the bootstrap, named as nr_php_frankenphp_name_open_txn names
+ * it, which also makes it a background job. One that the worker script made a
+ * background job itself is sent too, and keeps its name if that is frozen. It
+ * is stopped at stop_time, when frankenphp_handle_request was called, together
+ * with the segments that are still open, such as the frame that runs the
+ * worker loop, and not after FrankenPHP's wait for a request. stop_time is
+ * relative to the transaction that started at txn_start, so it isn't applied
+ * to another one. FrankenPHP has set up the first worker request by then, so
+ * the transaction is ended without the request data.
+ *
+ * A web transaction whose name is frozen is discarded instead: the worker
+ * script ended it early with newrelic_end_of_transaction(), or the browser
+ * agent's footer or a CAT response header froze its name while it was still
+ * recording. Its type can't change once its name is frozen, so sent as the
+ * bootstrap it would be a web transaction with the first worker request's HTTP
+ * status and response headers, which is wrong data. One that the worker script
+ * ignored is discarded, as in classic mode. Under off it is discarded too, and
+ * the thread records nothing from then on.
+ *
+ * Otherwise only the return of the first call shows it, and send_bootstrap is
+ * false. Whatever transaction is open is discarded then, not sent and not
+ * renamed. When the call reached a request handler that the begin handler
+ * never sees, it is the one RINIT began, or one that the request handler
+ * began in its place during the call, with newrelic_set_appname() for
+ * example. FrankenPHP had set up the first worker request before it called
+ * the request handler, so that transaction has recorded the request's
+ * segments, errors and duration, and the wait for it: sent as the bootstrap,
+ * it would be wrong data. When the worker stopped before its first request,
+ * the call returned false without calling the request handler, and the RINIT
+ * transaction holds the bootstrap and the wait; it is discarded too. A
+ * discarded transaction doesn't go through the shutdown that reads the
+ * superglobals, and sends nothing.
+ *
+ * A discarded transaction doesn't consume the pending metrics, so the thread's
+ * next transaction carries them, and it leaves the thread's Composer package
+ * scan for that transaction too. Either way the first call has been made, so
+ * the thread is after a request from now on.
+ */
+static void nr_php_frankenphp_confirm_after_rinit(bool send_bootstrap,
+                                                  nrtime_t txn_start,
+                                                  nrtime_t stop_time) {
+  // This decides the mode, which says whether the transaction is sent.
+  nr_php_frankenphp_confirm_worker_thread();
+
+  // A web transaction whose name is frozen can't become a background job, so
+  // it is discarded rather than sent as the bootstrap.
+  if (!send_bootstrap
+      || NR_PHP_FRANKENPHP_MODE_OFF == nr_php_frankenphp_thread_mode()
+      || (NULL != NRPRG(txn) && NRTXN(status.path_is_frozen)
+          && !NRTXN(status.background))) {
+    if (NULL != NRPRG(txn)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "frankenphp worker thread that was taken for classic "
+                       "mode, discarding its transaction");
+      // Ending an ignored transaction also discards the Composer package scan
+      // that the thread's entry holds and that no transaction has sent. The
+      // bootstrap took that scan when it loaded the autoloader, and a worker
+      // thread doesn't scan again, so it belongs to the next transaction that
+      // the thread sends, which fetches the entry again when it begins. So
+      // this transaction lets go of the entry first. Only a discard may do
+      // that: a transaction that is sent pulls the scan from the entry.
+      NRTXN(composer_info.entry) = NULL;
+      nr_php_txn_end(1, 0);
+    }
+  } else if (NULL != NRPRG(txn)) {
+    // nr_txn_set_timing moves only the root's stop time, and nothing keeps
+    // the other segments within it, so the open ones are stopped first.
+    if (0 != stop_time && txn_start == NRTXN(abs_start_time)
+        && !NRTXN(status.complete)) {
+      nr_txn_set_open_segments_stop_time(NRPRG(txn), stop_time);
+      nr_txn_set_timing(NRPRG(txn), NRTXN(abs_start_time), stop_time);
+    }
+
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp worker thread that was taken for classic "
+                     "mode, ending its transaction as the bootstrap");
+    nr_php_frankenphp_name_open_txn(false);
+    nr_php_frankenphp_txn_end_without_request_data(0);
+  }
+
+  nr_php_frankenphp_worker_request.requests_started = true;
 }
 
 /*
@@ -220,9 +356,23 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
     return;
   }
 
+  // In classic mode frankenphp_handle_request throws before it calls the
+  // request handler, so a call from it shows that a thread that RINIT took
+  // for classic mode is a worker thread. Confirm it before this first worker
+  // request runs: the open transaction is sent as the bootstrap, stopped when
+  // frankenphp_handle_request was called, or discarded, as
+  // nr_php_frankenphp_confirm_after_rinit says, and the request gets its own
+  // transaction below. The confirmation comes before the worker request is
+  // marked in progress: the transaction that it ends recorded the bootstrap,
+  // not the request.
+  if (NR_PHP_FRANKENPHP_THREAD_CLASSIC == nr_php_frankenphp_thread_role()) {
+    nr_php_frankenphp_confirm_after_rinit(
+        true, nr_php_frankenphp_worker_request.canary_txn_start,
+        nr_php_frankenphp_worker_request.canary_stop_time);
+  }
+
   // Only a worker thread begins a worker request transaction. On a thread
-  // that RINIT took for classic mode, or whose run RINIT didn't classify, the
-  // open transaction is left alone.
+  // whose run RINIT didn't classify, the open transaction is left alone.
   if (NR_PHP_FRANKENPHP_THREAD_WORKER != nr_php_frankenphp_thread_role()) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "frankenphp request handler called on a thread that "
@@ -290,6 +440,8 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // earlier one left behind.
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
+  nr_php_frankenphp_worker_request.canary_stop_time = 0;
+  nr_php_frankenphp_worker_request.canary_txn_start = 0;
 
   // Under off, pass the call straight through. No transaction is open on a
   // worker thread then, nor may one begin, so there is nothing to end and no
@@ -326,6 +478,21 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
                      "frankenphp_handle_request called without a callable, "
                      "leaving the transaction alone");
     goto end;
+  }
+
+  // On a thread that RINIT took for classic mode, the request handler's begin
+  // handler may show that this is a worker thread, and send the open
+  // transaction as the bootstrap, unless its name is frozen while it is a web
+  // transaction. Note when it should stop: now, before FrankenPHP waits for a
+  // request. A transaction that isn't recording gets no stop time:
+  // newrelic_end_of_transaction() stopped it already, and it is going to be
+  // discarded unless it is a background job, or it is ignored and is going to
+  // be discarded.
+  if (NR_PHP_FRANKENPHP_THREAD_CLASSIC == nr_php_frankenphp_thread_role()
+      && nr_php_recording()) {
+    nr_php_frankenphp_worker_request.canary_stop_time
+        = nr_txn_now_rel(NRPRG(txn));
+    nr_php_frankenphp_worker_request.canary_txn_start = NRTXN(abs_start_time);
   }
 
   // On a worker thread, end the transaction that is open, or the request
@@ -398,44 +565,23 @@ end:
   zend_release_fcall_info_cache(&fcc);
 }
 
-/*
- * Makes a thread that RINIT took for classic mode a worker thread, once a call
- * has shown that it is one.
- *
- * Whatever transaction is open is discarded, not sent and not renamed. It is
- * the one RINIT began, or one that the request handler began in its place
- * during the call, with newrelic_set_appname() for example. FrankenPHP had
- * set up the first worker request before it called the request handler, so
- * that transaction has recorded the request's segments, errors and duration,
- * and the wait for it: sent as the bootstrap, it would be wrong data. A
- * discarded transaction doesn't go through the shutdown that reads the
- * superglobals, and sends nothing.
- *
- * The first call has returned, so the thread is after a request from now on.
- */
-static void nr_php_frankenphp_confirm_after_rinit(void) {
-  nr_php_frankenphp_confirm_worker_thread();
-
-  if (NULL != NRPRG(txn)) {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "frankenphp_handle_request returned on a thread that was "
-                     "taken for classic mode, discarding its transaction");
-    nr_php_txn_end(1, 0);
-  }
-
-  nr_php_frankenphp_worker_request.requests_started = true;
-}
-
 void nr_php_frankenphp_handle_request_end(void) {
   // Classic mode throws before calling the request handler, and an invalid
   // argument leaves a TypeError pending. So a call that returns with no
   // exception pending shows that a thread that RINIT took for classic mode
-  // is a worker thread. Confirm it now, so that its next call is a worker
-  // request, and its RINIT transaction isn't left open for the worker
-  // lifetime.
+  // is a worker thread. The begin handler confirms such a thread before the
+  // first request runs, so it is still taken for classic mode here only when
+  // the call didn't reach a request handler that the begin handler sees: the
+  // request handler is a trampoline, an internal function, or a closure
+  // called before it was passed in, or the worker stopped before its first
+  // request, and the call returned false without calling it. Confirm it now,
+  // so that its next call is a worker request, and its RINIT transaction
+  // isn't left open for the worker lifetime. That transaction holds the first
+  // request, or the bootstrap and the wait for a request that never came, so
+  // it is discarded.
   if (NR_PHP_FRANKENPHP_THREAD_CLASSIC == nr_php_frankenphp_thread_role()
       && NULL == EG(exception)) {
-    nr_php_frankenphp_confirm_after_rinit();
+    nr_php_frankenphp_confirm_after_rinit(false, 0, 0);
   }
 
   // The begin handler began no worker request transaction: the thread isn't
@@ -480,6 +626,8 @@ void nr_php_frankenphp_rshutdown(void) {
   // the agent's shutdown path ends its transaction.
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
+  nr_php_frankenphp_worker_request.canary_stop_time = 0;
+  nr_php_frankenphp_worker_request.canary_txn_start = 0;
 
   // The next script run on this thread starts a new worker lifetime, or is
   // classic mode.
