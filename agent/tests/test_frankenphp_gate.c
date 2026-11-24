@@ -305,6 +305,56 @@ static void test_mode_for(void) {
 }
 
 typedef struct {
+  const char* version;
+  const char* suffix;
+} unsupported_name_row_t;
+
+/*
+ * The unsupported metric's last segment is the version as read, cut to 16
+ * bytes, with every byte outside [0-9A-Za-z._+-] replaced by _, or unknown
+ * when there is no version. Valgrind checks that nothing is read past the
+ * cut or leaked.
+ */
+static void test_unsupported_metric_name(void) {
+  static const unsupported_name_row_t rows[] = {
+      {"v1.11.1", "v1.11.1"},
+      {"1.13.0", "1.13.0"},
+      {"dev", "dev"},
+      {NULL, "unknown"},
+      {"", "unknown"},
+      {"0123456789abcdef0123456789abcdef01234567", "0123456789abcdef"},
+      {"v1.13.1-custom12", "v1.13.1-custom12"},
+      {"v1.13.1-custom123", "v1.13.1-custom12"},
+      {"v1.13.1-rc.1", "v1.13.1-rc.1"},
+      {"1.13.1+build", "1.13.1+build"},
+      {"my build/2", "my_build_2"},
+      {" 1.2.3", "_1.2.3"},
+      {"v1.2.3\n", "v1.2.3_"},
+      {"v1.2.3-\xc3\xa9", "v1.2.3-__"},
+      /* The cut falls inside the last character. */
+      {"v1.13.1-custom1\xc3\xa9", "v1.13.1-custom1_"},
+      {"///", "___"},
+      {"V1.2.3-RC1", "V1.2.3-RC1"},
+      /* Each byte after 09 is next to an allowed range. */
+      {"AZaz09*,:@[^`{", "AZaz09________"},
+  };
+  size_t i;
+
+  for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+    char what[64];
+    char* expected = nr_formatf("%s%s", NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED,
+                                rows[i].suffix);
+    char* name = nr_php_frankenphp_unsupported_metric_name(rows[i].version);
+
+    snprintf(what, sizeof(what), "unsupported_metric_name, row %zu", i);
+    tlib_pass_if_str_equal(what, expected, name);
+
+    nr_free(name);
+    nr_free(expected);
+  }
+}
+
+typedef struct {
   const char* value; /* NULL: no line in the INI at all */
   nr_php_frankenphp_setting_t expected;
 } ini_row_t;
@@ -380,6 +430,7 @@ void test_main(void* p NRUNUSED) {
   test_log_once();
   test_classify_run();
   test_mode_for();
+  test_unsupported_metric_name();
 
   /* Last: it creates engines. */
   test_ini_worker_mode();

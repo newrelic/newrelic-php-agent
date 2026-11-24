@@ -7,11 +7,13 @@
 #include "php_agent.h"
 #include "php_error.h"
 #include "php_frankenphp_gate.h"
+#include "php_globals.h"
 #include "php_header.h"
 #include "php_observer.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "util_memory.h"
+#include "util_metrics.h"
 #include "util_strings.h"
 #include "util_threads.h"
 
@@ -25,11 +27,12 @@
  */
 typedef struct _nr_php_frankenphp_worker_request_t {
   /*
-   * Set by the request handler's begin handler, even when it can't begin a
-   * transaction: the request handler may still begin one with
-   * newrelic_start_transaction(), and that one has to end as the request's
-   * transaction too, not as the bootstrap transaction. Reset by
-   * nr_php_frankenphp_handle_request_end, on entry to
+   * Set by the request handler's begin handler, even when it can't or may not
+   * begin a transaction. When it can't, the request handler may still begin
+   * one with newrelic_start_transaction(), and that one has to end as the
+   * request's transaction too, not as the bootstrap transaction. When the
+   * thread's mode doesn't allow one, nr_php_txn_begin refuses while this is
+   * set. Reset by nr_php_frankenphp_handle_request_end, on entry to
    * frankenphp_handle_request and at RSHUTDOWN, so a value that a bailout
    * leaves behind ends with its worker lifetime.
    */
@@ -44,8 +47,10 @@ typedef struct _nr_php_frankenphp_worker_request_t {
    * thread. A thread that RINIT took for classic mode needs it too: when the
    * request handler is one that the begin handler never sees, only the return
    * of the first call confirms the thread, and by then the first request has
-   * run. Every reader checks the thread's role itself. It lasts for the
-   * worker lifetime, so only RSHUTDOWN resets it.
+   * run. On a worker thread under off the wrapper passes the call through
+   * before it checks the argument, and doesn't set it: nothing reads it there,
+   * because no transaction begins. Every reader checks the thread's role
+   * itself. It lasts for the worker lifetime, so only RSHUTDOWN resets it.
    */
   bool requests_started;
 
@@ -84,6 +89,12 @@ static void nr_php_frankenphp_clear_response_headers(void) {
 static bool nr_php_frankenphp_outside_worker_request(void) {
   return NR_PHP_FRANKENPHP_THREAD_WORKER == nr_php_frankenphp_thread_role()
          && !nr_php_frankenphp_worker_request.in_progress;
+}
+
+/* Whether the thread is a worker thread whose mode is the given one. */
+static bool nr_php_frankenphp_worker_in_mode(nr_php_frankenphp_mode_t mode) {
+  return NR_PHP_FRANKENPHP_THREAD_WORKER == nr_php_frankenphp_thread_role()
+         && mode == nr_php_frankenphp_thread_mode();
 }
 
 /*
@@ -224,8 +235,19 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
   // The worker request is in progress before its transaction begins, or
   // nr_php_frankenphp_txn_starting would take the transaction for one begun
   // outside a worker request, and make it a background job without its queue
-  // start.
+  // start. It is in progress whatever the mode, so that when the mode isn't
+  // instrumented, nr_php_txn_begin refuses the transactions the request
+  // handler would begin itself.
   nr_php_frankenphp_worker_request.in_progress = true;
+
+  if (NR_PHP_FRANKENPHP_MODE_INSTRUMENTED != nr_php_frankenphp_thread_mode()) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp request handler called on a worker thread "
+                     "whose worker mode isn't instrumented, not beginning a "
+                     "transaction");
+    return;
+  }
+
   // start web transaction at the start of web request handling
   nr_php_txn_begin(0, 0);
 }
@@ -269,6 +291,19 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 
+  // Under off, pass the call straight through. No transaction is open on a
+  // worker thread then, nor may one begin, so there is nothing to end and no
+  // request handler to wrap, and the call needs no callable. Return before
+  // the argument is resolved, so that no trampoline is allocated: this is the
+  // one path that may return without going through the end label.
+  if (nr_php_frankenphp_worker_in_mode(NR_PHP_FRANKENPHP_MODE_OFF)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp_handle_request called on a worker thread "
+                     "under " NR_PHP_FRANKENPHP_INI_WORKER_MODE
+                     " off, passing it through");
+    return;
+  }
+
   // Resolve the argument before touching the open transaction. The real
   // function rejects an argument that isn't callable with a TypeError or an
   // ArgumentCountError, and a call that is going to throw doesn't end the
@@ -281,10 +316,11 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
     zf = fcc.function_handler;
   }
 
-  // From here on, every path leaves through the end label, which releases
-  // fcc. For a callable that resolves to __call or __callStatic, fcc holds a
-  // trampoline, and a path that skips the release leaks one per call for the
-  // worker's lifetime.
+  // Once zend_is_callable_ex has run, every path leaves through the end
+  // label, which releases fcc. For a callable that resolves to __call or
+  // __callStatic, fcc holds a trampoline, and a path that skips the release
+  // leaks one per call for the worker's lifetime. The only early return, for
+  // off, comes before the argument is resolved, while fcc is still empty.
   if (NULL == zf) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "frankenphp_handle_request called without a callable, "
@@ -300,8 +336,11 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // that phase. As in classic mode, an ignored transaction is discarded, and
   // one ended early with newrelic_end_of_transaction() is sent with the name
   // it had when it ended. None is open when the agent wasn't connected to the
-  // daemon yet at RINIT, or when nr_php_frankenphp_handle_request_end has
-  // ended the last request's.
+  // daemon yet at RINIT, when nr_php_frankenphp_handle_request_end has ended
+  // the last request's, or when the confirmation of a thread that RINIT took
+  // for classic mode, by the begin handler or by the return of the first
+  // call, ended the one that was open. On an unsupported version this ends
+  // the bootstrap, and the transactions begun between requests, the same way.
   //
   // On any other thread, leave the transaction alone. In classic mode the
   // real function throws before it calls the request handler, and the rest of
@@ -327,7 +366,10 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // nr_php_frankenphp_handle_request_end ends it. The callback is wrapped on
   // any thread: Zend installs a function's Observer handlers at its first
   // call, so a thread that turns out to be a worker thread only gets the
-  // custom handlers on later calls if they were set before the first one.
+  // custom handlers on later calls if they were set before the first one. It
+  // is wrapped on an unsupported version too: the fcall_begin handler begins
+  // no transaction then, but marks the worker request as in progress, during
+  // which nr_php_txn_begin refuses.
   //
   // A trampoline is a temporary function that the agent can't instrument, so
   // don't wrap it.
@@ -468,5 +510,45 @@ void nr_php_frankenphp_txn_starting(nrtxn_t* txn) {
   // browser agent's footer and the CAT response header read the queue start
   // whatever the transaction's type.
   txn->status.http_x_start = 0;
+}
+
+bool nr_php_frankenphp_txn_begin_refused(void) {
+  // A thread that isn't a worker thread pays this one read.
+  if (NR_PHP_FRANKENPHP_THREAD_WORKER != nr_php_frankenphp_thread_role()) {
+    return false;
+  }
+
+  switch (nr_php_frankenphp_thread_mode()) {
+    case NR_PHP_FRANKENPHP_MODE_OFF:
+      return true;
+    case NR_PHP_FRANKENPHP_MODE_UNSUPPORTED:
+      return nr_php_frankenphp_worker_request.in_progress;
+    case NR_PHP_FRANKENPHP_MODE_INSTRUMENTED:
+      break;
+  }
+
+  return false;
+}
+
+void nr_php_frankenphp_txn_begun(nrtxn_t* txn) {
+  nr_php_frankenphp_version_t version = {0, 0, 0};
+  char* name;
+
+  if (NULL == txn || !nr_php_frankenphp_worker_request.in_progress
+      || !nr_php_frankenphp_worker_in_mode(
+          NR_PHP_FRANKENPHP_MODE_INSTRUMENTED)) {
+    return;
+  }
+
+  if (nr_php_frankenphp_parse_version(
+          NR_PHP_PROCESS_GLOBALS(frankenphp_version), &version)) {
+    name = nr_formatf(NR_PHP_FRANKENPHP_METRIC_WORKER_MODE "%d.%d.%d",
+                      version.major, version.minor, version.patch);
+  } else {
+    name = nr_strdup(NR_PHP_FRANKENPHP_METRIC_WORKER_MODE "unknown");
+  }
+
+  nrm_force_add(txn->unscoped_metrics, name, 0);
+  nr_free(name);
 }
 #endif /* ZTS */

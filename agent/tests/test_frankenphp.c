@@ -41,6 +41,7 @@ tlib_parallel_info_t parallel_info
 #include "util_object.h"
 #include "util_string_pool.h"
 #include "util_strings.h"
+#include "util_text.h"
 
 #include "zend_exceptions.h"
 #include "ext/spl/spl_exceptions.h"
@@ -82,7 +83,14 @@ typedef struct {
   bool background_change_prevented;
   /* The queue start taken from X-Request-Start, or 0 when there is none. */
   nrtime_t queue_start;
+  /*
+   * The names of the unscoped metrics that start with
+   * FRANKENPHP_METRIC_PREFIX, joined with "\n".
+   */
+  char* frankenphp_metrics;
 } captured_txn_t;
+
+#define FRANKENPHP_METRIC_PREFIX "Supportability/PHP/FrankenPHP/"
 
 static captured_txn_t captured[CAPTURE_MAX];
 static size_t captured_count = 0;
@@ -119,6 +127,30 @@ static char* capture_segment_names(const nrtxn_t* txn) {
   return names;
 }
 
+static char* capture_frankenphp_metrics(const nrtxn_t* txn) {
+  nrbuf_t* buf = nr_buffer_create(256, 256);
+  int size = nrm_table_size(txn->unscoped_metrics);
+  char* names;
+  int i;
+
+  for (i = 0; i < size; i++) {
+    const char* name = nrm_get_name(txn->unscoped_metrics,
+                                    nrm_get_metric(txn->unscoped_metrics, i));
+
+    if (0 != nr_strncmp(name, NR_PSTR(FRANKENPHP_METRIC_PREFIX))) {
+      continue;
+    }
+    if (nr_buffer_len(buf) > 0) {
+      nr_buffer_add(buf, NR_PSTR("\n"));
+    }
+    nr_buffer_add(buf, name, nr_strlen(name));
+  }
+
+  names = nr_strndup((const char*)nr_buffer_cptr(buf), nr_buffer_len(buf));
+  nr_buffer_destroy(&buf);
+  return names;
+}
+
 static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
   if (captured_count < CAPTURE_MAX) {
     captured_txn_t* c = &captured[captured_count];
@@ -139,6 +171,7 @@ static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
            != nrm_find(txn->unscoped_metrics,
                        "Supportability/background_status_change_prevented"));
     c->queue_start = txn->status.http_x_start;
+    c->frankenphp_metrics = capture_frankenphp_metrics(txn);
     nro_delete(attrs);
     nro_delete(agent_attrs);
   }
@@ -155,6 +188,7 @@ static void capture_reset(void) {
     nr_free(captured[i].user_attributes);
     nr_free(captured[i].agent_attributes);
     nr_free(captured[i].segment_names);
+    nr_free(captured[i].frankenphp_metrics);
   }
   nr_memset(captured, 0, sizeof(captured));
   captured_count = 0;
@@ -169,6 +203,31 @@ static bool segment_names_have(const char* segment_names, const char* name) {
   nr_free(haystack);
   nr_free(needle);
   return found;
+}
+
+/* Whether the captured transaction carries the given FrankenPHP metric. */
+static bool carries_metric(const captured_txn_t* c, const char* metric) {
+  char* haystack = nr_formatf("\n%s\n", NRBLANKSTR(c->frankenphp_metrics));
+  char* needle = nr_formatf("\n%s\n", metric);
+  bool found = (NULL != nr_strstr(haystack, needle));
+
+  nr_free(haystack);
+  nr_free(needle);
+  return found;
+}
+
+static void pass_if_carries(const char* msg,
+                            const captured_txn_t* c,
+                            const char* metric) {
+  tlib_pass_if_true(msg, carries_metric(c, metric), "metrics=%s",
+                    NRSAFESTR(c->frankenphp_metrics));
+}
+
+static void pass_if_lacks(const char* msg,
+                          const captured_txn_t* c,
+                          const char* metric) {
+  tlib_pass_if_false(msg, carries_metric(c, metric), "metrics=%s",
+                     NRSAFESTR(c->frankenphp_metrics));
 }
 /* }}} */
 
@@ -523,6 +582,54 @@ static void pass_if_php_string(const char* msg,
       (NULL != value && IS_STRING == Z_TYPE_P(value)) ? Z_STRVAL_P(value)
                                                        : "<not a string>");
   nr_php_zval_free(&value);
+}
+
+/* Passes if the PHP expression evaluates to the expected boolean. */
+static void pass_if_php_bool(const char* msg, bool expected, const char* expr) {
+  zval* value = tlib_php_request_eval_expr(expr);
+
+  tlib_pass_if_zval_is_bool_value(msg, expected, value);
+  nr_php_zval_free(&value);
+}
+
+/*
+ * How many times the text appears in the agent's log. tlib gives each engine
+ * a new log file, so this counts what the current engine logged.
+ */
+static size_t log_count(const char* text) {
+  char* log
+      = nr_read_file_contents(INI_STR("newrelic.logfile"), 64 * 1024 * 1024);
+  const char* cursor = log;
+  size_t count = 0;
+
+  while (NULL != (cursor = nr_strstr(cursor, text))) {
+    count += 1;
+    cursor += nr_strlen(text);
+  }
+
+  nr_free(log);
+  return count;
+}
+
+/* An INI line that sets the worker mode setting. */
+#define WORKER_MODE_INI(value) NR_PHP_FRANKENPHP_INI_WORKER_MODE "=" value "\n"
+
+/*
+ * Passes if the warning that a worker thread runs on a FrankenPHP version the
+ * setting doesn't allow, naming the version and the setting, was logged the
+ * given number of times.
+ */
+static void pass_if_unsupported_warnings(const char* msg,
+                                         size_t expected,
+                                         const char* version,
+                                         const char* setting) {
+  char* warning = nr_formatf(
+      "FrankenPHP '%s' isn't supported in worker mode "
+      "with " NR_PHP_FRANKENPHP_INI_WORKER_MODE "=%s",
+      version, setting);
+
+  tlib_pass_if_size_t_equal(msg, expected, log_count(warning));
+  nr_free(warning);
 }
 /* }}} */
 
@@ -2672,6 +2779,575 @@ static void test_txn_after_counter_exit_keeps_request_data(void) {
 
   engine_destroy();
 }
+
+/* {{{ The setting, the version check and the gate's metrics */
+
+#define VERSION_METRIC_1_13_1 NR_PHP_FRANKENPHP_METRIC_WORKER_MODE "1.13.1"
+#define UNSUPPORTED_METRIC_V1_11_1 \
+  NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "v1.11.1"
+
+/* Two calls to a closure that counts its calls in $calls. */
+static const char two_counted_calls[]
+    = "$calls = 0;"
+      "$cb = function () { $GLOBALS['calls']++; };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);";
+
+static bool unsupported_pending(void) {
+  return 0
+         != (nr_php_frankenphp_thread_pending_metrics()
+             & NR_PHP_FRANKENPHP_PENDING_UNSUPPORTED);
+}
+
+/*
+ * Each worker request transaction carries the worker-mode metric, with the
+ * version as X.Y.Z, or unknown. The bootstrap and a transaction begun between
+ * requests don't: no worker request is in progress then. A transaction that
+ * newrelic_set_appname() begins during a request, in place of the one the
+ * begin handler began, carries it too, because by default
+ * newrelic_set_appname() discards the transaction it ends.
+ */
+static void test_worker_mode_metric(void) {
+  static const char unknown_metric[]
+      = NR_PHP_FRANKENPHP_METRIC_WORKER_MODE "unknown";
+  static const char unknown_info[] = "can't read FrankenPHP's version 'dev'";
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("worker-mode metric: bootstrap plus two requests",
+                            3, captured_count);
+  pass_if_lacks("worker-mode metric: not on the bootstrap", &captured[0],
+                VERSION_METRIC_1_13_1);
+  pass_if_carries("worker-mode metric: request 1", &captured[1],
+                  VERSION_METRIC_1_13_1);
+  pass_if_carries("worker-mode metric: request 2", &captured[2],
+                  VERSION_METRIC_1_13_1);
+  request_end();
+  engine_destroy();
+
+  /* An unknown version, which the setting on instruments. */
+  engine_create_version(WORKER_MODE_INI("on"), "dev");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("unknown version: bootstrap plus the request", 2,
+                            captured_count);
+  pass_if_carries("unknown version: the request", &captured[1], unknown_metric);
+  request_end();
+  request_start(FAKE_RETURN_ONLY);
+  request_end();
+  tlib_pass_if_size_t_equal("unknown version: logged once per process", 1,
+                            log_count(unknown_info));
+  engine_destroy();
+
+  /* A replacement that newrelic_set_appname() begins during the request. */
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () {"
+      "  $GLOBALS['replaced']"
+      "      = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "};"
+      "frankenphp_handle_request($cb);");
+  pass_if_php_bool("set_appname in a request: it began a replacement", true,
+                   "$replaced");
+  tlib_pass_if_size_t_equal(
+      "set_appname in a request: the bootstrap and the replacement", 2,
+      captured_count);
+  pass_if_carries("set_appname in a request: the replacement", &captured[1],
+                  VERSION_METRIC_1_13_1);
+  request_end();
+  engine_destroy();
+
+  /*
+   * A transaction begun between requests. Captured: [0] bootstrap, [1]
+   * request 1, [2] the between-requests transaction, [3] request 2.
+   */
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("between requests: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_str_equal("between requests: the between-requests one",
+                         BETWEEN_REQUESTS_TXN_NAME, captured[2].name);
+  pass_if_lacks("between requests: no worker-mode metric", &captured[2],
+                VERSION_METRIC_1_13_1);
+  pass_if_carries("between requests: request 2 has it", &captured[3],
+                  VERSION_METRIC_1_13_1);
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * Under off the agent records nothing on a worker thread. RINIT begins no
+ * transaction, the wrapper passes the call straight through without wrapping
+ * the request handler, and nr_php_txn_begin refuses to begin one, so
+ * newrelic_start_transaction() and newrelic_set_appname() return false there,
+ * in a worker request or outside one. Classic mode is recorded as usual.
+ */
+static void test_setting_off(void) {
+  static const char off_info[] = NR_PHP_FRANKENPHP_INI_WORKER_MODE " is off";
+  size_t trampolines = 0;
+  size_t i;
+
+  engine_create(WORKER_MODE_INI("off"));
+
+  request_start(FAKE_CALL);
+  tlib_pass_if_null("off: no transaction after RINIT", NRPRG(txn));
+  tlib_php_request_eval(
+      "$callback_ran = false;"
+      "$cb = function () { $GLOBALS['callback_ran'] = true; };"
+      "$returned = frankenphp_handle_request($cb);");
+  pass_if_php_bool("off: the call returns true", true, "$returned");
+  pass_if_php_bool("off: the callback ran", true, "$callback_ran");
+  tlib_pass_if_size_t_equal("off: nothing captured", 0, captured_count);
+  tlib_pass_if_false("off: the callback isn't wrapped",
+                     wraprec_has_custom_handlers(wraprec_of("$cb")),
+                     "the callback has the custom handlers");
+  request_end();
+  tlib_pass_if_size_t_equal("off: nothing captured at the end", 0,
+                            captured_count);
+
+  /*
+   * newrelic_start_transaction() comes first in each pair: once
+   * newrelic_set_appname() has begun a transaction, it returns false anyway.
+   */
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$boot_start = newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "$boot_appname = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "$cb = function () {"
+      "  $GLOBALS['cb_start']"
+      "      = newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "  $GLOBALS['cb_appname']"
+      "      = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "};"
+      "frankenphp_handle_request($cb);"
+      "$after_start = newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "$after_appname = newrelic_set_appname(ini_get('newrelic.appname'));");
+  pass_if_php_bool("off, in the bootstrap: start_transaction", false,
+                   "$boot_start");
+  pass_if_php_bool("off, in the bootstrap: set_appname", false,
+                   "$boot_appname");
+  pass_if_php_bool("off, in the callback: start_transaction", false,
+                   "$cb_start");
+  pass_if_php_bool("off, in the callback: set_appname", false, "$cb_appname");
+  pass_if_php_bool("off, after the last call: start_transaction", false,
+                   "$after_start");
+  pass_if_php_bool("off, after the last call: set_appname", false,
+                   "$after_appname");
+  request_end();
+  tlib_pass_if_size_t_equal("off, API calls: nothing captured", 0,
+                            captured_count);
+
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "newrelic_end_transaction();");
+  request_end();
+  tlib_pass_if_size_t_equal("off, start then end in the bootstrap: nothing", 0,
+                            captured_count);
+
+  /*
+   * The wrapper returns before it resolves the argument, so it allocates no
+   * trampoline (valgrind checks the leak).
+   */
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    const char* label = rejected_callables[i].label;
+    char* code;
+    char msg[128];
+
+    if (NULL == nr_strstr(label, "trampoline")) {
+      continue;
+    }
+    trampolines += 1;
+    code = nr_formatf(
+        "$cb = %s; frankenphp_handle_request($cb); "
+        "frankenphp_handle_request($cb);",
+        rejected_callables[i].expr);
+
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    snprintf(msg, sizeof(msg), "off, %s: both calls pass through", label);
+    tlib_pass_if_int_equal(msg, 2, fake.entered);
+    snprintf(msg, sizeof(msg), "off, %s: no exception", label);
+    tlib_pass_if_false(msg, fake.exception_after_call[0], "the callback threw");
+    request_end();
+    snprintf(msg, sizeof(msg), "off, %s: nothing captured", label);
+    tlib_pass_if_size_t_equal(msg, 0, captured_count);
+    nr_free(code);
+  }
+  tlib_pass_if_size_t_equal("off: both trampoline cases ran", 2, trampolines);
+
+  tlib_pass_if_size_t_equal("off: logged once per process", 1,
+                            log_count(off_info));
+
+  /* Classic mode, in the same engine. */
+  request_start_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  tlib_php_request_eval(
+      "$appname = newrelic_set_appname(ini_get('newrelic.appname'));");
+  pass_if_php_bool("off, classic mode: set_appname works", true, "$appname");
+  pass_if_classic_run_keeps_its_transaction("off, classic mode");
+
+  engine_destroy();
+}
+
+/*
+ * An unsupported worker script whose boot fails before its first call sends
+ * its bootstrap at the end of the script run, after RSHUTDOWN, and the
+ * bootstrap carries the unsupported metric. If RSHUTDOWN cleared the pending
+ * metrics, this transaction would lose it.
+ */
+static void test_unsupported_failed_boot(void) {
+  engine_create_version("", "v1.11.1");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval("newrelic_notice_error('boot failed');");
+  request_end();
+
+  tlib_pass_if_size_t_equal("unsupported failed boot: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("unsupported failed boot: the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("unsupported failed boot: has the error",
+                    captured[0].has_error, "the transaction has no error");
+  pass_if_carries("unsupported failed boot: the unsupported metric",
+                  &captured[0], UNSUPPORTED_METRIC_V1_11_1);
+
+  engine_destroy();
+}
+
+typedef struct {
+  const char* version;
+  const char* ini;
+  const char* setting;
+  const char* metric;
+} unsupported_case_t;
+
+/*
+ * On a version that the setting doesn't allow, the agent records the
+ * bootstrap and no worker request transactions. The bootstrap carries the
+ * unsupported metric, with the version cut and sanitised, and the warning
+ * names the version as read. The request handler is still wrapped, so that
+ * its begin handler marks each worker request as in progress, during which
+ * nr_php_txn_begin refuses.
+ */
+static void test_unsupported_version(void) {
+  static const unsupported_case_t cases[] = {
+      {"v1.11.1", "", "auto", UNSUPPORTED_METRIC_V1_11_1},
+      {"dev", "", "auto", NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "dev"},
+      {"v1.2.3", WORKER_MODE_INI("on"), "on",
+       NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "v1.2.3"},
+      /*
+       * The patch doesn't fit in an int, so the version is unknown, but its
+       * first 16 bytes parse as a supported release. The mode comes from the
+       * version as read; only the metric's text is cut.
+       */
+      {"v1.11.20000000000", "", "auto",
+       NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "v1.11.2000000000"},
+  };
+  size_t trampolines = 0;
+  size_t i;
+
+  for (i = 0; i < CASE_COUNT(cases); i++) {
+    const char* version = cases[i].version;
+    char msg[160];
+
+    engine_create_version(cases[i].ini, version);
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(two_counted_calls);
+
+    snprintf(msg, sizeof(msg), "unsupported %s: the bootstrap only", version);
+    tlib_pass_if_size_t_equal(msg, 1, captured_count);
+    snprintf(msg, sizeof(msg), "unsupported %s: named as the bootstrap",
+             version);
+    tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+    snprintf(msg, sizeof(msg), "unsupported %s: the bootstrap's metric",
+             version);
+    pass_if_carries(msg, &captured[0], cases[i].metric);
+    snprintf(msg, sizeof(msg), "unsupported %s: no transaction in call 1",
+             version);
+    tlib_pass_if_true(msg, fake.after_call[0].txn_is_null,
+                      "NRPRG(txn) was not NULL");
+    snprintf(msg, sizeof(msg), "unsupported %s: no transaction in call 2",
+             version);
+    tlib_pass_if_true(msg, fake.after_call[1].txn_is_null,
+                      "NRPRG(txn) was not NULL");
+    snprintf(msg, sizeof(msg), "unsupported %s: the callback ran twice",
+             version);
+    pass_if_php_string(msg, "2", "(string) $calls");
+    snprintf(msg, sizeof(msg), "unsupported %s: the callback is wrapped",
+             version);
+    tlib_pass_if_true(msg, wraprec_has_custom_handlers(wraprec_of("$cb")),
+                      "no wraprec with custom handlers");
+    snprintf(msg, sizeof(msg), "unsupported %s: the warning, once", version);
+    pass_if_unsupported_warnings(msg, 1, version, cases[i].setting);
+
+    request_end();
+    snprintf(msg, sizeof(msg), "unsupported %s: nothing more at the end",
+             version);
+    tlib_pass_if_size_t_equal(msg, 1, captured_count);
+    engine_destroy();
+  }
+
+  engine_create_version("", "v1.11.1");
+
+  /* newrelic_set_appname() in a worker request begins nothing. */
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () {"
+      "  $GLOBALS['appname']"
+      "      = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "};"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  pass_if_php_bool("unsupported, set_appname in a request: returns false",
+                   false, "$appname");
+  request_end();
+  tlib_pass_if_size_t_equal(
+      "unsupported, set_appname in a request: the bootstrap only", 1,
+      captured_count);
+  tlib_pass_if_str_equal(
+      "unsupported, set_appname in a request: named as the bootstrap",
+      BOOTSTRAP_TXN_NAME, captured[0].name);
+
+  /* Trampolines: valgrind checks that the wrapper releases them. */
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    const char* label = rejected_callables[i].label;
+    char* code;
+    char msg[128];
+
+    if (NULL == nr_strstr(label, "trampoline")) {
+      continue;
+    }
+    trampolines += 1;
+    code = nr_formatf(
+        "$cb = %s; frankenphp_handle_request($cb); "
+        "frankenphp_handle_request($cb);",
+        rejected_callables[i].expr);
+
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    snprintf(msg, sizeof(msg), "unsupported, %s: both calls", label);
+    tlib_pass_if_int_equal(msg, 2, fake.entered);
+    snprintf(msg, sizeof(msg), "unsupported, %s: no exception", label);
+    tlib_pass_if_false(msg, fake.exception_after_call[0], "the callback threw");
+    request_end();
+    snprintf(msg, sizeof(msg), "unsupported, %s: the bootstrap only", label);
+    tlib_pass_if_size_t_equal(msg, 1, captured_count);
+    nr_free(code);
+  }
+  tlib_pass_if_size_t_equal("unsupported: both trampoline cases ran", 2,
+                            trampolines);
+
+  /*
+   * newrelic_set_appname() in the bootstrap discards the RINIT transaction,
+   * which leaves the metric pending, and begins a replacement, which is sent
+   * as the bootstrap at the first call and carries it.
+   */
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$replaced = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  pass_if_php_bool("unsupported, replaced bootstrap: a replacement began", true,
+                   "$replaced");
+  tlib_pass_if_size_t_equal(
+      "unsupported, replaced bootstrap: sent at the first call", 1,
+      fake.on_entry[0].captured);
+  request_end();
+  tlib_pass_if_size_t_equal("unsupported, replaced bootstrap: only it", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("unsupported, replaced bootstrap: the bootstrap name",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  pass_if_carries("unsupported, replaced bootstrap: the metric", &captured[0],
+                  UNSUPPORTED_METRIC_V1_11_1);
+  engine_destroy();
+
+  /*
+   * No bootstrap begins when the app isn't connected yet at RINIT. The
+   * warning is logged anyway, and the metric stays pending, because no
+   * worker request transaction begins to carry it.
+   */
+  engine_create_version("", "v1.11.1");
+  nr_cmd_appinfo_hook = mock_cmd_appinfo_unknown;
+  request_start(FAKE_CALL);
+  tlib_pass_if_null("unsupported, app unknown: no bootstrap", NRPRG(txn));
+  pass_if_unsupported_warnings("unsupported, app unknown: the warning", 1,
+                               "v1.11.1", "auto");
+  tlib_php_request_eval(two_counted_calls);
+  tlib_pass_if_size_t_equal("unsupported, app unknown: nothing captured", 0,
+                            captured_count);
+  tlib_pass_if_true("unsupported, app unknown: the metric is still pending",
+                    unsupported_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * The pending metrics last until a transaction is sent or until the next
+ * RINIT, not until RSHUTDOWN. Those that nothing consumed in a worker lifetime
+ * are dropped at the next RINIT, or they would go on the next classic-mode
+ * transaction on the thread.
+ */
+static void test_pending_flags_cleared_at_next_rinit(void) {
+  engine_create_version("", "v1.11.1");
+  nr_cmd_appinfo_hook = mock_cmd_appinfo_unknown;
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(two_counted_calls);
+  tlib_pass_if_true("next RINIT: pending after the calls",
+                    unsupported_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
+  request_end();
+  tlib_pass_if_true("next RINIT: still pending after RSHUTDOWN",
+                    unsupported_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
+
+  request_start_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  tlib_pass_if_int_equal("next RINIT: nothing pending in classic mode", 0,
+                         (int)nr_php_frankenphp_thread_pending_metrics());
+  request_end();
+  engine_destroy();
+}
+
+/* With the setting on, v1.2.4, the technical floor, is instrumented. */
+static void test_on_allows_technical_floor(void) {
+  static const char version_metric[]
+      = NR_PHP_FRANKENPHP_METRIC_WORKER_MODE "1.2.4";
+
+  engine_create_version(WORKER_MODE_INI("on"), "v1.2.4");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(two_counted_calls);
+
+  tlib_pass_if_size_t_equal("technical floor: bootstrap plus two requests", 3,
+                            captured_count);
+  tlib_pass_if_str_equal("technical floor: the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_fail_if_str_equal("technical floor: request 1", BOOTSTRAP_TXN_NAME,
+                         captured[1].name);
+  tlib_fail_if_str_equal("technical floor: request 2", BOOTSTRAP_TXN_NAME,
+                         captured[2].name);
+  pass_if_carries("technical floor: request 1's metric", &captured[1],
+                  version_metric);
+  pass_if_carries("technical floor: request 2's metric", &captured[2],
+                  version_metric);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A thread that RINIT took for classic mode, on an unsupported version, and
+ * that only the return of call 1 confirms as a worker thread. The RINIT
+ * transaction, which holds request 1, is discarded then, so nothing is sent,
+ * and the metric stays pending for the next transaction the thread sends.
+ * The confirmation decides the mode, so call 2 begins no transaction either.
+ */
+static void test_canary_unsupported(void) {
+  engine_create_version("", "v1.11.1");
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_php_request_eval(two_counted_calls);
+
+  tlib_pass_if_int_equal("canary, unsupported: a worker thread",
+                         NR_PHP_FRANKENPHP_THREAD_WORKER,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_size_t_equal("canary, unsupported: nothing captured", 0,
+                            captured_count);
+  tlib_pass_if_true("canary, unsupported: no transaction in call 2",
+                    fake.after_call[1].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_null("canary, unsupported: no transaction left", NRPRG(txn));
+  pass_if_php_string("canary, unsupported: the callback ran twice", "2",
+                     "(string) $calls");
+  pass_if_unsupported_warnings("canary, unsupported: the warning", 1, "v1.11.1",
+                               "auto");
+  tlib_pass_if_true("canary, unsupported: the metric is still pending",
+                    unsupported_pending(), "pending=%u",
+                    nr_php_frankenphp_thread_pending_metrics());
+
+  request_end();
+  tlib_pass_if_size_t_equal("canary, unsupported: nothing at the end", 0,
+                            captured_count);
+  engine_destroy();
+}
+
+/*
+ * A thread that RINIT took for classic mode, under off. The confirmation at
+ * the return of call 1 discards the RINIT transaction and decides the mode,
+ * so from then on the thread records nothing.
+ */
+static void test_canary_with_setting_off(void) {
+  engine_create(WORKER_MODE_INI("off"));
+  request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_pass_if_not_null("canary, off: a classic-mode transaction at RINIT",
+                        NRPRG(txn));
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_null("canary, off: no transaction after call 1", NRPRG(txn));
+
+  tlib_php_request_eval(
+      "$started = newrelic_start_transaction(ini_get('newrelic.appname'));");
+  pass_if_php_bool("canary, off: start_transaction returns false", false,
+                   "$started");
+
+  tlib_php_request_eval("frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("canary, off: nothing captured by call 2", 0,
+                            captured_count);
+
+  request_end();
+  tlib_pass_if_size_t_equal("canary, off: nothing captured at the end", 0,
+                            captured_count);
+  engine_destroy();
+}
+
+/*
+ * MINIT runs again on a server reload, and the mode follows the version it
+ * reads then.
+ */
+static void test_version_changes_on_minit(void) {
+  engine_create("");
+
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("v1.13.1: bootstrap plus the request", 2,
+                            captured_count);
+  pass_if_lacks("v1.13.1: the bootstrap isn't unsupported", &captured[0],
+                NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "v1.13.1");
+  pass_if_carries("v1.13.1: the request's metric", &captured[1],
+                  VERSION_METRIC_1_13_1);
+  request_end();
+
+  nr_php_frankenphp_set_process_info("frankenphp", "v1.11.1");
+
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("then v1.11.1: the bootstrap only", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("then v1.11.1: the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  pass_if_carries("then v1.11.1: unsupported", &captured[0],
+                  UNSUPPORTED_METRIC_V1_11_1);
+  request_end();
+
+  engine_destroy();
+}
+/* }}} */
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -2725,5 +3401,14 @@ void test_main(void* p NRUNUSED) {
   test_requests_started_on_canary_thread();
   test_requests_started_without_open_txn();
   test_txn_after_counter_exit_keeps_request_data();
+  test_worker_mode_metric();
+  test_setting_off();
+  test_unsupported_failed_boot();
+  test_unsupported_version();
+  test_pending_flags_cleared_at_next_rinit();
+  test_on_allows_technical_floor();
+  test_canary_unsupported();
+  test_canary_with_setting_off();
+  test_version_changes_on_minit();
 #endif
 }

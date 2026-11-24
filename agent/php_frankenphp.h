@@ -56,6 +56,32 @@ extern bool nr_php_frankenphp_requests_started(void);
  */
 extern void nr_php_frankenphp_txn_starting(nrtxn_t* txn);
 
+/*
+ * Purpose : Tell nr_php_txn_begin whether it must refuse to begin a
+ *           transaction on FrankenPHP: on a worker thread under off, and on
+ *           a worker thread on an unsupported version while a worker request
+ *           is in progress. newrelic_set_appname() and
+ *           newrelic_start_transaction() begin a transaction even when none
+ *           is open, so refusing there means that nothing has to be discarded
+ *           later.
+ *
+ * Returns : True if no transaction may begin.
+ */
+extern bool nr_php_frankenphp_txn_begin_refused(void);
+
+/*
+ * Purpose : Add the worker-mode metric to a transaction that nr_php_txn_begin
+ *           has begun on a worker thread during a worker request, when worker
+ *           mode is instrumented: the begin handler's own, or one that
+ *           newrelic_set_appname() or the request handler begins in its
+ *           place. The metric names the FrankenPHP version as X.Y.Z, or
+ *           unknown. nr_php_txn_begin calls this on FrankenPHP at the end of a
+ *           successful begin.
+ *
+ * Params  : 1. The transaction that was begun.
+ */
+extern void nr_php_frankenphp_txn_begun(nrtxn_t* txn);
+
 #endif
 
 #endif

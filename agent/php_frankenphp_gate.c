@@ -7,6 +7,7 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "util_memory.h"
+#include "util_metrics.h"
 #include "util_strings.h"
 #include "util_threads.h"
 
@@ -15,6 +16,15 @@
 #include <stdlib.h>
 
 #ifdef ZTS
+
+/*
+ * agent-specs limits a metric name to 255 bytes. Neither the agent nor the
+ * daemon checks it, so make sure that a renamed prefix can't break it.
+ */
+_Static_assert(sizeof(NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED) - 1
+                       + NR_PHP_FRANKENPHP_VERSION_METRIC_MAX
+                   <= 255,
+               "the unsupported metric's name must fit in 255 bytes");
 
 /*
  * Reads one decimal number at the cursor, and moves the cursor past it.
@@ -241,6 +251,11 @@ nr_php_frankenphp_mode_t nr_php_frankenphp_mode_for(
  */
 typedef struct {
   nr_php_frankenphp_thread_role_t role;
+  /*
+   * Decided when the thread becomes a worker thread, and meaningful only on a
+   * worker thread.
+   */
+  nr_php_frankenphp_mode_t mode;
   nr_php_frankenphp_run_t run;
   /*
    * The request URI seen at RINIT, truncated, and empty when there was none.
@@ -248,12 +263,91 @@ typedef struct {
    * later instead: FrankenPHP updates it for each worker request.
    */
   char rinit_uri[256];
+  /*
+   * The nr_php_frankenphp_pending_t bits. Unlike the rest, they outlive
+   * RSHUTDOWN: a transaction still open at the end of the script run is sent
+   * in post-deactivate, after RSHUTDOWN, and carries them. They are dropped
+   * at the next RINIT, so that what one worker lifetime didn't send can't go
+   * on another lifetime's transactions, or on a classic-mode one.
+   */
+  unsigned pending;
 } nr_php_frankenphp_thread_t;
 
 static nrt_thread_local nr_php_frankenphp_thread_t nr_php_frankenphp_thread
     = {.role = NR_PHP_FRANKENPHP_THREAD_UNKNOWN,
+       .mode = NR_PHP_FRANKENPHP_MODE_INSTRUMENTED,
        .run = NR_PHP_FRANKENPHP_RUN_CLASSIC,
-       .rinit_uri = ""};
+       .rinit_uri = "",
+       .pending = 0};
+
+static const char* nr_php_frankenphp_setting_name(
+    nr_php_frankenphp_setting_t setting) {
+  switch (setting) {
+    case NR_PHP_FRANKENPHP_SETTING_ON:
+      return "on";
+    case NR_PHP_FRANKENPHP_SETTING_OFF:
+      return "off";
+    case NR_PHP_FRANKENPHP_SETTING_AUTO:
+      break;
+  }
+
+  return "auto";
+}
+
+/*
+ * Decides the mode of a thread that has just become a worker thread, from the
+ * setting and the version read at MINIT, and logs what it means.
+ *
+ * A version that the setting doesn't allow makes the unsupported metric
+ * pending, for the next transaction the thread sends, and is logged at
+ * warning once per worker lifetime, whether or not a transaction began. The
+ * warning names the version as read, not as the metric cuts it, because a
+ * support engineer needs the exact string. The setting off, and an unknown
+ * version that the setting on lets through, are logged once per process.
+ */
+static void nr_php_frankenphp_decide_mode(void) {
+  nr_php_frankenphp_setting_t setting
+      = (nr_php_frankenphp_setting_t)NRINI(frankenphp_worker_mode);
+  const char* version = NR_PHP_PROCESS_GLOBALS(frankenphp_version);
+  nr_php_frankenphp_version_t parsed = {0, 0, 0};
+
+  nr_php_frankenphp_thread.mode = nr_php_frankenphp_mode_for(setting, version);
+
+  switch (nr_php_frankenphp_thread.mode) {
+    case NR_PHP_FRANKENPHP_MODE_OFF:
+      if (nr_php_frankenphp_log_once(NR_PHP_FRANKENPHP_LOG_OFF)) {
+        nrl_info(NRL_INIT, NR_PHP_FRANKENPHP_INI_WORKER_MODE
+                 " is off, so the agent records nothing on FrankenPHP worker "
+                 "threads");
+      }
+      break;
+
+    case NR_PHP_FRANKENPHP_MODE_UNSUPPORTED:
+      nr_php_frankenphp_thread.pending |= NR_PHP_FRANKENPHP_PENDING_UNSUPPORTED;
+      nrl_warning(NRL_INIT,
+                  "FrankenPHP " NRP_FMT
+                  " isn't supported in worker mode "
+                  "with " NR_PHP_FRANKENPHP_INI_WORKER_MODE "=" NRP_FMT_UQ
+                  ", so the agent records no worker request transactions in "
+                  "this worker lifetime",
+                  NRP_CONFIG(version),
+                  NRP_CONFIG(nr_php_frankenphp_setting_name(setting)));
+      break;
+
+    case NR_PHP_FRANKENPHP_MODE_INSTRUMENTED:
+      if (!nr_php_frankenphp_parse_version(version, &parsed)
+          && nr_php_frankenphp_log_once(
+              NR_PHP_FRANKENPHP_LOG_UNKNOWN_VERSION)) {
+        nrl_info(NRL_INIT,
+                 "the agent can't read FrankenPHP's version " NRP_FMT
+                 " as X.Y.Z; with " NR_PHP_FRANKENPHP_INI_WORKER_MODE
+                 "=on it instruments worker mode anyway, which isn't "
+                 "supported",
+                 NRP_CONFIG(version));
+      }
+      break;
+  }
+}
 
 /*
  * Classifies the script run from the request URI and FRANKENPHP_WORKER.
@@ -288,12 +382,27 @@ static nr_php_frankenphp_run_t nr_php_frankenphp_rinit_classify(
 void nr_php_frankenphp_rinit(void) {
   const char* request_uri = SG(request_info).request_uri;
 
+  /*
+   * What the last script run on this thread left pending, no transaction
+   * consumed. It belongs to that worker lifetime, so drop it before this run
+   * can send anything.
+   */
+  nr_php_frankenphp_thread.pending = 0;
+
   nr_php_frankenphp_thread.run = nr_php_frankenphp_rinit_classify(request_uri);
   nr_strlcpy(nr_php_frankenphp_thread.rinit_uri, request_uri,
              sizeof(nr_php_frankenphp_thread.rinit_uri));
 
   switch (nr_php_frankenphp_thread.run) {
     case NR_PHP_FRANKENPHP_RUN_BOOTSTRAP:
+      nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
+      nr_php_frankenphp_decide_mode();
+
+      /* Under off nothing is recorded on a worker thread. */
+      if (NR_PHP_FRANKENPHP_MODE_OFF == nr_php_frankenphp_thread.mode) {
+        return;
+      }
+
       /*
        * The bootstrap is named as soon as it begins, so that it keeps the
        * name however it ends: early, with newrelic_end_of_transaction(), or
@@ -301,9 +410,9 @@ void nr_php_frankenphp_rinit(void) {
        * frankenphp_handle_request() call. The thread is a worker thread
        * before the transaction begins, so the begin makes it a background
        * job, as it does every transaction begun on a worker thread outside a
-       * worker request.
+       * worker request. On an unsupported version the bootstrap is recorded
+       * too, and carries the unsupported metric.
        */
-      nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
       nr_php_txn_begin(0, 0);
       if (NULL != NRPRG(txn)) {
         nr_txn_set_path("FrankenPHP worker bootstrap", NRPRG(txn),
@@ -342,14 +451,81 @@ nr_php_frankenphp_thread_role_t nr_php_frankenphp_thread_role(void) {
   return nr_php_frankenphp_thread.role;
 }
 
+nr_php_frankenphp_mode_t nr_php_frankenphp_thread_mode(void) {
+  return nr_php_frankenphp_thread.mode;
+}
+
 void nr_php_frankenphp_confirm_worker_thread(void) {
   nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
+  nr_php_frankenphp_decide_mode();
 }
 
 void nr_php_frankenphp_gate_rshutdown(void) {
   nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_UNKNOWN;
+  nr_php_frankenphp_thread.mode = NR_PHP_FRANKENPHP_MODE_INSTRUMENTED;
   nr_php_frankenphp_thread.run = NR_PHP_FRANKENPHP_RUN_CLASSIC;
   nr_php_frankenphp_thread.rinit_uri[0] = '\0';
+}
+
+unsigned nr_php_frankenphp_thread_pending_metrics(void) {
+  return nr_php_frankenphp_thread.pending;
+}
+
+/*
+ * The bytes that a metric name segment may hold: ASCII letters and digits,
+ * ., _, + and -. The ranges are spelled out, because isalnum() depends on the
+ * locale. Every byte above 0x7F is outside them, so the name stays valid
+ * UTF-8 even when the cut splits a character.
+ */
+static bool nr_php_frankenphp_metric_byte_allowed(unsigned char c) {
+  return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')
+         || (c >= 'a' && c <= 'z') || '.' == c || '_' == c || '+' == c
+         || '-' == c;
+}
+
+char* nr_php_frankenphp_unsupported_metric_name(const char* version) {
+  char segment[NR_PHP_FRANKENPHP_VERSION_METRIC_MAX + 1];
+  size_t i;
+
+  if (nr_strempty(version)) {
+    return nr_strdup(NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "unknown");
+  }
+
+  for (i = 0; i < NR_PHP_FRANKENPHP_VERSION_METRIC_MAX && '\0' != version[i];
+       i++) {
+    segment[i]
+        = nr_php_frankenphp_metric_byte_allowed((unsigned char)version[i])
+              ? version[i]
+              : '_';
+  }
+  segment[i] = '\0';
+
+  return nr_formatf(NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED "%s", segment);
+}
+
+void nr_php_frankenphp_txn_sending(nrtxn_t* txn) {
+  if (NULL == txn) {
+    return;
+  }
+
+  if (nr_php_frankenphp_thread.pending
+      & NR_PHP_FRANKENPHP_PENDING_MISSED_AT_RINIT) {
+    nrm_force_add(txn->unscoped_metrics,
+                  NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT, 0);
+  }
+
+  if (nr_php_frankenphp_thread.pending
+      & NR_PHP_FRANKENPHP_PENDING_UNSUPPORTED) {
+    char* name = nr_php_frankenphp_unsupported_metric_name(
+        NR_PHP_PROCESS_GLOBALS(frankenphp_version));
+
+    nrm_force_add(txn->unscoped_metrics, name, 0);
+    nr_free(name);
+  }
+}
+
+void nr_php_frankenphp_txn_sent(void) {
+  nr_php_frankenphp_thread.pending = 0;
 }
 
 #endif /* ZTS */

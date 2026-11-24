@@ -11,6 +11,7 @@
 #define PHP_FRANKENPHP_GATE_H
 
 #include "php_includes.h"
+#include "nr_txn.h"
 
 #ifdef ZTS
 
@@ -37,6 +38,14 @@
  */
 #define NR_PHP_FRANKENPHP_METRIC_UNSUPPORTED \
   "Supportability/PHP/FrankenPHP/WorkerMode/Unsupported/"
+
+/*
+ * How many bytes of the version the unsupported metric keeps. A release's
+ * version fits, and so do the first 16 hex digits of the git SHA that a
+ * static build without a version reports, which are enough to name the
+ * commit.
+ */
+#define NR_PHP_FRANKENPHP_VERSION_METRIC_MAX 16
 
 /* TODO-NAME: a worker thread that RINIT took for classic mode. */
 #define NR_PHP_FRANKENPHP_METRIC_MISSED_AT_RINIT \
@@ -216,10 +225,14 @@ typedef enum {
  * Purpose : Classify the script run, and begin its transaction. RINIT calls
  *           this on FrankenPHP instead of beginning the transaction itself.
  *
+ *           First it drops the metrics that are still pending from the last
+ *           script run on the thread, which no transaction consumed.
+ *
  *           The run is classified once, from the request URI and the
  *           FRANKENPHP_WORKER variable, and the answer is kept until
  *           RSHUTDOWN. A worker bootstrap makes the thread a worker thread,
- *           and its transaction is named as the bootstrap and made a
+ *           and decides its mode from the setting and the version. Unless the
+ *           mode is off, its transaction is named as the bootstrap and made a
  *           background job as soon as it begins. Every other run is classic
  *           mode, and its transaction begins as on any other SAPI. Each of
  *           the two ways in which the signals can disagree is logged once per
@@ -235,16 +248,82 @@ extern void nr_php_frankenphp_rinit(void);
 extern nr_php_frankenphp_thread_role_t nr_php_frankenphp_thread_role(void);
 
 /*
+ * Purpose : Tell what the agent does with worker mode on the current thread.
+ *
+ * Returns : The mode that nr_php_frankenphp_mode_for() gives for the setting
+ *           and the version read at MINIT, decided when the thread became a
+ *           worker thread. Meaningful only on a worker thread.
+ */
+extern nr_php_frankenphp_mode_t nr_php_frankenphp_thread_mode(void);
+
+/*
  * Purpose : Make the current thread a worker thread, once a call has shown
- *           that RINIT took it for classic mode wrongly.
+ *           that RINIT took it for classic mode wrongly, and decide its mode
+ *           as RINIT does for a worker bootstrap.
  */
 extern void nr_php_frankenphp_confirm_worker_thread(void);
 
 /*
- * Purpose : Forget what RINIT learned about the current thread: its role,
- *           the run's classification and the request URI.
+ * Purpose : Forget what RINIT learned about the current thread: its role and
+ *           mode, the run's classification and the request URI.
+ *
+ *           The pending metrics are kept: a transaction still open when the
+ *           script run ends is sent after RSHUTDOWN, and carries them.
  */
 extern void nr_php_frankenphp_gate_rshutdown(void);
+
+/*
+ * The supportability metrics that wait for the next transaction the thread
+ * sends, as bits. The transaction that would carry them often doesn't exist
+ * when the agent learns of them, as on a cold start, so they go on whichever
+ * transaction the thread sends next in the worker lifetime.
+ */
+typedef enum {
+  /* The thread is a worker thread on a version the setting doesn't allow. */
+  NR_PHP_FRANKENPHP_PENDING_UNSUPPORTED = 1,
+  /* RINIT took a worker thread for classic mode. */
+  NR_PHP_FRANKENPHP_PENDING_MISSED_AT_RINIT = 2
+} nr_php_frankenphp_pending_t;
+
+/*
+ * Purpose : Tell which metrics are pending on the current thread.
+ *
+ * Returns : The nr_php_frankenphp_pending_t bits that are set.
+ */
+extern unsigned nr_php_frankenphp_thread_pending_metrics(void);
+
+/*
+ * Purpose : Build the name of the unsupported metric for a version.
+ *
+ *           The last segment is unknown when the version is NULL or empty.
+ *           Otherwise it is the first NR_PHP_FRANKENPHP_VERSION_METRIC_MAX
+ *           bytes of the version, with every byte other than an ASCII letter,
+ *           a digit, ., _, + or - replaced by _, so that the version can't add
+ *           segments to the name or make it invalid UTF-8.
+ *
+ * Params  : 1. The version as read from FrankenPHP. May be NULL.
+ *
+ * Returns : The metric name, which the caller must free.
+ */
+extern char* nr_php_frankenphp_unsupported_metric_name(const char* version);
+
+/*
+ * Purpose : Add the pending metrics to a transaction that is about to be
+ *           sent. They stay pending until nr_php_frankenphp_txn_sent() says
+ *           that the send succeeded.
+ *
+ *           It reads no thread state but the pending metrics, so it also
+ *           works in post-deactivate, after RSHUTDOWN.
+ *
+ * Params  : 1. The transaction.
+ */
+extern void nr_php_frankenphp_txn_sending(nrtxn_t* txn);
+
+/*
+ * Purpose : Clear the pending metrics, once the transaction that carries them
+ *           has been sent.
+ */
+extern void nr_php_frankenphp_txn_sent(void);
 
 #endif /* ZTS */
 

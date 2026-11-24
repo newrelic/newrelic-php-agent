@@ -9,6 +9,7 @@
 #include "php_autorum.h"
 #include "php_execute.h"
 #include "php_frankenphp.h"
+#include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_header.h"
@@ -915,6 +916,23 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     return NR_FAILURE;
   }
 
+#ifdef ZTS
+  /*
+   * On a FrankenPHP worker thread, no transaction may begin under off, nor
+   * during a worker request on an unsupported version.
+   * newrelic_set_appname() and newrelic_start_transaction() begin one even
+   * when none is open, so this is where it has to be refused, rather than
+   * discarded later.
+   */
+  if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)
+      && nr_php_frankenphp_txn_begin_refused()) {
+    nrl_verbosedebug(NRL_TXN,
+                     "not beginning a transaction on a FrankenPHP worker "
+                     "thread whose worker mode isn't instrumented");
+    return NR_FAILURE;
+  }
+#endif
+
   /*
    * Transaction globals must be zeroed out, whether the transaction can be
    * started or not.
@@ -1196,6 +1214,18 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
+#ifdef ZTS
+  /*
+   * Every transaction begun during a FrankenPHP worker request carries the
+   * worker-mode metric from its begin: the begin handler's own, and one that
+   * the request handler begins in its place, with newrelic_set_appname() for
+   * example.
+   */
+  if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+    nr_php_frankenphp_txn_begun(NRPRG(txn));
+  }
+#endif
+
   return NR_SUCCESS;
 }
 
@@ -1373,6 +1403,16 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
     /* SAPI name metric */
     nr_php_txn_create_sapi_metric(txn, sapi_module.name);
 
+#ifdef ZTS
+    /*
+     * The FrankenPHP metrics that wait for the next transaction the thread
+     * sends. They stay pending until the send succeeds.
+     */
+    if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+      nr_php_frankenphp_txn_sending(txn);
+    }
+#endif
+
     /* PHP packages major version metrics */
     nr_php_txn_create_packages_major_metrics(txn);
 
@@ -1402,6 +1442,16 @@ static nr_status_t nr_php_txn_end_internal(int ignoretxn,
         ret = nr_cmd_txndata_tx(txn);
         if (NR_SUCCESS == ret) {
           nr_txn_mark_composer_packages_sent(txn);
+#ifdef ZTS
+          /*
+           * Only a transaction that was sent consumes the pending FrankenPHP
+           * metrics. One that nr_txn_end ignored, or whose send failed,
+           * leaves them for the next one.
+           */
+          if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+            nr_php_frankenphp_txn_sent();
+          }
+#endif
         } else {
           nrl_debug(NRL_TXN, "failed to send txn");
         }
