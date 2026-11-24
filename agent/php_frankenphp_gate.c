@@ -8,6 +8,7 @@
 #include "php_globals.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "util_threads.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -231,6 +232,122 @@ nr_php_frankenphp_mode_t nr_php_frankenphp_mode_for(
   }
 
   return NR_PHP_FRANKENPHP_MODE_UNSUPPORTED;
+}
+
+/*
+ * What the agent learned about the current thread at RINIT, kept until
+ * RSHUTDOWN. Each FrankenPHP thread runs its own script, so this is per
+ * thread. It allocates nothing.
+ */
+typedef struct {
+  nr_php_frankenphp_thread_role_t role;
+  nr_php_frankenphp_run_t run;
+  /*
+   * The request URI seen at RINIT, truncated, and empty when there was none.
+   * It is kept whatever its shape, because SG(request_info) can't be read
+   * later instead: FrankenPHP updates it for each worker request.
+   */
+  char rinit_uri[256];
+} nr_php_frankenphp_thread_t;
+
+static nrt_thread_local nr_php_frankenphp_thread_t nr_php_frankenphp_thread
+    = {.role = NR_PHP_FRANKENPHP_THREAD_UNKNOWN,
+       .run = NR_PHP_FRANKENPHP_RUN_CLASSIC,
+       .rinit_uri = ""};
+
+/*
+ * Classifies the script run from the request URI and FRANKENPHP_WORKER.
+ *
+ * The variable is read from $_SERVER first. Only when it isn't there and the
+ * URI is bootstrap-shaped is it read from the SAPI's environment, the one case
+ * in which that can change the answer. On FrankenPHP v1.11.2 sapi_getenv() is
+ * a call into Go, too costly for every classic-mode RINIT.
+ */
+static nr_php_frankenphp_run_t nr_php_frankenphp_rinit_classify(
+    const char* request_uri) {
+  char* worker = nr_php_get_server_global("FRANKENPHP_WORKER");
+  nr_php_frankenphp_run_t run;
+
+  if (NULL == worker
+      && NR_PHP_FRANKENPHP_RUN_CLASSIC_NO_WORKER_ENV
+             == nr_php_frankenphp_classify_run(request_uri, NULL)) {
+    char* env = sapi_getenv(NR_PSTR("FRANKENPHP_WORKER"));
+
+    run = nr_php_frankenphp_classify_run(request_uri, env);
+    if (NULL != env) {
+      efree(env);
+    }
+    return run;
+  }
+
+  run = nr_php_frankenphp_classify_run(request_uri, worker);
+  nr_free(worker);
+  return run;
+}
+
+void nr_php_frankenphp_rinit(void) {
+  const char* request_uri = SG(request_info).request_uri;
+
+  nr_php_frankenphp_thread.run = nr_php_frankenphp_rinit_classify(request_uri);
+  nr_strlcpy(nr_php_frankenphp_thread.rinit_uri, request_uri,
+             sizeof(nr_php_frankenphp_thread.rinit_uri));
+
+  switch (nr_php_frankenphp_thread.run) {
+    case NR_PHP_FRANKENPHP_RUN_BOOTSTRAP:
+      /*
+       * The bootstrap is named as soon as it begins, so that it keeps the
+       * name however it ends: early, with newrelic_end_of_transaction(), or
+       * at the end of a worker script that fails before its first
+       * frankenphp_handle_request() call.
+       */
+      nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
+      nr_php_txn_begin(0, 0);
+      if (NULL != NRPRG(txn)) {
+        nr_txn_set_path("FrankenPHP worker bootstrap", NRPRG(txn),
+                        NR_PHP_FRANKENPHP_BOOTSTRAP_TXN_NAME,
+                        NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
+        nr_txn_set_as_background_job(NRPRG(txn), "FrankenPHP worker bootstrap");
+      }
+      return;
+
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC_WORKER_ENV_SET:
+      if (nr_php_frankenphp_log_once(NR_PHP_FRANKENPHP_LOG_WORKER_ENV_SET)) {
+        nrl_info(NRL_INIT,
+                 "FRANKENPHP_WORKER is 1 for a request that isn't a worker "
+                 "script's bootstrap; the agent takes it for classic mode");
+      }
+      break;
+
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC_NO_WORKER_ENV:
+      if (nr_php_frankenphp_log_once(NR_PHP_FRANKENPHP_LOG_NO_WORKER_ENV)) {
+        nrl_info(NRL_INIT,
+                 "the request URI " NRP_FMT
+                 " looks like a worker script's, but FRANKENPHP_WORKER isn't "
+                 "1; the agent takes the script run for classic mode",
+                 NRP_URL(nr_php_frankenphp_thread.rinit_uri));
+      }
+      break;
+
+    case NR_PHP_FRANKENPHP_RUN_CLASSIC:
+      break;
+  }
+
+  nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_CLASSIC;
+  nr_php_txn_begin(0, 0);
+}
+
+nr_php_frankenphp_thread_role_t nr_php_frankenphp_thread_role(void) {
+  return nr_php_frankenphp_thread.role;
+}
+
+void nr_php_frankenphp_confirm_worker_thread(void) {
+  nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
+}
+
+void nr_php_frankenphp_gate_rshutdown(void) {
+  nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_UNKNOWN;
+  nr_php_frankenphp_thread.run = NR_PHP_FRANKENPHP_RUN_CLASSIC;
+  nr_php_frankenphp_thread.rinit_uri[0] = '\0';
 }
 
 #endif /* ZTS */

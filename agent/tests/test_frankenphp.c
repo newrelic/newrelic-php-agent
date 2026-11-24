@@ -33,14 +33,16 @@ tlib_parallel_info_t parallel_info
 #include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "util_buffer.h"
 #include "util_memory.h"
 #include "util_object.h"
+#include "util_string_pool.h"
 #include "util_strings.h"
 
 #include "zend_exceptions.h"
 #include "ext/spl/spl_exceptions.h"
 
-#define BOOTSTRAP_TXN_NAME "OtherTransaction/Custom/frankenphp/worker"
+#define BOOTSTRAP_TXN_NAME "OtherTransaction/Custom/frankenphp/worker/bootstrap"
 
 /*
  * PHP 8.5 always loads OPcache, so every engine these tests create maps
@@ -66,10 +68,44 @@ typedef struct {
   char* error_message;
   char* user_attributes;  /* JSON */
   char* agent_attributes; /* JSON */
+  /* The names of the segments other than the root, each followed by "\n". */
+  char* segment_names;
 } captured_txn_t;
 
 static captured_txn_t captured[CAPTURE_MAX];
 static size_t captured_count = 0;
+
+typedef struct {
+  const nrtxn_t* txn;
+  nrbuf_t* names;
+} segment_names_collector_t;
+
+static nr_segment_iter_return_t collect_segment_name(nr_segment_t* segment,
+                                                     void* userdata) {
+  segment_names_collector_t* collector = (segment_names_collector_t*)userdata;
+  const char* name;
+
+  if (segment == collector->txn->segment_root) {
+    return NR_SEGMENT_NO_POST_ITERATION_CALLBACK;
+  }
+
+  name = NRSAFESTR(nr_string_get(collector->txn->trace_strings, segment->name));
+  nr_buffer_add(collector->names, name, nr_strlen(name));
+  nr_buffer_add(collector->names, NR_PSTR("\n"));
+  return NR_SEGMENT_NO_POST_ITERATION_CALLBACK;
+}
+
+static char* capture_segment_names(const nrtxn_t* txn) {
+  segment_names_collector_t collector
+      = {.txn = txn, .names = nr_buffer_create(256, 256)};
+  char* names;
+
+  nr_segment_iterate(txn->segment_root, collect_segment_name, &collector);
+  names = nr_strndup((const char*)nr_buffer_cptr(collector.names),
+                     nr_buffer_len(collector.names));
+  nr_buffer_destroy(&collector.names);
+  return names;
+}
 
 static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
   if (captured_count < CAPTURE_MAX) {
@@ -85,6 +121,7 @@ static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
     c->error_message = nr_strdup(nr_error_get_message(txn->error));
     c->user_attributes = nro_to_json(attrs);
     c->agent_attributes = nro_to_json(agent_attrs);
+    c->segment_names = capture_segment_names(txn);
     nro_delete(attrs);
     nro_delete(agent_attrs);
   }
@@ -100,9 +137,21 @@ static void capture_reset(void) {
     nr_free(captured[i].error_message);
     nr_free(captured[i].user_attributes);
     nr_free(captured[i].agent_attributes);
+    nr_free(captured[i].segment_names);
   }
   nr_memset(captured, 0, sizeof(captured));
   captured_count = 0;
+}
+
+/* Whether the captured segment names include the given name. */
+static bool segment_names_have(const char* segment_names, const char* name) {
+  char* haystack = nr_formatf("\n%s", NRBLANKSTR(segment_names));
+  char* needle = nr_formatf("\n%s\n", name);
+  bool found = (NULL != nr_strstr(haystack, needle));
+
+  nr_free(haystack);
+  nr_free(needle);
+  return found;
 }
 /* }}} */
 
@@ -256,6 +305,8 @@ static const zend_function_entry fake_frankenphp_functions[]
 
 /* {{{ Helpers */
 
+#define CASE_COUNT(cases) (sizeof(cases) / sizeof((cases)[0]))
+
 /*
  * Creates an engine with the fake registered and transactions captured. The
  * test SAPI registers the fake at module startup, where FrankenPHP registers
@@ -305,13 +356,32 @@ typedef enum {
 } run_kind_t;
 
 /*
- * Starts a request that looks like the given kind of run, with an empty
- * capture and the fake in the given mode.
+ * Starts a request with the given request URI and FRANKENPHP_WORKER value,
+ * either of which may be NULL, with an empty capture and the fake in the given
+ * mode.
  *
  * Both signals are set before tlib_php_request_start(). RINIT forces $_SERVER,
  * and the embed SAPI imports the environment into it then (php_embed.c,
  * php_embed_register_variables). Neither SAPI.c nor main.c touches
  * SG(request_info).request_uri, so the test owns it.
+ */
+static void request_start_with_signals(char* uri,
+                                       const char* worker_env,
+                                       fake_mode_t mode) {
+  capture_reset();
+  fake_reset(mode);
+  SG(request_info).request_uri = uri;
+  if (NULL != worker_env) {
+    setenv("FRANKENPHP_WORKER", worker_env, 1);
+  } else {
+    unsetenv("FRANKENPHP_WORKER");
+  }
+  tlib_php_request_start();
+}
+
+/*
+ * Starts a request that looks like the given kind of run, with an empty
+ * capture and the fake in the given mode.
  */
 static void request_start_as(run_kind_t kind, fake_mode_t mode) {
   char* uri = NULL;
@@ -336,15 +406,7 @@ static void request_start_as(run_kind_t kind, fake_mode_t mode) {
       break;
   }
 
-  capture_reset();
-  fake_reset(mode);
-  SG(request_info).request_uri = uri;
-  if (NULL != worker_env) {
-    setenv("FRANKENPHP_WORKER", worker_env, 1);
-  } else {
-    unsetenv("FRANKENPHP_WORKER");
-  }
-  tlib_php_request_start();
+  request_start_with_signals(uri, worker_env, mode);
 }
 
 /*
@@ -539,6 +601,30 @@ static void test_bootstrap_txn_ended_before_real_function(void) {
   engine_destroy();
 }
 
+/*
+ * RINIT names the worker bootstrap transaction and makes it a background job
+ * as soon as it begins it, so the name holds however the bootstrap ends. The
+ * request is a GET, as FrankenPHP's dummy bootstrap request is, so the
+ * transaction would otherwise be a web transaction.
+ */
+static void test_bootstrap_named_at_rinit(void) {
+  engine_create("");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_RETURN_ONLY);
+
+  tlib_pass_if_not_null("named at RINIT: a transaction", NRPRG(txn));
+  if (NULL != NRPRG(txn)) {
+    tlib_pass_if_str_equal("named at RINIT: path",
+                           "frankenphp/worker/bootstrap", NRPRG(txn)->path);
+    tlib_pass_if_int_equal("named at RINIT: path type", NR_PATH_TYPE_CUSTOM,
+                           (int)NRPRG(txn)->status.path_type);
+    tlib_pass_if_int_equal("named at RINIT: background", 1,
+                           NRPRG(txn)->status.background);
+  }
+
+  request_end();
+  engine_destroy();
+}
+
 static nr_status_t mock_cmd_appinfo_unknown(nrapp_t* app) {
   app->state = NR_APP_UNKNOWN;
   return NR_SUCCESS;
@@ -612,30 +698,79 @@ static void test_bootstrap_not_recording_txn_ignored(void) {
  * A bootstrap transaction that the worker script ended early with
  * newrelic_end_of_transaction() is sent before the real function runs, as
  * classic mode sends an ended transaction at the end of the request. Ending
- * it froze its name, so it keeps the name it had then.
+ * it froze its name, so it keeps the name it had then: the bootstrap name
+ * that RINIT gave it, or the one the worker script gave it.
  */
 static void test_bootstrap_ended_early_is_sent(void) {
+  static const struct {
+    const char* label;
+    const char* code;
+    const char* expected_name;
+  } cases[] = {
+      {"ended bootstrap, unnamed",
+       "newrelic_end_of_transaction();"
+       "$cb = function () { return 1; };"
+       "frankenphp_handle_request($cb);",
+       BOOTSTRAP_TXN_NAME},
+      {"ended bootstrap, named",
+       "newrelic_name_transaction('ended_early');"
+       "newrelic_end_of_transaction();"
+       "$cb = function () { return 1; };"
+       "frankenphp_handle_request($cb);",
+       "OtherTransaction/Custom/ended_early"},
+  };
+  size_t i;
+
+  for (i = 0; i < CASE_COUNT(cases); i++) {
+    char msg[128];
+
+    engine_create("");
+    request_start(FAKE_CALL);
+
+    tlib_php_request_eval(cases[i].code);
+
+    snprintf(msg, sizeof(msg), "%s: bootstrap plus the request",
+             cases[i].label);
+    tlib_pass_if_size_t_equal(msg, 2, captured_count);
+    snprintf(msg, sizeof(msg), "%s: sent before the real function",
+             cases[i].label);
+    tlib_pass_if_size_t_equal(msg, 1, fake.on_entry[0].captured);
+    snprintf(msg, sizeof(msg),
+             "%s: no transaction when the real function is entered",
+             cases[i].label);
+    tlib_pass_if_true(msg, fake.on_entry[0].txn_is_null,
+                      "NRPRG(txn) was not NULL");
+    snprintf(msg, sizeof(msg), "%s: keeps the name it ended with",
+             cases[i].label);
+    tlib_pass_if_str_equal(msg, cases[i].expected_name, captured[0].name);
+
+    request_end();
+    engine_destroy();
+  }
+}
+
+/*
+ * A worker script that fails before its first frankenphp_handle_request()
+ * call still sends its bootstrap transaction, at the end of the script run,
+ * under the name RINIT gave it and with the error.
+ */
+static void test_failed_boot_recorded_as_bootstrap(void) {
   engine_create("");
-  request_start(FAKE_CALL);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
 
-  tlib_php_request_eval(
-      "newrelic_name_transaction('ended_early');"
-      "newrelic_end_of_transaction();"
-      "$cb = function () { return 1; };"
-      "frankenphp_handle_request($cb);");
-
-  tlib_pass_if_size_t_equal("ended bootstrap: bootstrap plus the request", 2,
-                            captured_count);
-  tlib_pass_if_size_t_equal("ended bootstrap: sent before the real function", 1,
-                            fake.on_entry[0].captured);
-  tlib_pass_if_true(
-      "ended bootstrap: no transaction when the real function is entered",
-      fake.on_entry[0].txn_is_null, "NRPRG(txn) was not NULL");
-  tlib_pass_if_str_equal("ended bootstrap: keeps the name it ended with",
-                         "OtherTransaction/Custom/ended_early",
-                         captured[0].name);
-
+  tlib_php_request_eval("newrelic_notice_error('boot failed');");
   request_end();
+
+  tlib_pass_if_size_t_equal("failed boot: one transaction", 1, captured_count);
+  tlib_pass_if_str_equal("failed boot: the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  tlib_pass_if_true("failed boot: background", captured[0].background,
+                    "background=%d", captured[0].background);
+  tlib_pass_if_true("failed boot: has the error", captured[0].has_error,
+                    "the transaction has no error");
+  tlib_pass_if_str_equal("failed boot: the error message", "boot failed",
+                         captured[0].error_message);
+
   engine_destroy();
 }
 
@@ -717,6 +852,9 @@ static void test_agent_disabled_for_request(void) {
   nr_php_zval_free(&rv);
   tlib_pass_if_size_t_equal("disabled agent: nothing captured", 0,
                             captured_count);
+  tlib_pass_if_int_equal("disabled agent: the thread's role is still unknown",
+                         NR_PHP_FRANKENPHP_THREAD_UNKNOWN,
+                         nr_php_frankenphp_thread_role());
 
   request_end();
   engine_destroy();
@@ -752,8 +890,6 @@ typedef struct {
   const char* label;
   const char* expr;
 } callable_case_t;
-
-#define CASE_COUNT(cases) (sizeof(cases) / sizeof((cases)[0]))
 
 static const callable_case_t wrapped_callables[] = {
     {"closure", "function () { return 1; }"},
@@ -877,31 +1013,186 @@ static void test_invalid_argument(void) {
 }
 
 /*
- * Called outside worker mode. Pinned: current behaviour, not necessarily the
- * desired one. The current transaction is ended and renamed before the real
- * function throws, so the rest of the request goes unrecorded.
+ * In a classic-mode request that has been started, calls
+ * frankenphp_handle_request, which throws as the real function does outside
+ * worker mode, then ends the request. The agent leaves the request's
+ * transaction alone: it is still open after the call, and it is sent at the
+ * end of the request under its own name.
  */
-static void test_called_outside_worker_mode(void) {
-  engine_create("");
-  request_start(FAKE_THROW_NOT_WORKER);
+static void pass_if_classic_run_keeps_its_transaction(const char* label) {
+  char msg[160];
 
   tlib_php_request_eval(
       "try { frankenphp_handle_request(function () {}); $caught = 'nothing'; }"
       " catch (RuntimeException $e) { $caught = $e->getMessage(); }");
 
+  snprintf(msg, sizeof(msg), "%s: the real function's exception reaches PHP",
+           label);
   pass_if_php_string(
-      "outside worker mode: the real function's exception reaches PHP",
-      "frankenphp_handle_request() called while not in worker mode",
+      msg, "frankenphp_handle_request() called while not in worker mode",
       "$caught");
-  tlib_pass_if_size_t_equal(
-      "outside worker mode: current transaction already sent", 1,
-      captured_count);
-  tlib_pass_if_str_equal("outside worker mode: named as the bootstrap",
-                         BOOTSTRAP_TXN_NAME, captured[0].name);
-  tlib_pass_if_null("outside worker mode: rest of the request unrecorded",
-                    NRPRG(txn));
+  snprintf(msg, sizeof(msg), "%s: nothing sent during the call", label);
+  tlib_pass_if_size_t_equal(msg, 0, captured_count);
+  snprintf(msg, sizeof(msg), "%s: the transaction is still open", label);
+  tlib_pass_if_not_null(msg, NRPRG(txn));
 
   request_end();
+
+  snprintf(msg, sizeof(msg), "%s: one transaction at the end of the request",
+           label);
+  tlib_pass_if_size_t_equal(msg, 1, captured_count);
+  snprintf(msg, sizeof(msg), "%s: not named as the bootstrap", label);
+  tlib_fail_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+}
+
+/*
+ * Called outside worker mode, the real function throws before it calls the
+ * request handler. The rest of the request is recorded as usual.
+ */
+static void test_called_outside_worker_mode(void) {
+  engine_create("");
+  request_start_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  pass_if_classic_run_keeps_its_transaction("outside worker mode");
+  engine_destroy();
+}
+
+/*
+ * The runs in which the two signals disagree, or are both missing, are
+ * classic mode too: FRANKENPHP_WORKER set for an HTTP request, a worker
+ * script's URI without the variable or with a value other than 1, and a run
+ * with no request URI at all.
+ */
+static void test_classic_runs_keep_their_transaction(void) {
+  static const struct {
+    const char* label;
+    run_kind_t kind;
+  } kinds[] = {
+      {"classic with the variable", RUN_CLASSIC_WORKER_ENV_SET},
+      {"bootstrap URI without the variable", RUN_BOOTSTRAP_URI_NO_ENV},
+      {"no signals", RUN_NO_SIGNALS},
+  };
+  size_t i;
+
+  engine_create("");
+
+  for (i = 0; i < CASE_COUNT(kinds); i++) {
+    request_start_as(kinds[i].kind, FAKE_THROW_NOT_WORKER);
+    pass_if_classic_run_keeps_its_transaction(kinds[i].label);
+  }
+
+  request_start_with_signals("worker.php", "0", FAKE_THROW_NOT_WORKER);
+  pass_if_classic_run_keeps_its_transaction(
+      "bootstrap URI with FRANKENPHP_WORKER=0");
+
+  engine_destroy();
+}
+
+/*
+ * The SAPI's environment, as FrankenPHP gives it to sapi_getenv(). Only
+ * FRANKENPHP_WORKER is set, to 1.
+ */
+static char* fake_sapi_getenv(const char* name, size_t name_len) {
+  static char one[] = "1";
+
+  if (sizeof("FRANKENPHP_WORKER") - 1 == name_len
+      && 0 == nr_strncmp(name, "FRANKENPHP_WORKER", (int)name_len)) {
+    return one;
+  }
+  return NULL;
+}
+
+/*
+ * When $_SERVER doesn't have FRANKENPHP_WORKER, because variables_order has no
+ * S, RINIT reads it from the SAPI's environment for a worker script's URI.
+ */
+static void test_sapi_getenv_fallback(void) {
+  char* (*saved_getenv)(const char* name, size_t name_len) = NULL;
+
+  engine_create("variables_order=EGPC\n");
+  saved_getenv = sapi_module.getenv;
+
+  sapi_module.getenv = fake_sapi_getenv;
+  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_RETURN_ONLY);
+  pass_if_php_string("getenv fallback: $_SERVER doesn't have the variable",
+                     "unset",
+                     "isset($_SERVER['FRANKENPHP_WORKER']) "
+                     "? $_SERVER['FRANKENPHP_WORKER'] : 'unset'");
+  tlib_pass_if_not_null("getenv fallback: a transaction", NRPRG(txn));
+  if (NULL != NRPRG(txn)) {
+    tlib_pass_if_str_equal("getenv fallback: named as the bootstrap at RINIT",
+                           "frankenphp/worker/bootstrap", NRPRG(txn)->path);
+  }
+  request_end();
+  sapi_module.getenv = saved_getenv;
+
+  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_RETURN_ONLY);
+  tlib_pass_if_not_null("without the variable: a transaction", NRPRG(txn));
+  if (NULL != NRPRG(txn)) {
+    tlib_fail_if_str_equal("without the variable: classic mode",
+                           "frankenphp/worker/bootstrap", NRPRG(txn)->path);
+  }
+  tlib_pass_if_int_equal("without the variable: a classic-mode thread",
+                         NR_PHP_FRANKENPHP_THREAD_CLASSIC,
+                         nr_php_frankenphp_thread_role());
+  request_end();
+
+  engine_destroy();
+}
+
+/* How many times the SAPI's environment was read. */
+static int sapi_getenv_calls = 0;
+
+/* An empty SAPI environment that counts its reads. */
+static char* counting_sapi_getenv(const char* name NRUNUSED,
+                                  size_t name_len NRUNUSED) {
+  sapi_getenv_calls += 1;
+  return NULL;
+}
+
+/*
+ * On FrankenPHP sapi_getenv() is a call into Go, too costly for every
+ * classic-mode RINIT, so RINIT reads the SAPI's environment only for a worker
+ * script's URI. With variables_order=EGPC $_SERVER never has
+ * FRANKENPHP_WORKER, so any other run would read it too if the URI didn't
+ * decide first.
+ */
+static void test_sapi_getenv_only_for_bootstrap_uri(void) {
+  static const struct {
+    const char* label;
+    run_kind_t kind;
+    int expected;
+  } kinds[] = {
+      {"classic", RUN_CLASSIC, 0},
+      {"classic with the variable", RUN_CLASSIC_WORKER_ENV_SET, 0},
+      {"no signals", RUN_NO_SIGNALS, 0},
+      /* The positive control: the one run that reads it. */
+      {"bootstrap URI without the variable", RUN_BOOTSTRAP_URI_NO_ENV, 1},
+  };
+  char* (*saved_getenv)(const char* name, size_t name_len) = NULL;
+  size_t i;
+
+  engine_create("variables_order=EGPC\n");
+  saved_getenv = sapi_module.getenv;
+  sapi_module.getenv = counting_sapi_getenv;
+
+  for (i = 0; i < CASE_COUNT(kinds); i++) {
+    char msg[128];
+
+    sapi_getenv_calls = 0;
+    request_start_as(kinds[i].kind, FAKE_RETURN_ONLY);
+    snprintf(msg, sizeof(msg), "sapi_getenv, %s: reads at RINIT",
+             kinds[i].label);
+    tlib_pass_if_int_equal(msg, kinds[i].expected, sapi_getenv_calls);
+    request_end();
+  }
+
+  sapi_getenv_calls = 0;
+  request_start_with_signals("*", NULL, FAKE_RETURN_ONLY);
+  tlib_pass_if_int_equal("sapi_getenv, OPTIONS *: reads at RINIT", 0,
+                         sapi_getenv_calls);
+  request_end();
+
+  sapi_module.getenv = saved_getenv;
   engine_destroy();
 }
 
@@ -1468,14 +1759,14 @@ static void test_direct_call_begins_no_transaction(void) {
 
 /*
  * A transaction started in the worker loop between requests is ended at the
- * next frankenphp_handle_request as the worker bootstrap: renamed and made a
- * background job, also when the application named it. Pinned: current
- * behaviour, not necessarily the desired one. Captured: [0] bootstrap, [1]
- * request 1, [2] the loop-body transaction, [3] request 2.
+ * next frankenphp_handle_request as it is: not renamed as the bootstrap, and
+ * not made a background job, so a named one in a GET keeps its name and its
+ * web type. Pinned: interim behaviour, not the desired one. Captured: [0]
+ * bootstrap, [1] request 1, [2] the loop-body transaction, [3] request 2.
  */
-static void test_loop_body_txn_ended_as_bootstrap(void) {
+static void test_loop_body_txn_ended_as_left(void) {
   engine_create("");
-  request_start(FAKE_CALL);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);"
@@ -1483,15 +1774,13 @@ static void test_loop_body_txn_ended_as_bootstrap(void) {
       "frankenphp_handle_request($cb);");
   tlib_pass_if_size_t_equal("loop body unnamed: 4 transactions", 4,
                             captured_count);
-  tlib_pass_if_str_equal("loop body unnamed: name", BOOTSTRAP_TXN_NAME,
-                         captured[2].name);
-  tlib_pass_if_true("loop body unnamed: background", captured[2].background,
-                    "background=%d", captured[2].background);
+  tlib_fail_if_str_equal("loop body unnamed: not named as the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[2].name);
   request_end();
   engine_destroy();
 
   engine_create("");
-  request_start(FAKE_CALL);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);"
@@ -1500,10 +1789,230 @@ static void test_loop_body_txn_ended_as_bootstrap(void) {
       "frankenphp_handle_request($cb);");
   tlib_pass_if_size_t_equal("loop body named: 4 transactions", 4,
                             captured_count);
-  tlib_pass_if_str_equal("loop body named: name", BOOTSTRAP_TXN_NAME,
-                         captured[2].name);
-  tlib_pass_if_true("loop body named: background", captured[2].background,
-                    "background=%d", captured[2].background);
+  tlib_pass_if_str_equal("loop body named: keeps its name and type",
+                         "WebTransaction/Custom/loop_body", captured[2].name);
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A thread that RINIT took for classic mode is a worker thread when a call to
+ * frankenphp_handle_request returns with no exception pending: classic mode
+ * throws before calling the request handler. Here RINIT misses the variable,
+ * so the begin handler never begins a transaction, and only the return
+ * confirms the thread. By then FrankenPHP has set up the first request, so the
+ * open transaction has recorded it, and it is discarded.
+ */
+static void test_confirmed_by_return(void) {
+  size_t trampolines = 0;
+  size_t i;
+
+  /*
+   * Handlers that the begin handler never sees: a trampoline, which the agent
+   * can't wrap, and a closure that ran before it was passed in.
+   */
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    char* code;
+    char msg[128];
+
+    if (NULL == nr_strstr(rejected_callables[i].label, "trampoline")) {
+      continue;
+    }
+    trampolines += 1;
+    code = nr_formatf("$cb = %s; frankenphp_handle_request($cb);",
+                      rejected_callables[i].expr);
+
+    engine_create("");
+    request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+
+    snprintf(msg, sizeof(msg), "confirmed, %s: no transaction left",
+             rejected_callables[i].label);
+    tlib_pass_if_null(msg, NRPRG(txn));
+    snprintf(msg, sizeof(msg), "confirmed, %s: a worker thread",
+             rejected_callables[i].label);
+    tlib_pass_if_int_equal(msg, NR_PHP_FRANKENPHP_THREAD_WORKER,
+                           nr_php_frankenphp_thread_role());
+    snprintf(msg, sizeof(msg), "confirmed, %s: nothing sent",
+             rejected_callables[i].label);
+    tlib_pass_if_size_t_equal(msg, 0, captured_count);
+
+    request_end();
+    engine_destroy();
+    nr_free(code);
+  }
+  tlib_pass_if_size_t_equal("confirmed: both trampoline cases ran", 2,
+                            trampolines);
+
+  engine_create("");
+  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "$cb();"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_null("confirmed, warmed-up closure: no transaction left",
+                    NRPRG(txn));
+  tlib_pass_if_int_equal("confirmed, warmed-up closure: a worker thread",
+                         NR_PHP_FRANKENPHP_THREAD_WORKER,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_size_t_equal("confirmed, warmed-up closure: nothing sent", 0,
+                            captured_count);
+  request_end();
+  engine_destroy();
+
+  /*
+   * The request handler replaces the open transaction during the first call.
+   * The replacement has recorded the first request too, so it is discarded.
+   */
+  engine_create("");
+  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_php_request_eval(
+      "class AppnameT {"
+      "  public function __call($name, $args) {"
+      "    $GLOBALS['replaced']"
+      "        = newrelic_set_appname(ini_get('newrelic.appname'));"
+      "    return 1;"
+      "  }"
+      "}"
+      "$cb = [new AppnameT(), 'anything'];"
+      "frankenphp_handle_request($cb);");
+  {
+    zval* replaced = tlib_php_request_eval_expr("$replaced");
+
+    tlib_pass_if_zval_is_bool_true(
+        "confirmed, set_appname: a replacement began", replaced);
+    nr_php_zval_free(&replaced);
+  }
+  tlib_pass_if_null("confirmed, set_appname: no transaction left", NRPRG(txn));
+  tlib_pass_if_int_equal("confirmed, set_appname: a worker thread",
+                         NR_PHP_FRANKENPHP_THREAD_WORKER,
+                         nr_php_frankenphp_thread_role());
+  tlib_pass_if_size_t_equal("confirmed, set_appname: nothing sent", 0,
+                            captured_count);
+  request_end();
+  engine_destroy();
+
+  /*
+   * A handler that the begin handler sees. On a thread taken for classic mode
+   * it begins no transaction, so the first call is confirmed by its return as
+   * above, and the second call is the first worker request with a
+   * transaction of its own. Pinned: interim behaviour, not the desired one.
+   */
+  engine_create("");
+  request_start_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("confirmed, plain closure: nothing sent by call 1",
+                            0, fake.on_entry[1].captured);
+  tlib_pass_if_true(
+      "confirmed, plain closure: no transaction when call 2 is entered",
+      fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
+  tlib_pass_if_size_t_equal("confirmed, plain closure: request 2 only", 1,
+                            captured_count);
+  tlib_fail_if_str_equal("confirmed, plain closure: not the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  request_end();
+  tlib_pass_if_size_t_equal("confirmed, plain closure: nothing more sent", 1,
+                            captured_count);
+  engine_destroy();
+}
+
+/*
+ * The functions that test_handler_called_from_user_code_keeps_its_segment
+ * passes to frankenphp_handle_request and calls itself.
+ */
+static const char direct_call_setup[]
+    = "function direct_handler() { return 1; }"
+      "function other_fn() { return 1; }"
+      "function direct_thrower() { throw new LogicException('direct'); }";
+
+/*
+ * A request handler that user code calls itself is recorded like any other
+ * function the agent wraps: it gets its own segment, in classic mode and in
+ * worker mode, and the stack depth stays balanced, also when it throws. A call
+ * from frankenphp_handle_request still gets no segment of its own.
+ */
+static void test_handler_called_from_user_code_keeps_its_segment(void) {
+  int depth = 0;
+
+  /* Classic mode. */
+  engine_create("");
+  request_start_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  NR_PHP_PROCESS_GLOBALS(expensive_min) = 0;
+  tlib_php_request_eval(direct_call_setup);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+  tlib_php_request_eval(
+      "try { frankenphp_handle_request('direct_handler'); }"
+      " catch (RuntimeException $e) { direct_handler(); }"
+      "other_fn();");
+  tlib_pass_if_int_equal("user code, classic: stack depth balanced", depth,
+                         NRPRG_CTX(php_cur_stack_depth));
+  request_end();
+  tlib_pass_if_size_t_equal("user code, classic: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_true(
+      "user code, classic: the positive control has its segment",
+      segment_names_have(captured[0].segment_names, "Custom/other_fn"),
+      "segment_names=%s", NRSAFESTR(captured[0].segment_names));
+  tlib_pass_if_true(
+      "user code, classic: the handler has its segment",
+      segment_names_have(captured[0].segment_names, "Custom/direct_handler"),
+      "segment_names=%s", NRSAFESTR(captured[0].segment_names));
+  engine_destroy();
+
+  /* Classic mode, with a handler that throws. */
+  engine_create("");
+  request_start_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  NR_PHP_PROCESS_GLOBALS(expensive_min) = 0;
+  tlib_php_request_eval(direct_call_setup);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+  tlib_php_request_eval(
+      "try { frankenphp_handle_request('direct_thrower'); }"
+      " catch (RuntimeException $e) {}"
+      "try { direct_thrower(); } catch (LogicException $e) {}");
+  tlib_pass_if_int_equal("user code, throwing: stack depth balanced", depth,
+                         NRPRG_CTX(php_cur_stack_depth));
+  request_end();
+  tlib_pass_if_size_t_equal("user code, throwing: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_true(
+      "user code, throwing: the handler has its segment",
+      segment_names_have(captured[0].segment_names, "Custom/direct_thrower"),
+      "segment_names=%s", NRSAFESTR(captured[0].segment_names));
+  tlib_pass_if_false("user code, throwing: no error on the transaction",
+                     captured[0].has_error, "the transaction has an error");
+  engine_destroy();
+
+  /*
+   * Worker mode. Captured: [0] bootstrap, [1] request 1, [2] the loop-body
+   * transaction, [3] request 2.
+   */
+  engine_create("");
+  request_start_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  NR_PHP_PROCESS_GLOBALS(expensive_min) = 0;
+  tlib_php_request_eval(direct_call_setup);
+  tlib_php_request_eval(
+      "frankenphp_handle_request('direct_handler');"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "direct_handler();"
+      "frankenphp_handle_request('direct_handler');");
+  tlib_pass_if_size_t_equal("user code, worker: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_true(
+      "user code, worker: the loop body has the handler's segment",
+      segment_names_have(captured[2].segment_names, "Custom/direct_handler"),
+      "segment_names=%s", NRSAFESTR(captured[2].segment_names));
+  tlib_pass_if_false(
+      "user code, worker: request 1 has no segment for the handler",
+      segment_names_have(captured[1].segment_names, "Custom/direct_handler"),
+      "segment_names=%s", NRSAFESTR(captured[1].segment_names));
+  tlib_pass_if_false(
+      "user code, worker: request 2 has no segment for the handler",
+      segment_names_have(captured[3].segment_names, "Custom/direct_handler"),
+      "segment_names=%s", NRSAFESTR(captured[3].segment_names));
   request_end();
   engine_destroy();
 }
@@ -1564,9 +2073,11 @@ void test_main(void* p NRUNUSED) {
   test_harness_worker_bootstrap_signals();
   test_harness_run_kinds();
   test_bootstrap_txn_ended_before_real_function();
+  test_bootstrap_named_at_rinit();
   test_bootstrap_not_recording_app_unknown();
   test_bootstrap_not_recording_txn_ignored();
   test_bootstrap_ended_early_is_sent();
+  test_failed_boot_recorded_as_bootstrap();
   test_return_value_passes_through();
   test_same_callable_reuses_wraprec();
   test_agent_disabled_for_request();
@@ -1574,6 +2085,9 @@ void test_main(void* p NRUNUSED) {
   test_rejected_callable_types();
   test_invalid_argument();
   test_called_outside_worker_mode();
+  test_classic_runs_keep_their_transaction();
+  test_sapi_getenv_fallback();
+  test_sapi_getenv_only_for_bootstrap_uri();
   test_one_transaction_per_call();
   test_user_code_between_requests_not_recorded();
   test_each_callable_type_gets_transactions();
@@ -1589,7 +2103,9 @@ void test_main(void* p NRUNUSED) {
   test_throwing_error_group_callback();
   test_buffered_html_gets_browser_agent();
   test_direct_call_begins_no_transaction();
-  test_loop_body_txn_ended_as_bootstrap();
+  test_loop_body_txn_ended_as_left();
+  test_confirmed_by_return();
+  test_handler_called_from_user_code_keeps_its_segment();
   test_loop_body_txn_not_recording();
 #endif
 }

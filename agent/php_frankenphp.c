@@ -6,7 +6,9 @@
 #include "php_frankenphp.h"
 #include "php_agent.h"
 #include "php_error.h"
+#include "php_frankenphp_gate.h"
 #include "php_header.h"
+#include "php_observer.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "util_memory.h"
@@ -56,10 +58,12 @@ static void nr_php_frankenphp_clear_response_headers(void) {
 }
 
 /*
- * The begin and end handlers run on every call to the request handler. Only a
- * call from frankenphp_handle_request is a worker request: a call from user
- * code must neither begin a transaction nor record an exception that its
- * caller may still catch.
+ * The begin and end handlers run on every call to the request handler, in
+ * place of the default ones. Only a call from frankenphp_handle_request is a
+ * worker request. A call from user code gets the default handlers, so it is
+ * recorded like any other function the agent wraps: it gets its own segment,
+ * and it begins no transaction. An exception that leaves it, which its caller
+ * may still catch, is recorded on that segment only.
  */
 static bool nr_php_frankenphp_called_from_handle_request(
     const zend_execute_data* execute_data) {
@@ -126,8 +130,20 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
     zend_execute_data* execute_data) {
   if (!nr_php_frankenphp_called_from_handle_request(execute_data)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
-                     "frankenphp request handler called from user code, not "
-                     "beginning a transaction");
+                     "frankenphp request handler called from user code, "
+                     "recording it as a function call");
+    nr_php_observer_fcall_begin(execute_data);
+    return;
+  }
+
+  // Only a worker thread begins a worker request transaction. On a thread
+  // that RINIT took for classic mode, or whose run RINIT didn't classify, the
+  // open transaction is left alone.
+  if (NR_PHP_FRANKENPHP_THREAD_WORKER != nr_php_frankenphp_thread_role()) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp request handler called on a thread that "
+                     "isn't known to be a worker thread, not beginning a "
+                     "transaction");
     return;
   }
 
@@ -139,10 +155,11 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
 
 static void nr_php_frankenphp_request_handler_fcall_end(
     zend_execute_data* execute_data,
-    zval* return_value NRUNUSED) {
+    zval* return_value) {
   zend_object* exception = EG(exception);
 
   if (!nr_php_frankenphp_called_from_handle_request(execute_data)) {
+    nr_php_observer_fcall_end(execute_data, return_value);
     return;
   }
 
@@ -175,32 +192,31 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 
-  // If recording, end current transaction and record it as FrankenPHP worker
-  // bootstrap background transaction. If the agent is not recording it can
-  // mean three things:
-  // - No transaction was started because either the agent is not connected to
-  //   the daemon yet, or the daemon has not verified appinfo yet.
-  // - The transaction was ended by nr_php_frankenphp_handle_request_end
-  // - The worker script ignored the bootstrap transaction, or ended it early
-  //   with newrelic_end_of_transaction(). End it, or the request handler's
-  //   begin handler would replace it without ending it, and it would leak.
-  //   As in classic mode, an ignored transaction is discarded and an ended
-  //   one is sent, with the name it had when it ended.
-  // On later calls, a transaction that is still open was started by the worker
-  // script between requests, and it is ended the same way.
-  if (nr_php_recording()) {
-    nr_txn_set_path("FrankenPHP worker", NRPRG(txn), "frankenphp/worker",
-                    NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
-    nr_txn_set_as_background_job(NRPRG(txn), "frankenphp worker");
-    nr_php_txn_end(0, 0);
-  } else if (NULL != NRPRG(txn)) {
+  // On a worker thread, end the transaction that is open, with the name it
+  // has, or the request handler's begin handler would replace it without
+  // ending it, and it would leak. On the first call it is the worker
+  // bootstrap, which RINIT named. On later calls it was started by the worker
+  // script between requests. As in classic mode, an ignored transaction is
+  // discarded, and one ended early with newrelic_end_of_transaction() is sent
+  // with the name it had when it ended. None is open when the agent wasn't
+  // connected to the daemon yet at RINIT, or when
+  // nr_php_frankenphp_handle_request_end has ended the last request's.
+  //
+  // On any other thread, leave the transaction alone. In classic mode the
+  // real function throws before it calls the request handler, and the rest of
+  // the request is recorded as usual.
+  if (NR_PHP_FRANKENPHP_THREAD_WORKER == nr_php_frankenphp_thread_role()
+      && NULL != NRPRG(txn)) {
     nr_php_txn_end(0, 0);
   }
 
   // Wrap frankenphp_handle_request's callback, which handles web request,
-  // using custom fcall_begin and fcall_end handlers. fcall_begin handler
-  // will start a new web transaction and nr_php_frankenphp_handle_request_end
-  // will end it.
+  // using custom fcall_begin and fcall_end handlers. On a worker thread the
+  // fcall_begin handler starts a new web transaction and
+  // nr_php_frankenphp_handle_request_end ends it. The callback is wrapped on
+  // any thread: Zend installs a function's Observer handlers at its first
+  // call, so a thread that turns out to be a worker thread only gets the
+  // custom handlers on later calls if they were set before the first one.
   zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "z",
                            &function);
   if (NULL != function
@@ -233,10 +249,47 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   wr->fcall_handlers.end = nr_php_frankenphp_request_handler_fcall_end;
 }
 
+/*
+ * Makes a thread that RINIT took for classic mode a worker thread, once a call
+ * has shown that it is one.
+ *
+ * Whatever transaction is open is discarded, not sent and not renamed. It is
+ * the one RINIT began, or one that the request handler began in its place
+ * during the call, with newrelic_set_appname() for example. FrankenPHP had
+ * set up the first worker request before it called the request handler, so
+ * that transaction has recorded the request's segments, errors and duration,
+ * and the wait for it: sent as the bootstrap, it would be wrong data. A
+ * discarded transaction doesn't go through the shutdown that reads the
+ * superglobals, and sends nothing.
+ */
+static void nr_php_frankenphp_confirm_after_rinit(void) {
+  nr_php_frankenphp_confirm_worker_thread();
+
+  if (NULL != NRPRG(txn)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp_handle_request returned on a thread that was "
+                     "taken for classic mode, discarding its transaction");
+    nr_php_txn_end(1, 0);
+  }
+}
+
 void nr_php_frankenphp_handle_request_end(void) {
-  // In classic mode frankenphp_handle_request throws before calling the
-  // request handler, and on the shutdown path it returns false without
-  // calling it.
+  // Classic mode throws before calling the request handler, and an invalid
+  // argument leaves a TypeError pending. So a call that returns with no
+  // exception pending shows that a thread that RINIT took for classic mode
+  // is a worker thread. Confirm it now, so that its next call is a worker
+  // request, and its RINIT transaction isn't left open for the worker
+  // lifetime.
+  if (NR_PHP_FRANKENPHP_THREAD_CLASSIC == nr_php_frankenphp_thread_role()
+      && NULL == EG(exception)) {
+    nr_php_frankenphp_confirm_after_rinit();
+  }
+
+  // The begin handler began no worker request transaction: the thread isn't
+  // a worker thread, or wasn't one yet when the call began, the request
+  // handler is one the agent couldn't wrap, or the call didn't reach it. In
+  // classic mode frankenphp_handle_request throws before calling the request
+  // handler, and on the shutdown path it returns false without calling it.
   if (!nr_php_frankenphp_worker_request.in_progress) {
     return;
   }
@@ -260,5 +313,8 @@ void nr_php_frankenphp_rshutdown(void) {
   // the agent's shutdown path ends its transaction.
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
+
+  // What RINIT learned is for this script run only.
+  nr_php_frankenphp_gate_rshutdown();
 }
 #endif /* ZTS */

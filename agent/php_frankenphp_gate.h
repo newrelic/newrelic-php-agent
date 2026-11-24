@@ -202,6 +202,50 @@ extern nr_php_frankenphp_mode_t nr_php_frankenphp_mode_for(
     nr_php_frankenphp_setting_t setting,
     const char* version);
 
+/* What the agent takes the current thread for, in this script run. */
+typedef enum {
+  /* RINIT didn't classify the run, as when the agent is disabled for it. */
+  NR_PHP_FRANKENPHP_THREAD_UNKNOWN = 0,
+  /* RINIT took the run for classic mode, and nothing has shown otherwise. */
+  NR_PHP_FRANKENPHP_THREAD_CLASSIC,
+  /* A worker thread: RINIT saw a worker bootstrap, or a call showed it. */
+  NR_PHP_FRANKENPHP_THREAD_WORKER
+} nr_php_frankenphp_thread_role_t;
+
+/*
+ * Purpose : Classify the script run, and begin its transaction. RINIT calls
+ *           this on FrankenPHP instead of beginning the transaction itself.
+ *
+ *           The run is classified once, from the request URI and the
+ *           FRANKENPHP_WORKER variable, and the answer is kept until
+ *           RSHUTDOWN. A worker bootstrap makes the thread a worker thread,
+ *           and its transaction is named as the bootstrap and made a
+ *           background job as soon as it begins. Every other run is classic
+ *           mode, and its transaction begins as on any other SAPI. Each of
+ *           the two ways in which the signals can disagree is logged once per
+ *           process.
+ */
+extern void nr_php_frankenphp_rinit(void);
+
+/*
+ * Purpose : Tell what the agent takes the current thread for.
+ *
+ * Returns : The thread's role until RSHUTDOWN.
+ */
+extern nr_php_frankenphp_thread_role_t nr_php_frankenphp_thread_role(void);
+
+/*
+ * Purpose : Make the current thread a worker thread, once a call has shown
+ *           that RINIT took it for classic mode wrongly.
+ */
+extern void nr_php_frankenphp_confirm_worker_thread(void);
+
+/*
+ * Purpose : Forget what RINIT learned about the current thread: its role,
+ *           the run's classification and the request URI.
+ */
+extern void nr_php_frankenphp_gate_rshutdown(void);
+
 #endif /* ZTS */
 
 #endif /* PHP_FRANKENPHP_GATE_H */
