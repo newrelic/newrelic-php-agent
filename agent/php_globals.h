@@ -76,6 +76,9 @@ typedef struct _nrphpglobals_t {
   int apache_threaded; /* 1 if a threaded MPM is in use, 0 otherwise */
 #ifdef ZTS
   int is_frankenphp;   /* 1 if the process is FrankenPHP, 0 otherwise */
+  char* frankenphp_version; /* Version of the frankenphp module, read at every
+                               MINIT. NULL if the process is not FrankenPHP or
+                               the module has no version. */
 #endif
   int preload_framework_library_detection; /* Enables preloading framework and
                                               library detection */

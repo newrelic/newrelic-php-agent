@@ -30,6 +30,7 @@ tlib_parallel_info_t parallel_info
 #include "nr_errors.h"
 #include "nr_txn.h"
 #include "php_agent.h"
+#include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
 #include "util_memory.h"
@@ -263,14 +264,25 @@ static const zend_function_entry fake_frankenphp_functions[]
  * Registering it after startup instead leaves it with engine state no real
  * function has, and calling it crashes the engine.
  */
-static void engine_create(const char* extra_ini) {
+static void engine_create_version(const char* extra_ini, const char* version) {
   char* ini = nr_formatf("%s%s", ENGINE_TEST_INI, NRBLANKSTR(extra_ini));
 
   tlib_php_engine_create_ex(ini, fake_frankenphp_functions);
   nr_free(ini);
+
+  /*
+   * The engine's SAPI is embed, so MINIT took the process for something else.
+   * Say what the agent would have read from FrankenPHP at MINIT, as a server
+   * reload does when it runs MINIT again.
+   */
+  nr_php_frankenphp_set_process_info("frankenphp", version);
   nr_cmd_txndata_hook = capture_txndata_tx;
   capture_reset();
   fake_reset(FAKE_RETURN_ONLY);
+}
+
+static void engine_create(const char* extra_ini) {
+  engine_create_version(extra_ini, "v1.13.1");
 }
 
 static void engine_destroy(void) {
@@ -278,11 +290,88 @@ static void engine_destroy(void) {
   capture_reset();
 }
 
-/* Starts a request with an empty capture and the fake in the given mode. */
-static void request_start(fake_mode_t mode) {
+/*
+ * The kinds of script run the agent has to tell apart at RINIT. Each sets the
+ * two signals it reads: the request URI, which has no leading slash for a
+ * worker bootstrap and has one for an HTTP request, and the FRANKENPHP_WORKER
+ * environment variable, which is 1 on a worker thread.
+ */
+typedef enum {
+  RUN_WORKER_BOOTSTRAP,       /* worker.php, FRANKENPHP_WORKER=1 */
+  RUN_CLASSIC,                /* /index.php, variable unset */
+  RUN_CLASSIC_WORKER_ENV_SET, /* /index.php, FRANKENPHP_WORKER=1 */
+  RUN_BOOTSTRAP_URI_NO_ENV,   /* worker.php, variable unset */
+  RUN_NO_SIGNALS              /* no request URI, variable unset */
+} run_kind_t;
+
+/*
+ * Starts a request that looks like the given kind of run, with an empty
+ * capture and the fake in the given mode.
+ *
+ * Both signals are set before tlib_php_request_start(). RINIT forces $_SERVER,
+ * and the embed SAPI imports the environment into it then (php_embed.c,
+ * php_embed_register_variables). Neither SAPI.c nor main.c touches
+ * SG(request_info).request_uri, so the test owns it.
+ */
+static void request_start_as(run_kind_t kind, fake_mode_t mode) {
+  char* uri = NULL;
+  const char* worker_env = NULL;
+
+  switch (kind) {
+    case RUN_WORKER_BOOTSTRAP:
+      uri = "worker.php";
+      worker_env = "1";
+      break;
+    case RUN_CLASSIC:
+      uri = "/index.php";
+      break;
+    case RUN_CLASSIC_WORKER_ENV_SET:
+      uri = "/index.php";
+      worker_env = "1";
+      break;
+    case RUN_BOOTSTRAP_URI_NO_ENV:
+      uri = "worker.php";
+      break;
+    case RUN_NO_SIGNALS:
+      break;
+  }
+
   capture_reset();
   fake_reset(mode);
+  SG(request_info).request_uri = uri;
+  if (NULL != worker_env) {
+    setenv("FRANKENPHP_WORKER", worker_env, 1);
+  } else {
+    unsetenv("FRANKENPHP_WORKER");
+  }
   tlib_php_request_start();
+}
+
+/*
+ * As request_start_as, for a request that has a method. tlib's transactions
+ * are background jobs unless REQUEST_METHOD is set, because the agent takes a
+ * request that has argv and no REQUEST_METHOD for a script run from the
+ * command line. A test that asserts that a transaction is a background job,
+ * or that it keeps its type, has to start the request with this, or the
+ * assertion passes without the code under test. FrankenPHP's dummy bootstrap
+ * request is a GET too.
+ */
+static void request_start_web_as(run_kind_t kind, fake_mode_t mode) {
+  setenv("REQUEST_METHOD", "GET", 1);
+  request_start_as(kind, mode);
+}
+
+/* Starts a request that looks like a worker bootstrap. */
+static void request_start(fake_mode_t mode) {
+  request_start_as(RUN_WORKER_BOOTSTRAP, mode);
+}
+
+/* Ends the request, and takes away what request_start_as set up. */
+static void request_end(void) {
+  tlib_php_request_end();
+  SG(request_info).request_uri = NULL;
+  unsetenv("FRANKENPHP_WORKER");
+  unsetenv("REQUEST_METHOD");
 }
 
 /*
@@ -341,7 +430,89 @@ static void test_harness_fake_is_wrapped_and_reachable(void) {
   tlib_pass_if_zval_is_bool_true("fake's return value reaches PHP", rv);
   nr_php_zval_free(&rv);
 
-  tlib_php_request_end();
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * Harness check: a request started as a worker bootstrap has both signals the
+ * gate reads, the environment variable in $_SERVER, and request_end takes
+ * them away again.
+ */
+static void test_harness_worker_bootstrap_signals(void) {
+  engine_create("");
+  request_start_as(RUN_WORKER_BOOTSTRAP, FAKE_RETURN_ONLY);
+
+  tlib_pass_if_int_equal("the process reads as FrankenPHP", 1,
+                         NR_PHP_PROCESS_GLOBALS(is_frankenphp));
+  tlib_pass_if_str_equal("the process has a FrankenPHP version", "v1.13.1",
+                         NR_PHP_PROCESS_GLOBALS(frankenphp_version));
+  pass_if_php_string("the variable reaches $_SERVER", "1",
+                     "$_SERVER['FRANKENPHP_WORKER']");
+  tlib_pass_if_str_equal("the request URI is the worker script", "worker.php",
+                         SG(request_info).request_uri);
+
+  request_end();
+  tlib_pass_if_null("request_end clears the request URI",
+                    SG(request_info).request_uri);
+  tlib_pass_if_null("request_end unsets the variable",
+                    getenv("FRANKENPHP_WORKER"));
+  engine_destroy();
+}
+
+/*
+ * Harness check: each kind of run has its own signals, and the web variant
+ * adds a request method that the plain one doesn't have, and that doesn't
+ * outlive the request.
+ */
+static void test_harness_run_kinds(void) {
+  static const struct {
+    run_kind_t kind;
+    const char* name;
+    const char* uri;
+    const char* worker_env;
+  } kinds[] = {
+      {RUN_WORKER_BOOTSTRAP, "worker bootstrap", "worker.php", "1"},
+      {RUN_CLASSIC, "classic", "/index.php", "unset"},
+      {RUN_CLASSIC_WORKER_ENV_SET, "classic with the variable", "/index.php",
+       "1"},
+      {RUN_BOOTSTRAP_URI_NO_ENV, "bootstrap URI without the variable",
+       "worker.php", "unset"},
+      {RUN_NO_SIGNALS, "no signals", NULL, "unset"},
+  };
+  const char* method_expr
+      = "isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] "
+        ": 'unset'";
+  size_t i;
+
+  engine_create("");
+
+  for (i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++) {
+    char msg[128];
+
+    request_start_as(kinds[i].kind, FAKE_RETURN_ONLY);
+
+    snprintf(msg, sizeof(msg), "%s: the request URI", kinds[i].name);
+    tlib_pass_if_str_equal(msg, kinds[i].uri, SG(request_info).request_uri);
+    snprintf(msg, sizeof(msg), "%s: the variable", kinds[i].name);
+    pass_if_php_string(msg, kinds[i].worker_env,
+                       "isset($_SERVER['FRANKENPHP_WORKER']) "
+                       "? $_SERVER['FRANKENPHP_WORKER'] : 'unset'");
+    snprintf(msg, sizeof(msg), "%s: no request method", kinds[i].name);
+    pass_if_php_string(msg, "unset", method_expr);
+
+    request_end();
+  }
+
+  request_start_web_as(RUN_CLASSIC, FAKE_RETURN_ONLY);
+  pass_if_php_string("web variant: a GET", "GET", method_expr);
+  request_end();
+
+  request_start_as(RUN_CLASSIC, FAKE_RETURN_ONLY);
+  pass_if_php_string("after a web request: no request method", "unset",
+                     method_expr);
+  request_end();
+
   engine_destroy();
 }
 
@@ -364,7 +535,7 @@ static void test_bootstrap_txn_ended_before_real_function(void) {
   tlib_pass_if_size_t_equal("bootstrap: sent before the real function", 1,
                             fake.on_entry[0].captured);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -390,7 +561,7 @@ static void test_bootstrap_not_recording_app_unknown(void) {
                     wraprec_has_custom_handlers(wraprec_of("$cb")),
                     "no wraprec with custom handlers");
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -409,7 +580,7 @@ static void test_bootstrap_not_recording_txn_ignored(void) {
                     wraprec_has_custom_handlers(wraprec_of("$cb")),
                     "no wraprec with custom handlers");
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   /*
@@ -433,7 +604,7 @@ static void test_bootstrap_not_recording_txn_ignored(void) {
   tlib_fail_if_str_equal("ignored txn: captured one is not the bootstrap",
                          BOOTSTRAP_TXN_NAME, captured[0].name);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -464,7 +635,7 @@ static void test_bootstrap_ended_early_is_sent(void) {
                          "OtherTransaction/Custom/ended_early",
                          captured[0].name);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -485,7 +656,7 @@ static void test_return_value_passes_through(void) {
   tlib_pass_if_zval_is_bool_true("return value: true passes through", rv);
   nr_php_zval_free(&rv);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -507,7 +678,7 @@ static void test_same_callable_reuses_wraprec(void) {
   tlib_pass_if_not_null("same callable: wrapped", first);
   tlib_pass_if_ptr_equal("same callable: same wraprec reused", first, second);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -523,7 +694,7 @@ static void test_agent_disabled_for_request(void) {
 
   engine_create("");
   request_start(FAKE_RETURN_ONLY);
-  tlib_php_request_end();
+  request_end();
 
   NRINI(enabled) = 0;
   request_start(FAKE_CALL);
@@ -547,7 +718,7 @@ static void test_agent_disabled_for_request(void) {
   tlib_pass_if_size_t_equal("disabled agent: nothing captured", 0,
                             captured_count);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -628,7 +799,7 @@ static void test_wrapped_callable_types(void) {
     tlib_pass_if_true(wrapped_callables[i].label,
                       wraprec_has_custom_handlers(wraprec_of("$cb")),
                       "no wraprec with custom handlers");
-    tlib_php_request_end();
+    request_end();
     nr_free(code);
   }
   engine_destroy();
@@ -657,7 +828,7 @@ static void test_rejected_callable_types(void) {
     tlib_pass_if_false(rejected_callables[i].label,
                        fake.exception_after_call[0], "the callback threw");
     tlib_pass_if_size_t_equal(rejected_callables[i].label, 1, captured_count);
-    tlib_php_request_end();
+    request_end();
     nr_free(code);
   }
   engine_destroy();
@@ -699,7 +870,7 @@ static void test_invalid_argument(void) {
     tlib_pass_if_size_t_equal(invalid_calls[i].label, 1, captured_count);
     tlib_pass_if_str_equal(invalid_calls[i].label, BOOTSTRAP_TXN_NAME,
                            captured[0].name);
-    tlib_php_request_end();
+    request_end();
     nr_free(code);
   }
   engine_destroy();
@@ -730,7 +901,7 @@ static void test_called_outside_worker_mode(void) {
   tlib_pass_if_null("outside worker mode: rest of the request unrecorded",
                     NRPRG(txn));
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -778,7 +949,7 @@ static void test_one_transaction_per_call(void) {
                        "the callback threw");
   }
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -800,7 +971,7 @@ static void test_user_code_between_requests_not_recorded(void) {
   tlib_pass_if_null("between requests: no transaction after the loop",
                     NRPRG(txn));
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -819,7 +990,7 @@ static void test_each_callable_type_gets_transactions(void) {
     tlib_php_request_eval(callable_setup);
     tlib_php_request_eval(code);
     tlib_pass_if_size_t_equal(wrapped_callables[i].label, 3, captured_count);
-    tlib_php_request_end();
+    request_end();
     nr_free(code);
   }
   engine_destroy();
@@ -842,7 +1013,7 @@ static void test_closure_recreated_each_loop_pass(void) {
       "}");
   tlib_pass_if_size_t_equal("closure per pass: top-level loop", 4,
                             captured_count);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   engine_create("");
@@ -858,7 +1029,7 @@ static void test_closure_recreated_each_loop_pass(void) {
       "(new LoopRunner())->run();");
   tlib_pass_if_size_t_equal("closure per pass: loop inside a method", 4,
                             captured_count);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   engine_create("");
@@ -875,7 +1046,7 @@ static void test_closure_recreated_each_loop_pass(void) {
   tlib_pass_if_size_t_equal(
       "closure per pass: static closure in a loop inside a method", 4,
       captured_count);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -899,7 +1070,7 @@ static void test_warm_up_call_prevents_transactions(void) {
   tlib_pass_if_size_t_equal("warmed-up closure: bootstrap only", 1,
                             captured_count);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -922,7 +1093,7 @@ static void test_callback_with_a_parameter(void) {
   pass_if_php_string("callback parameter: the callback got the argument",
                      "fake-arg", "$got_payload");
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -959,7 +1130,7 @@ static void test_requests_are_isolated(void) {
   tlib_pass_if_false("isolation: request 2 no error", captured[2].has_error,
                      "request 2 has an error");
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -977,7 +1148,7 @@ static void test_api_calls_inside_callback(void) {
   tlib_pass_if_size_t_equal(
       "ignore_transaction: ignored request not captured, the next is", 2,
       captured_count);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   engine_create("");
@@ -989,7 +1160,7 @@ static void test_api_calls_inside_callback(void) {
   tlib_pass_if_size_t_equal("end_transaction: one capture per request", 3,
                             captured_count);
   tlib_pass_if_null("end_transaction: no transaction left", NRPRG(txn));
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1027,7 +1198,7 @@ static void test_api_started_txn_after_failed_begin(void) {
                      captured[0].background, "background=%d",
                      captured[0].background);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1066,7 +1237,7 @@ static void test_callback_throws(void) {
       captured_count);
   tlib_pass_if_true("direct throw: exception recorded on the transaction",
                     captured[1].has_error, "the transaction has no error");
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   /*
@@ -1109,7 +1280,7 @@ static void test_callback_throws(void) {
                             captured_count);
   tlib_pass_if_int_equal("nested throw: stack depth balanced", depth,
                          NRPRG_CTX(php_cur_stack_depth));
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1146,7 +1317,7 @@ static void test_nested_call_site(void) {
   tlib_pass_if_null("nested call site: no transaction after the loop",
                     NRPRG(txn));
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1179,7 +1350,7 @@ static void test_uncaught_exception_recorded_with_status_500(void) {
                                   "\"http.statusCode\":500"));
   tlib_pass_if_null("uncaught exception: no transaction left", NRPRG(txn));
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1228,7 +1399,7 @@ static void test_throwing_error_group_callback(void) {
 
   nr_php_zval_free(&callback_ran);
   nr_php_zval_free(&reported);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1269,7 +1440,7 @@ static void test_buffered_html_gets_browser_agent(void) {
   tlib_pass_if_size_t_equal("browser agent: bootstrap plus the request", 2,
                             captured_count);
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1291,7 +1462,7 @@ static void test_direct_call_begins_no_transaction(void) {
                             captured_count);
   tlib_pass_if_null("direct call: no transaction", NRPRG(txn));
 
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1316,7 +1487,7 @@ static void test_loop_body_txn_ended_as_bootstrap(void) {
                          captured[2].name);
   tlib_pass_if_true("loop body unnamed: background", captured[2].background,
                     "background=%d", captured[2].background);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   engine_create("");
@@ -1333,7 +1504,7 @@ static void test_loop_body_txn_ended_as_bootstrap(void) {
                          captured[2].name);
   tlib_pass_if_true("loop body named: background", captured[2].background,
                     "background=%d", captured[2].background);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 
@@ -1364,7 +1535,7 @@ static void test_loop_body_txn_not_recording(void) {
       fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
   tlib_pass_if_str_equal("loop body ended early: keeps its name",
                          "OtherTransaction/Custom/loop_body", captured[2].name);
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 
   engine_create("");
@@ -1382,7 +1553,7 @@ static void test_loop_body_txn_not_recording(void) {
   tlib_pass_if_true(
       "loop body ignored: no transaction when the real function is entered",
       fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
-  tlib_php_request_end();
+  request_end();
   engine_destroy();
 }
 #endif /* ZTS && PHP 8.0+ */
@@ -1390,6 +1561,8 @@ static void test_loop_body_txn_not_recording(void) {
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   test_harness_fake_is_wrapped_and_reachable();
+  test_harness_worker_bootstrap_signals();
+  test_harness_run_kinds();
   test_bootstrap_txn_ended_before_real_function();
   test_bootstrap_not_recording_app_unknown();
   test_bootstrap_not_recording_txn_ignored();
