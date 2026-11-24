@@ -8145,6 +8145,97 @@ static void test_finalize_parent_stacks(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_set_open_segments_stop_time(void) {
+  nrapp_t app;
+  nrtxnopt_t opts;
+  nr_segment_t* segment_default_1;
+  nr_segment_t* segment_default_2;
+  nr_segment_t* segment_async;
+  nr_segment_t* segment_late;
+  nrtime_t root_stop_time;
+  nrtxn_t* txn;
+  nr_stack_t* async_stack;
+  size_t default_stack_size;
+  size_t async_stack_size;
+  const nrtime_t stop_time = 5 * NR_TIME_DIVISOR;
+
+  /*
+   * Don't crash on a NULL txn
+   */
+  nr_txn_set_open_segments_stop_time(NULL, stop_time);
+
+  nr_memset(&app, 0, sizeof(app));
+  nr_memset(&opts, 0, sizeof(opts));
+  app.state = NR_APP_OK;
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+
+  /*
+   * Move the transaction's start 10 seconds back, so that now is well after
+   * the stop time, and give the segments start times around it: two on the
+   * default parent stack and one on an async context's stack start before
+   * it, and one starts after it.
+   */
+  txn->abs_start_time -= 10 * NR_TIME_DIVISOR;
+  segment_default_1 = nr_segment_start(txn, NULL, NULL);
+  segment_default_2 = nr_segment_start(txn, NULL, NULL);
+  segment_late = nr_segment_start(txn, NULL, NULL);
+  segment_async = nr_segment_start(txn, NULL, "async");
+  segment_default_1->start_time = 1 * NR_TIME_DIVISOR;
+  segment_default_2->start_time = 2 * NR_TIME_DIVISOR;
+  segment_async->start_time = 3 * NR_TIME_DIVISOR;
+  segment_late->start_time = 6 * NR_TIME_DIVISOR;
+  root_stop_time = txn->segment_root->stop_time;
+
+  /*
+   * The default parent stack holds the root and the three segments on it, and
+   * the async context's stack its one segment.
+   */
+  async_stack = (nr_stack_t*)nr_hashmap_index_get(
+      txn->parent_stacks, (uint64_t)segment_async->async_context);
+  default_stack_size = nr_vector_size(&txn->default_parent_stack);
+  async_stack_size = nr_vector_size(async_stack);
+  tlib_pass_if_size_t_equal("default parent stack before", 4,
+                            default_stack_size);
+  tlib_pass_if_size_t_equal("async parent stack before", 1, async_stack_size);
+
+  nr_txn_set_open_segments_stop_time(txn, stop_time);
+
+  tlib_pass_if_size_t_equal("default parent stack not popped",
+                            default_stack_size,
+                            nr_vector_size(&txn->default_parent_stack));
+  tlib_pass_if_size_t_equal("async parent stack not popped", async_stack_size,
+                            nr_vector_size(async_stack));
+
+  tlib_pass_if_time_equal("first segment in the default parent stack",
+                          stop_time, segment_default_1->stop_time);
+  tlib_pass_if_time_equal("second segment in the default parent stack",
+                          stop_time, segment_default_2->stop_time);
+  tlib_pass_if_time_equal("segment in the async parent stack", stop_time,
+                          segment_async->stop_time);
+  tlib_pass_if_time_equal("segment that starts after the stop time", 0,
+                          segment_late->stop_time);
+  tlib_pass_if_time_equal("root segment unchanged", root_stop_time,
+                          txn->segment_root->stop_time);
+
+  /*
+   * Ending the segments keeps the stop time they have. The one that starts
+   * after it is ended now.
+   */
+  nr_txn_finalize_parent_stacks(txn);
+
+  tlib_pass_if_time_equal("first segment in the default parent stack, ended",
+                          stop_time, segment_default_1->stop_time);
+  tlib_pass_if_time_equal("second segment in the default parent stack, ended",
+                          stop_time, segment_default_2->stop_time);
+  tlib_pass_if_time_equal("segment in the async parent stack, ended", stop_time,
+                          segment_async->stop_time);
+  tlib_pass_if_true("segment that starts after the stop time, ended now",
+                    segment_late->stop_time > segment_late->start_time,
+                    "stop_time=" NR_TIME_FMT, segment_late->stop_time);
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_max_segments_no_limit(void) {
   test_txn_state_t* p = (test_txn_state_t*)tlib_getspecific();
   nrapp_t app;
@@ -9698,6 +9789,7 @@ void test_main(void* p NRUNUSED) {
   test_get_current_trace_id();
   test_get_current_span_id();
   test_finalize_parent_stacks();
+  test_set_open_segments_stop_time();
   test_max_segments_no_limit();
   test_max_segments_count_tree();
   test_max_segments();

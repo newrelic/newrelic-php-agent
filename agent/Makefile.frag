@@ -88,6 +88,7 @@ TEST_BINARIES = \
 	tests/test_fatal_signal_handler \
 	tests/test_fibers \
 	tests/test_frankenphp \
+	tests/test_frankenphp_gate \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
 	tests/test_fw_laravel \

@@ -4,6 +4,7 @@
  */
 #include "php_agent.h"
 #include "php_execute.h"
+#include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
@@ -1742,6 +1743,54 @@ static PHP_INI_MH(nr_framework_mh) {
 
 #ifdef ZTS
 /*
+ * newrelic.frankenphp.worker_mode is "auto", "on" or "off", in any case.
+ *
+ * PHP's INI parser rewrites an unquoted on, yes or true to "1", and an
+ * unquoted off, no, false, none or null to an empty string, before the handler
+ * runs. So the handler can't tell "off" from an unquoted off, and takes "1" for
+ * on and an empty value for off, as nr_recordsql_mh takes an empty value for
+ * off. Mapping the empty value to auto instead would leave worker mode
+ * recording for an administrator who turned it off. For the same reason "0",
+ * which is what the parser hands over for 0, quoted or not, is off too.
+ *
+ * Any other value is refused. PHP then gives the setting its default, auto,
+ * so worker mode keeps recording.
+ */
+static PHP_INI_MH(nr_frankenphp_worker_mode_mh) {
+  nriniuint_t* p;
+  nr_php_frankenphp_setting_t val;
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  if (0 == NEW_VALUE_LEN) {
+    val = NR_PHP_FRANKENPHP_SETTING_OFF;
+  } else if (0 == nr_strcmp(NEW_VALUE, "1")) {
+    val = NR_PHP_FRANKENPHP_SETTING_ON;
+  } else if (0 == nr_strcmp(NEW_VALUE, "0")) {
+    val = NR_PHP_FRANKENPHP_SETTING_OFF;
+  } else if (0 == nr_stricmp(NEW_VALUE, "auto")) {
+    val = NR_PHP_FRANKENPHP_SETTING_AUTO;
+  } else if (0 == nr_stricmp(NEW_VALUE, "on")) {
+    val = NR_PHP_FRANKENPHP_SETTING_ON;
+  } else if (0 == nr_stricmp(NEW_VALUE, "off")) {
+    val = NR_PHP_FRANKENPHP_SETTING_OFF;
+  } else {
+    p->where = 0;
+    return FAILURE;
+  }
+
+  p->value = (zend_uint)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
+/*
  * ZTS MINIT callbacks for INI wraprec creation. These match the foreach_fn_t
  * signature and route to the INI hashmap instead of the per-request hashmap.
  */
@@ -2505,6 +2554,17 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_framework_dh)
+
+#ifdef ZTS
+STD_PHP_INI_ENTRY_EX(NR_PHP_FRANKENPHP_INI_WORKER_MODE,
+                     "auto",
+                     NR_PHP_SYSTEM,
+                     nr_frankenphp_worker_mode_mh,
+                     ini.frankenphp_worker_mode,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+#endif /* ZTS */
 
 /* DEPRECATED */
 STD_PHP_INI_ENTRY_EX("newrelic.cross_application_tracer.enabled",

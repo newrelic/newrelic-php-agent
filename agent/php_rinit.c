@@ -9,6 +9,7 @@
  */
 #include "php_agent.h"
 #include "php_error.h"
+#include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_mysqli.h"
@@ -182,7 +183,12 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG_CTX(predis_command_starts)
       = nr_php_objtable_create((void (*)(void*))nr_predis_command_destroy);
 
-  nr_php_txn_begin(0, 0 TSRMLS_CC);
+#ifdef ZTS
+  if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+    nr_php_frankenphp_rinit();
+  } else
+#endif
+    nr_php_txn_begin(0, 0 TSRMLS_CC);
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing done");
 

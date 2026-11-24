@@ -3224,6 +3224,69 @@ void nr_txn_finalize_parent_stacks(nrtxn_t* txn) {
   nr_txn_end_segments_in_stack(&txn->default_parent_stack, txn);
 }
 
+typedef struct _nr_txn_open_segments_stop_time_t {
+  const nrtxn_t* txn;
+  nrtime_t stop_time;
+} nr_txn_open_segments_stop_time_t;
+
+/*
+ * Purpose : Set the stop time of the open segments in a given stack, without
+ *           removing them from the stack.
+ */
+static void nr_txn_set_stop_time_in_stack(
+    nr_stack_t* stack,
+    const nr_txn_open_segments_stop_time_t* params) {
+  size_t i;
+  size_t size;
+
+  if (NULL == stack) {
+    return;
+  }
+
+  size = nr_vector_size(stack);
+  for (i = 0; i < size; i++) {
+    nr_segment_t* segment = (nr_segment_t*)nr_vector_get(stack, i);
+
+    /*
+     * The root's stop time is the transaction's, which the caller sets.
+     */
+    if (NULL == segment || params->txn->segment_root == segment) {
+      continue;
+    }
+
+    if (0 == segment->stop_time && segment->start_time <= params->stop_time) {
+      segment->stop_time = params->stop_time;
+    }
+  }
+}
+
+/*
+ * Purpose : Wrap nr_txn_set_stop_time_in_stack so it can be passed to
+ *           nr_hashmap_apply.
+ */
+static void nr_txn_set_stop_time_in_stack_wrapper(void* value,
+                                                  const char* key NRUNUSED,
+                                                  size_t key_len NRUNUSED,
+                                                  void* user_data) {
+  nr_txn_set_stop_time_in_stack(
+      (nr_stack_t*)value, (const nr_txn_open_segments_stop_time_t*)user_data);
+}
+
+void nr_txn_set_open_segments_stop_time(nrtxn_t* txn, nrtime_t stop_time) {
+  nr_txn_open_segments_stop_time_t params;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  params.txn = txn;
+  params.stop_time = stop_time;
+
+  nr_hashmap_apply(txn->parent_stacks, nr_txn_set_stop_time_in_stack_wrapper,
+                   &params);
+  nr_txn_set_stop_time_in_stack(&txn->default_parent_stack, &params);
+}
+
 const char* nr_txn_get_current_context(nrtxn_t* txn) {
   if (NULL == txn) {
     return NULL;

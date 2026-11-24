@@ -15,6 +15,7 @@
 #include "php_environment.h"
 #include "php_error.h"
 #include "php_extension.h"
+#include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_hooks.h"
@@ -450,9 +451,17 @@ static void nr_php_populate_cli_process_globals(void) {
 
 #ifdef ZTS
 static void nr_php_populate_frankenphp_process_globals(void) {
-  if (0 == nr_strcmp(sapi_module.name, "frankenphp")) {
-    NR_PHP_PROCESS_GLOBALS(is_frankenphp) = 1;
-  }
+  /*
+   * FrankenPHP registers its module before the agent's MINIT runs. This runs
+   * at every MINIT, because a server reload runs MINIT again, possibly after
+   * the binary was upgraded.
+   */
+  const zend_module_entry* fp
+      = (const zend_module_entry*)zend_hash_str_find_ptr(&module_registry,
+                                                         NR_PSTR("frankenphp"));
+
+  nr_php_frankenphp_set_process_info(sapi_module.name,
+                                     NULL != fp ? fp->version : NULL);
 }
 #endif
 

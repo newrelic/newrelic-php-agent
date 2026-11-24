@@ -42,6 +42,9 @@ static void nr_php_per_process_globals_dispose(void) {
   nr_free(nr_php_per_process_globals.env_labels);
   nr_free(nr_php_per_process_globals.apache_add);
   nr_free(nr_php_per_process_globals.docker_id);
+#ifdef ZTS
+  nr_free(nr_php_per_process_globals.frankenphp_version);
+#endif
 
   nr_memset(&nr_php_per_process_globals, 0, sizeof(nr_php_per_process_globals));
 }
