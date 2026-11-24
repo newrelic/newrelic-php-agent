@@ -192,6 +192,29 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 
+  // Resolve the argument before touching the open transaction. The real
+  // function rejects an argument that isn't callable with a TypeError or an
+  // ArgumentCountError, and a call that is going to throw doesn't end the
+  // bootstrap: the script goes on after the exception, and what it records
+  // belongs to the transaction that is open.
+  zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "z",
+                           &function);
+  if (NULL != function
+      && zend_is_callable_ex(function, NULL, 0, NULL, &fcc, NULL)) {
+    zf = fcc.function_handler;
+  }
+
+  // From here on, every path leaves through the end label, which releases
+  // fcc. For a callable that resolves to __call or __callStatic, fcc holds a
+  // trampoline, and a path that skips the release leaks one per call for the
+  // worker's lifetime.
+  if (NULL == zf) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "frankenphp_handle_request called without a callable, "
+                     "leaving the transaction alone");
+    goto end;
+  }
+
   // On a worker thread, end the transaction that is open, with the name it
   // has, or the request handler's begin handler would replace it without
   // ending it, and it would leak. On the first call it is the worker
@@ -217,36 +240,32 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // any thread: Zend installs a function's Observer handlers at its first
   // call, so a thread that turns out to be a worker thread only gets the
   // custom handlers on later calls if they were set before the first one.
-  zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "z",
-                           &function);
-  if (NULL != function
-      && zend_is_callable_ex(function, NULL, 0, NULL, &fcc, NULL)) {
-    zf = fcc.function_handler;
-  }
-
-  // A callable that resolves to __call or __callStatic gives a trampoline: a
-  // temporary function that the agent can't instrument, so don't wrap it.
-  if (NULL != zf && (zf->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)) {
+  //
+  // A trampoline is a temporary function that the agent can't instrument, so
+  // don't wrap it.
+  if (zf->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       char* name = nr_php_function_debug_name(zf);
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
                        __func__, NRSAFESTR(name));
       nr_free(name);
     }
-  } else {
-    wr = nr_php_wrap_callable(zf, NULL);
+    goto end;
   }
-  // Free the trampoline, if zend_is_callable_ex allocated one. Nothing keeps
-  // zf once nr_php_wrap_callable returns.
-  zend_release_fcall_info_cache(&fcc);
 
+  wr = nr_php_wrap_callable(zf, NULL);
   if (NULL == wr) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "Failed to create wraprec for frankenphp request handler");
-    return;
+    goto end;
   }
   wr->fcall_handlers.begin = nr_php_frankenphp_request_handler_fcall_begin;
   wr->fcall_handlers.end = nr_php_frankenphp_request_handler_fcall_end;
+
+end:
+  // Free the trampoline, if zend_is_callable_ex allocated one. Nothing keeps
+  // zf once nr_php_wrap_callable returns.
+  zend_release_fcall_info_cache(&fcc);
 }
 
 /*

@@ -945,17 +945,20 @@ static void test_wrapped_callable_types(void) {
  * Callable types the agent doesn't wrap. Pinned: current behaviour, not
  * necessarily the desired one. They get no per-request transactions, and
  * nothing says so. Checked by behaviour, because nr_php_get_wraprec must not
- * be given an internal function.
+ * be given an internal function. Each is a valid argument, though, so the
+ * first call still ends the bootstrap before the real function runs.
  */
 static void test_rejected_callable_types(void) {
   size_t i;
 
   engine_create("");
   for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    const char* label = rejected_callables[i].label;
     char* code = nr_formatf(
         "$cb = %s; frankenphp_handle_request($cb); "
         "frankenphp_handle_request($cb);",
         rejected_callables[i].expr);
+    char msg[128];
 
     request_start(FAKE_CALL);
     tlib_php_request_eval(callable_setup);
@@ -964,6 +967,13 @@ static void test_rejected_callable_types(void) {
     tlib_pass_if_false(rejected_callables[i].label,
                        fake.exception_after_call[0], "the callback threw");
     tlib_pass_if_size_t_equal(rejected_callables[i].label, 1, captured_count);
+    snprintf(msg, sizeof(msg),
+             "%s: the bootstrap sent before the real function", label);
+    tlib_pass_if_size_t_equal(msg, 1, fake.on_entry[0].captured);
+    snprintf(msg, sizeof(msg),
+             "%s: no transaction when the real function is entered", label);
+    tlib_pass_if_true(msg, fake.on_entry[0].txn_is_null,
+                      "NRPRG(txn) was not NULL");
     request_end();
     nr_free(code);
   }
@@ -984,29 +994,109 @@ static const invalid_call_case_t invalid_calls[] = {
 };
 
 /*
- * Invalid argument. Pinned: current behaviour, not necessarily the desired
- * one. The agent ends and renames the bootstrap transaction before the
- * argument is known to be valid.
+ * An invalid argument is rejected by the real function, which raises a
+ * TypeError or an ArgumentCountError. The agent leaves the bootstrap
+ * transaction alone then: it is still open, with its name, when the real
+ * function is entered and when the call has thrown, and it is sent at the end
+ * of the script run.
+ *
+ * An invalid call doesn't end the bootstrap, so a valid call after it still
+ * does, as the first call on a worker thread always does, and the run records
+ * the bootstrap and one worker request. FAKE_RETURN_ONLY never calls the
+ * callback, so only this second part shows that the valid call still begins its
+ * request's transaction.
  */
 static void test_invalid_argument(void) {
   size_t i;
 
   engine_create("");
   for (i = 0; i < CASE_COUNT(invalid_calls); i++) {
+    const char* label = invalid_calls[i].label;
     char* code = nr_formatf(
         "try { %s; $caught = 'nothing'; }"
         " catch (TypeError $e) { $caught = get_class($e); }",
         invalid_calls[i].call);
+    char msg[160];
 
     request_start(FAKE_RETURN_ONLY);
     tlib_php_request_eval(code);
-    pass_if_php_string(invalid_calls[i].label, invalid_calls[i].expected_error,
-                       "$caught");
-    tlib_pass_if_int_equal(invalid_calls[i].label, 1, fake.entered);
-    tlib_pass_if_size_t_equal(invalid_calls[i].label, 1, captured_count);
-    tlib_pass_if_str_equal(invalid_calls[i].label, BOOTSTRAP_TXN_NAME,
-                           captured[0].name);
+    snprintf(msg, sizeof(msg), "%s: the error class reaches PHP", label);
+    pass_if_php_string(msg, invalid_calls[i].expected_error, "$caught");
+    snprintf(msg, sizeof(msg), "%s: the real function is entered once", label);
+    tlib_pass_if_int_equal(msg, 1, fake.entered);
+    snprintf(msg, sizeof(msg), "%s: nothing sent before the real function",
+             label);
+    tlib_pass_if_size_t_equal(msg, 0, fake.on_entry[0].captured);
+    snprintf(msg, sizeof(msg),
+             "%s: the bootstrap is open when the real function is entered",
+             label);
+    tlib_pass_if_false(msg, fake.on_entry[0].txn_is_null,
+                       "NRPRG(txn) was NULL");
+    snprintf(msg, sizeof(msg), "%s: the bootstrap is still open after the call",
+             label);
+    tlib_pass_if_not_null(msg, NRPRG(txn));
+    if (NULL != NRPRG(txn)) {
+      snprintf(msg, sizeof(msg), "%s: the bootstrap keeps its name", label);
+      tlib_pass_if_str_equal(msg, "frankenphp/worker/bootstrap",
+                             NRPRG(txn)->path);
+    }
+
     request_end();
+
+    snprintf(msg, sizeof(msg), "%s: one transaction at the end of the run",
+             label);
+    tlib_pass_if_size_t_equal(msg, 1, captured_count);
+    snprintf(msg, sizeof(msg), "%s: it is the bootstrap", label);
+    tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+    nr_free(code);
+  }
+
+  for (i = 0; i < CASE_COUNT(invalid_calls); i++) {
+    const char* label = invalid_calls[i].label;
+    char* code = nr_formatf(
+        "try { %s; } catch (TypeError $e) {}"
+        "$cb = function () { return 1; };"
+        "frankenphp_handle_request($cb);",
+        invalid_calls[i].call);
+    char msg[160];
+
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(code);
+
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: both reach the real function", label);
+    tlib_pass_if_int_equal(msg, 2, fake.entered);
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the invalid one sent nothing", label);
+    tlib_pass_if_size_t_equal(msg, 0, fake.on_entry[0].captured);
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the bootstrap is open at the invalid one",
+             label);
+    tlib_pass_if_false(msg, fake.on_entry[0].txn_is_null,
+                       "NRPRG(txn) was NULL");
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the valid one sent the bootstrap first",
+             label);
+    tlib_pass_if_size_t_equal(msg, 1, fake.on_entry[1].captured);
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: no transaction when the valid one is "
+             "entered",
+             label);
+    tlib_pass_if_true(msg, fake.on_entry[1].txn_is_null,
+                      "NRPRG(txn) was not NULL");
+
+    request_end();
+
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the bootstrap and one worker request",
+             label);
+    tlib_pass_if_size_t_equal(msg, 2, captured_count);
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the first is the bootstrap", label);
+    tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+    snprintf(msg, sizeof(msg),
+             "%s, then a valid call: the second is the worker request", label);
+    tlib_fail_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[1].name);
     nr_free(code);
   }
   engine_destroy();
