@@ -1095,7 +1095,11 @@ void nr_lib_aws_sdk_php_handle_version() {
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                version);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  zval_ptr_dtor_nogc(&retval);
+#else
   zval_dtor(&retval);
+#endif
 }
 
 void nr_lib_aws_sdk_php_add_supportability_service_metric(

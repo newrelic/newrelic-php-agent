@@ -33,6 +33,7 @@
 #include "util_number_converter.h"
 #include "util_sleep.h"
 #include "util_strings.h"
+#include "zend_ini.h"
 
 static void nr_php_collect_x_request_start(TSRMLS_D) {
   char* x_request_start;
@@ -1152,12 +1153,17 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   /*
    * Only try to instrument preloaded opcache scripts when opcache enabled and
-   * preload is not null.  If an INI value does not exist, INI_INT/INI_BOOL
-   * returns 0 and INI_STR returns NULL.
+   * preload is not null.  If an INI value does not exist,
+   * INI_BOOL/zend_ini_bool_literal returns 0.
    */
   if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+    bool opcache_enabled = is_cli ? zend_ini_bool_literal("opcache.enable_cli")
+                                  : zend_ini_bool_literal("opcache.enable");
+#else
     bool opcache_enabled
         = is_cli ? INI_BOOL("opcache.enable_cli") : INI_BOOL("opcache.enable");
+#endif
     if ((nr_php_ini_setting_is_set_by_user("opcache.preload"))
         && (opcache_enabled)) {
       nr_php_user_instrumentation_from_opcache(TSRMLS_C);

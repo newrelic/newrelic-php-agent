@@ -15,22 +15,32 @@
  * https://github.com/php/php-src/blob/PHP-5.6/ext/mysql/php_mysql.c#L752-L761
  */
 char* nr_php_mysql_default_port() {
-  char* port = nr_php_zend_ini_string(NR_PSTR("mysql.default_port"), 0);
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  const char* ini_port
+      = nr_php_zend_ini_string(NR_PSTR("mysql.default_port"), 0);
+#else
+  char* ini_port = nr_php_zend_ini_string(NR_PSTR("mysql.default_port"), 0);
+#endif
+  char* port;
 
-  if (nr_strempty(port)) {
-    port = nr_system_get_service_port("mysql", "tcp");
-    if (NULL != port) {
-      return port;
-    } else {
-      port = getenv("MYSQL_TCP_PORT");
-    }
+  if (!nr_strempty(ini_port)) {
+    return nr_strdup(ini_port);
   }
 
-  return nr_strdup(port);
+  port = nr_system_get_service_port("mysql", "tcp");
+  if (NULL != port) {
+    return port;
+  }
+
+  return nr_strdup(getenv("MYSQL_TCP_PORT"));
 }
 
 char* nr_php_mysql_default_host() {
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  const char* host = nr_php_zend_ini_string(NR_PSTR("mysql.default_host"), 0);
+#else
   char* host = nr_php_zend_ini_string(NR_PSTR("mysql.default_host"), 0);
+#endif
 
   if (nr_strempty(host)) {
     host = "localhost";
@@ -40,7 +50,12 @@ char* nr_php_mysql_default_host() {
 }
 
 char* nr_php_mysql_default_socket() {
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  const char* socket
+      = nr_php_zend_ini_string(NR_PSTR("mysql.default_socket"), 0);
+#else
   char* socket = nr_php_zend_ini_string(NR_PSTR("mysql.default_socket"), 0);
+#endif
 
   return nr_strdup(socket);
 }

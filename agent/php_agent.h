@@ -694,12 +694,19 @@ static inline zend_class_entry* nr_php_zend_register_internal_class_ex(
     zend_class_entry* parent_ce TSRMLS_DC) {
   return zend_register_internal_class_ex(ce, parent_ce);
 }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+static inline const char* nr_php_zend_ini_string(char* name,
+                                                 nr_string_len_t name_len,
+                                                 int orig) {
+  return zend_ini_string(name, name_len, orig);
+}
+#else
 static inline char* nr_php_zend_ini_string(char* name,
                                            nr_string_len_t name_len,
                                            int orig) {
   return zend_ini_string(name, name_len, orig);
 }
+#endif
 
 static inline const char* NRPURE
 nr_php_class_entry_name(const zend_class_entry* ce) {

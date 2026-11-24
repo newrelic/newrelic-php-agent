@@ -9,7 +9,7 @@
 
 ARG PHP_VER
 
-FROM php:${PHP_VER:-8.5}-trixie
+FROM php:8.6-trixie
 
 RUN docker-php-source extract
 
@@ -68,6 +68,8 @@ RUN docker-php-ext-install pgsql
 COPY --from=golang:1.27.4 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:$PATH
 
+COPY --from=ghcr.io/php/pie:bin /pie /usr/bin/pie
+
 #
 # If the debian version is buster, don't install python-dev-is-python3
 #
@@ -102,17 +104,23 @@ COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 #   and 8.0 has problems with how the explanation for informational_schema
 #   work (refer to bug https://bugs.mysql.com/bug.php?id=102536) so to run
 #   the mysql tests a separate machine running mysql server 5.6 is required.
-RUN docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql
+RUN docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql mbstring
 
 # install redis extension required by test_redis:
 RUN \
-  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.6.0', '>=');"); \
   if [ "$php_cmp" = 1 ]; then \
-    # install latest redis for PHPs >= 7.4
-    echo 'no' | pecl install redis; \
+    # pecl is deprecated and no longer ships in 8.6 docker images
+    pie install -n phpredis/phpredis:@dev; \
   else \
-    # install redis-4.3.0 - last one with support for php 7.2
-    echo 'no' | pecl install redis-4.3.0; \
+    php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
+    if [ "$php_cmp" = 1 ]; then \
+      # install latest redis for PHPs >= 7.4
+      echo 'no' | pecl install redis; \
+    else \
+      # install redis-4.3.0 - last one with support for php 7.2
+      echo 'no' | pecl install redis-4.3.0; \
+    fi \
   fi && docker-php-ext-enable redis
 
 # memcache
@@ -133,7 +141,14 @@ RUN \
 
 # memcached
 RUN apt-get install -y --no-install-recommends libmemcached-dev
-RUN pecl install memcached && docker-php-ext-enable memcached
+RUN \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.6.0', '>=');"); \
+  if [ "$php_cmp" = 1 ]; then \
+    # pecl is deprecated and no longer ships in 8.6 docker images
+    pie install -n php-memcached/php-memcached:@dev; \
+  else \
+    pecl install memcached; \
+  fi && docker-php-ext-enable memcached
 
 # uopz
 # Pre-8.0 requires 6.1.2

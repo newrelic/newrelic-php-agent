@@ -9,7 +9,11 @@
 #include "php_pdo_mysql.h"
 #include "util_system.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+static inline const char* nr_php_pdo_mysql_default_socket(void) {
+#else
 static inline char* nr_php_pdo_mysql_default_socket(void) {
+#endif
   /*
    * It is impossible for pdo_mysql.default_socket to be an empty string, as its
    * modify handler is defined as OnUpdateStringUnempty for all versions of PHP.

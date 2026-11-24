@@ -181,9 +181,15 @@ static void test_remove_datastore_instance(TSRMLS_D) {
 }
 
 static void test_default_port_host_and_socket() {
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  const char* port = NULL;
+  const char* host = NULL;
+  const char* socket = NULL;
+#else
   char* port = NULL;
   char* host = NULL;
   char* socket = NULL;
+#endif
 
   /*
    * Test: Normal operation
@@ -929,8 +935,12 @@ static zval* new_fake_bound_statement(unsigned int param_count,
       "$stmt = (new ReflectionClass('mysqli_stmt'))"
       "->newInstanceWithoutConstructor();");
   stmt = tlib_php_request_eval_expr("$stmt");
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  intern = (mysqli_object*)((char*)Z_OBJ_P(stmt) - offsetof(mysqli_object, zo));
+#else
   intern
       = (mysqli_object*)((char*)Z_OBJ_P(stmt) - XtOffsetOf(mysqli_object, zo));
+#endif
   intern->ptr = resource;
 
   return stmt;
@@ -938,8 +948,13 @@ static zval* new_fake_bound_statement(unsigned int param_count,
 
 /* Detach and free what new_fake_bound_statement() attached. */
 static void free_fake_bound_statement(zval** stmt) {
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  mysqli_object* intern
+      = (mysqli_object*)((char*)Z_OBJ_P(*stmt) - offsetof(mysqli_object, zo));
+#else
   mysqli_object* intern
       = (mysqli_object*)((char*)Z_OBJ_P(*stmt) - XtOffsetOf(mysqli_object, zo));
+#endif
   MYSQLI_RESOURCE* resource = (MYSQLI_RESOURCE*)intern->ptr;
   MY_STMT* my_stmt = (MY_STMT*)resource->ptr;
 

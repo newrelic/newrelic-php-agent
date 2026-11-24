@@ -930,6 +930,17 @@ static zval* nr_php_mysqli_query_find_or_create(
   return metadata;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+const char* nr_php_mysqli_default_host() {
+  const char* host = nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0);
+
+  if (nr_strempty(host)) {
+    host = "localhost";
+  }
+
+  return host;
+}
+#else
 char* nr_php_mysqli_default_host() {
   char* host = nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0);
 
@@ -939,6 +950,7 @@ char* nr_php_mysqli_default_host() {
 
   return host;
 }
+#endif
 
 void nr_php_mysqli_get_host_and_port_path_or_id(const char* host_param,
                                                 const zend_long port,

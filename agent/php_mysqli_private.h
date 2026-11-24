@@ -14,25 +14,41 @@
  *
  * Returns : A pointer to a Zend-owned string.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+static inline const char* nr_php_mysqli_default_socket() {
+  return nr_php_zend_ini_string(NR_PSTR("mysqli.default_socket"), 0);
+}
+#else
 static inline char* nr_php_mysqli_default_socket() {
   return nr_php_zend_ini_string(NR_PSTR("mysqli.default_socket"), 0);
 }
+#endif
 /*
  * Purpose : Retrieve the default port for a MySQL connection
  *           made by the mysql extension.
  *
  * Returns : A pointer to a Zend-owned string.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+static inline const char* nr_php_mysqli_default_port() {
+  return nr_php_zend_ini_string(NR_PSTR("mysqli.default_port"), 0);
+}
+#else
 static inline char* nr_php_mysqli_default_port() {
   return nr_php_zend_ini_string(NR_PSTR("mysqli.default_port"), 0);
 }
+#endif
 /*
  * Purpose : Retrieve the default host for a MySQL connection
  *           made by the mysql extension.
  *
  * Returns : A pointer to a Zend-owned string.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+extern const char* nr_php_mysqli_default_host();
+#else
 extern char* nr_php_mysqli_default_host();
+#endif
 
 /*
  * Purpose : Determine the host and port_path_or_id from the parameters

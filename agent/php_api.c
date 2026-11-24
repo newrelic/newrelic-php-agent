@@ -20,7 +20,9 @@
 
 void nr_php_api_error(const char* format, ...) {
   const char* docref = NULL;
+#if ZEND_MODULE_API_NO < ZEND_8_6_X_API_NO
   const char* params = "";
+#endif
   va_list args;
   /* Avoid using TSRMLS_DC so that we can use NRPRINTFMT */
   TSRMLS_FETCH();
@@ -36,7 +38,11 @@ void nr_php_api_error(const char* format, ...) {
    * without the agent.
    */
   va_start(args, format);
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  php_verror(docref, E_WARNING, format, args TSRMLS_CC);
+#else
   php_verror(docref, params, E_WARNING, format, args TSRMLS_CC);
+#endif
   va_end(args);
 }
 

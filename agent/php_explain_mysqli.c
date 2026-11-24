@@ -61,7 +61,8 @@ static nr_status_t nr_php_explain_mysqli_add_fields_to_plan(
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  */
-static nr_status_t nr_php_explain_mysqli_execute(zval* stmt, zval* params TSRMLS_DC);
+static nr_status_t nr_php_explain_mysqli_execute(zval* stmt,
+                                                 zval* params TSRMLS_DC);
 
 /*
  * Purpose : Retrieve the result of a mysqli_stmt that executed an EXPLAIN
@@ -283,9 +284,13 @@ static const MYSQLND_STMT_DATA* nr_php_explain_mysqli_stmt_data(
       || !nr_php_explain_mysqli_uses_mysqlnd()) {
     return NULL;
   }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  intern = (const mysqli_object*)((const char*)Z_OBJ_P(stmt)
+                                  - offsetof(mysqli_object, zo));
+#else
   intern = (const mysqli_object*)((const char*)Z_OBJ_P(stmt)
                                   - XtOffsetOf(mysqli_object, zo));
+#endif
   resource = (const MYSQLI_RESOURCE*)intern->ptr;
   my_stmt = resource ? (const MY_STMT*)resource->ptr : NULL;
 
@@ -521,7 +526,8 @@ static nr_status_t nr_php_explain_mysqli_add_fields_to_plan(
   return NR_SUCCESS;
 }
 
-static nr_status_t nr_php_explain_mysqli_execute(zval* stmt, zval* params TSRMLS_DC) {
+static nr_status_t nr_php_explain_mysqli_execute(zval* stmt,
+                                                 zval* params TSRMLS_DC) {
   zval* retval;
   nr_status_t status;
 

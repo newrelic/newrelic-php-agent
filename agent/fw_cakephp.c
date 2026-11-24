@@ -86,7 +86,13 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
 
   nr_php_zval_str(&action_param, "action");
   action_zval = nr_php_call(request, "getParam", &action_param);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  zval_ptr_dtor_nogc(&action_param);
+#else
   zval_dtor(&action_param);
+#endif
+
   if (!nr_php_is_zval_non_empty_string(action_zval)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "CakePHP: no action param found in request");

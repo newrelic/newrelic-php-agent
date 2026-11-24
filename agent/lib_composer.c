@@ -55,7 +55,12 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
     return NR_FAILURE;
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  zval_ptr_dtor_nogc(&retval);
+#else
   zval_dtor(&retval);
+#endif
+
   nr_free(code);
 
   // Make sure runtime API is available after loading
@@ -167,7 +172,13 @@ nr_execute_handle_autoload_composer_get_packages_information(
                      __func__, NRP_ARGSTR(strbuf));
     api_status = NR_COMPOSER_API_STATUS_INVALID_RESULT;
   }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_6_X_API_NO
+  zval_ptr_dtor_nogc(&retval);
+#else
   zval_dtor(&retval);
+#endif
+
   return api_status;
 }
 
