@@ -36,6 +36,20 @@ typedef struct _nr_php_frankenphp_worker_request_t {
   bool in_progress;
 
   /*
+   * Whether the worker script has called frankenphp_handle_request with a
+   * valid argument in this script run, so that a transaction begun outside a
+   * worker request belongs after a request and not to the bootstrap. Set by
+   * the wrapper at every such call, whatever the thread's role and whether
+   * or not a transaction was open, and by the confirmation of a worker
+   * thread. A thread that RINIT took for classic mode needs it too: when the
+   * request handler is one that the begin handler never sees, only the return
+   * of the first call confirms the thread, and by then the first request has
+   * run. Every reader checks the thread's role itself. It lasts for the
+   * worker lifetime, so only RSHUTDOWN resets it.
+   */
+  bool requests_started;
+
+  /*
    * The response's Content-Type and Content-Length, taken at the request
    * handler's end because FrankenPHP destroys the response headers before
    * frankenphp_handle_request returns. The status is read when the
@@ -50,11 +64,70 @@ typedef struct _nr_php_frankenphp_worker_request_t {
 
 static nrt_thread_local nr_php_frankenphp_worker_request_t
     nr_php_frankenphp_worker_request
-    = {.in_progress = false, .content_type = NULL, .content_length = -1};
+    = {.in_progress = false,
+       .requests_started = false,
+       .content_type = NULL,
+       .content_length = -1};
 
 static void nr_php_frankenphp_clear_response_headers(void) {
   nr_free(nr_php_frankenphp_worker_request.content_type);
   nr_php_frankenphp_worker_request.content_length = -1;
+}
+
+/*
+ * Whether the thread is a worker thread outside a worker request: in the
+ * worker bootstrap, between two requests or after the last call. With
+ * requests_started set as well, it is after a request. A transaction begun
+ * then records no HTTP request: before the first call it records the
+ * bootstrap, and after a call has returned the client has its response.
+ */
+static bool nr_php_frankenphp_outside_worker_request(void) {
+  return NR_PHP_FRANKENPHP_THREAD_WORKER == nr_php_frankenphp_thread_role()
+         && !nr_php_frankenphp_worker_request.in_progress;
+}
+
+/*
+ * Names the open transaction after the phase of the worker script it
+ * recorded, if it is still recording, and makes it a background job. It is
+ * one already when it began on a worker thread outside a worker request, but
+ * not when it began while RINIT took the thread for classic mode. Only one
+ * that isn't a background job yet is made one: once the name is frozen the
+ * change is refused, and the refusal adds a supportability metric.
+ *
+ * An unnamed transaction's default path says nothing about what the worker
+ * script did, so it gets the bootstrap name before the first call, and the
+ * between-requests name after it. One that the script or a framework named
+ * keeps its name. The transaction isn't ended.
+ */
+static void nr_php_frankenphp_name_open_txn(bool requests_started) {
+  if (!nr_php_recording()) {
+    return;
+  }
+
+  if (!NRTXN(status.background)) {
+    nr_txn_set_as_background_job(NRPRG(txn),
+                                 "FrankenPHP worker, outside a worker request");
+  }
+
+  if (NRTXN(status.path_type) < NR_PATH_TYPE_ACTION) {
+    nr_txn_set_path("FrankenPHP worker, outside a worker request", NRPRG(txn),
+                    requests_started
+                        ? NR_PHP_FRANKENPHP_BETWEEN_REQUESTS_TXN_NAME
+                        : NR_PHP_FRANKENPHP_BOOTSTRAP_TXN_NAME,
+                    NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
+  }
+}
+
+/*
+ * Ends the open transaction, named as nr_php_frankenphp_name_open_txn names
+ * it. On the first call the superglobals still hold the bootstrap's data. On
+ * a later call they hold the last worker request's, and the transaction is
+ * that request's after-response work, so it takes that request's URI and
+ * parameters at its end.
+ */
+static void nr_php_frankenphp_end_open_txn(bool requests_started) {
+  nr_php_frankenphp_name_open_txn(requests_started);
+  nr_php_txn_end(0, 0);
 }
 
 /*
@@ -148,9 +221,13 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
   }
 
   nrl_verbosedebug(NRL_INSTRUMENT, "frankenphp_request_handler_fcall_begin");
+  // The worker request is in progress before its transaction begins, or
+  // nr_php_frankenphp_txn_starting would take the transaction for one begun
+  // outside a worker request, and make it a background job without its queue
+  // start.
+  nr_php_frankenphp_worker_request.in_progress = true;
   // start web transaction at the start of web request handling
   nr_php_txn_begin(0, 0);
-  nr_php_frankenphp_worker_request.in_progress = true;
 }
 
 static void nr_php_frankenphp_request_handler_fcall_end(
@@ -215,23 +292,34 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
     goto end;
   }
 
-  // On a worker thread, end the transaction that is open, with the name it
-  // has, or the request handler's begin handler would replace it without
-  // ending it, and it would leak. On the first call it is the worker
-  // bootstrap, which RINIT named. On later calls it was started by the worker
-  // script between requests. As in classic mode, an ignored transaction is
-  // discarded, and one ended early with newrelic_end_of_transaction() is sent
-  // with the name it had when it ended. None is open when the agent wasn't
-  // connected to the daemon yet at RINIT, or when
-  // nr_php_frankenphp_handle_request_end has ended the last request's.
+  // On a worker thread, end the transaction that is open, or the request
+  // handler's begin handler would replace it without ending it, and it would
+  // leak. On the first call it records the worker bootstrap: RINIT began and
+  // named it, or the worker script began one in its place. On later calls the
+  // worker script began it after a request. An unnamed one is named after
+  // that phase. As in classic mode, an ignored transaction is discarded, and
+  // one ended early with newrelic_end_of_transaction() is sent with the name
+  // it had when it ended. None is open when the agent wasn't connected to the
+  // daemon yet at RINIT, or when nr_php_frankenphp_handle_request_end has
+  // ended the last request's.
   //
   // On any other thread, leave the transaction alone. In classic mode the
   // real function throws before it calls the request handler, and the rest of
   // the request is recorded as usual.
   if (NR_PHP_FRANKENPHP_THREAD_WORKER == nr_php_frankenphp_thread_role()
       && NULL != NRPRG(txn)) {
-    nr_php_txn_end(0, 0);
+    nr_php_frankenphp_end_open_txn(
+        nr_php_frankenphp_worker_request.requests_started);
   }
+
+  // From this call on, a transaction begun outside a worker request is begun
+  // after a request, also when no transaction was open to end here, as on a
+  // cold start. It is recorded on every thread: on one that RINIT took for
+  // classic mode, the return of this call may be what shows it is a worker
+  // thread, after its first request has run, or when the worker stopped before
+  // its first request and the call returned false without calling the request
+  // handler. In classic mode the call throws, and nothing reads it.
+  nr_php_frankenphp_worker_request.requests_started = true;
 
   // Wrap frankenphp_handle_request's callback, which handles web request,
   // using custom fcall_begin and fcall_end handlers. On a worker thread the
@@ -280,6 +368,8 @@ end:
  * and the wait for it: sent as the bootstrap, it would be wrong data. A
  * discarded transaction doesn't go through the shutdown that reads the
  * superglobals, and sends nothing.
+ *
+ * The first call has returned, so the thread is after a request from now on.
  */
 static void nr_php_frankenphp_confirm_after_rinit(void) {
   nr_php_frankenphp_confirm_worker_thread();
@@ -290,6 +380,8 @@ static void nr_php_frankenphp_confirm_after_rinit(void) {
                      "taken for classic mode, discarding its transaction");
     nr_php_txn_end(1, 0);
   }
+
+  nr_php_frankenphp_worker_request.requests_started = true;
 }
 
 void nr_php_frankenphp_handle_request_end(void) {
@@ -327,13 +419,54 @@ void nr_php_frankenphp_handle_request_end(void) {
 }
 
 void nr_php_frankenphp_rshutdown(void) {
+  // A transaction still open on a worker thread outside a worker request is
+  // ended in post-deactivate. Name it now, while the thread's role and
+  // in_progress still say which phase it recorded: a boot that fails before
+  // the first call, after the worker script replaced the bootstrap
+  // transaction, is sent as the bootstrap, and one that the worker script
+  // starts after its last call as a between-requests one. After a normal exit
+  // from the worker loop nothing is open, because the last call ended it.
+  // The shutdown that attached the request data has run already, and it
+  // doesn't freeze the name.
+  if (nr_php_frankenphp_outside_worker_request()) {
+    nr_php_frankenphp_name_open_txn(
+        nr_php_frankenphp_worker_request.requests_started);
+  }
+
   // A request handler that bailed out (exit() or a fatal error) ended the
   // worker script without reaching nr_php_frankenphp_handle_request_end, and
   // the agent's shutdown path ends its transaction.
   nr_php_frankenphp_worker_request.in_progress = false;
   nr_php_frankenphp_clear_response_headers();
 
+  // The next script run on this thread starts a new worker lifetime, or is
+  // classic mode.
+  nr_php_frankenphp_worker_request.requests_started = false;
+
   // What RINIT learned is for this script run only.
   nr_php_frankenphp_gate_rshutdown();
+}
+
+bool nr_php_frankenphp_requests_started(void) {
+  return nr_php_frankenphp_worker_request.requests_started;
+}
+
+void nr_php_frankenphp_txn_starting(nrtxn_t* txn) {
+  if (NULL == txn || !nr_php_frankenphp_outside_worker_request()) {
+    return;
+  }
+
+  // It has to be a background job before nr_php_txn_begin decides whether to
+  // install the auto-RUM output handler, which doesn't check again later.
+  nr_txn_set_as_background_job(txn,
+                               "FrankenPHP worker, outside a worker request");
+
+  // The transaction keeps the rest of the data that the superglobals hold.
+  // After a request they still hold that request's, as FrankenPHP documents,
+  // and so is X-Request-Start: a queue time would measure the request, not
+  // this transaction. Being a background job drops the queue metric, but the
+  // browser agent's footer and the CAT response header read the queue start
+  // whatever the transaction's type.
+  txn->status.http_x_start = 0;
 }
 #endif /* ZTS */

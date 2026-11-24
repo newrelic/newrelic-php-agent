@@ -298,7 +298,10 @@ void nr_php_frankenphp_rinit(void) {
        * The bootstrap is named as soon as it begins, so that it keeps the
        * name however it ends: early, with newrelic_end_of_transaction(), or
        * at the end of a worker script that fails before its first
-       * frankenphp_handle_request() call.
+       * frankenphp_handle_request() call. The thread is a worker thread
+       * before the transaction begins, so the begin makes it a background
+       * job, as it does every transaction begun on a worker thread outside a
+       * worker request.
        */
       nr_php_frankenphp_thread.role = NR_PHP_FRANKENPHP_THREAD_WORKER;
       nr_php_txn_begin(0, 0);
@@ -306,7 +309,6 @@ void nr_php_frankenphp_rinit(void) {
         nr_txn_set_path("FrankenPHP worker bootstrap", NRPRG(txn),
                         NR_PHP_FRANKENPHP_BOOTSTRAP_TXN_NAME,
                         NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
-        nr_txn_set_as_background_job(NRPRG(txn), "FrankenPHP worker bootstrap");
       }
       return;
 

@@ -16,8 +16,10 @@
  * For the tests of what the transaction records from the rest of the
  * request, one mode also copies the parts of FrankenPHP's request setup and
  * teardown that the agent reads: the request method, reporting an uncaught
- * exception and flushing the output. Nothing else of FrankenPHP's request
- * handling is copied.
+ * exception and flushing the output. Another gives the request the data that
+ * a transaction takes from the superglobals: the request URI, a queue start
+ * and a request parameter. Nothing else of FrankenPHP's request handling is
+ * copied.
  */
 #include "tlib_php.h"
 
@@ -30,6 +32,7 @@ tlib_parallel_info_t parallel_info
 #include "nr_errors.h"
 #include "nr_txn.h"
 #include "php_agent.h"
+#include "php_frankenphp.h"
 #include "php_frankenphp_gate.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
@@ -43,6 +46,8 @@ tlib_parallel_info_t parallel_info
 #include "ext/spl/spl_exceptions.h"
 
 #define BOOTSTRAP_TXN_NAME "OtherTransaction/Custom/frankenphp/worker/bootstrap"
+#define BETWEEN_REQUESTS_TXN_NAME \
+  "OtherTransaction/Custom/" NR_PHP_FRANKENPHP_BETWEEN_REQUESTS_TXN_NAME
 
 /*
  * PHP 8.5 always loads OPcache, so every engine these tests create maps
@@ -70,6 +75,13 @@ typedef struct {
   char* agent_attributes; /* JSON */
   /* The names of the segments other than the root, each followed by "\n". */
   char* segment_names;
+  /*
+   * Whether something tried to change whether it is a background job after
+   * its name was frozen.
+   */
+  bool background_change_prevented;
+  /* The queue start taken from X-Request-Start, or 0 when there is none. */
+  nrtime_t queue_start;
 } captured_txn_t;
 
 static captured_txn_t captured[CAPTURE_MAX];
@@ -122,6 +134,11 @@ static nr_status_t capture_txndata_tx(const nrtxn_t* txn) {
     c->user_attributes = nro_to_json(attrs);
     c->agent_attributes = nro_to_json(agent_attrs);
     c->segment_names = capture_segment_names(txn);
+    c->background_change_prevented
+        = (NULL
+           != nrm_find(txn->unscoped_metrics,
+                       "Supportability/background_status_change_prevented"));
+    c->queue_start = txn->status.http_x_start;
     nro_delete(attrs);
     nro_delete(agent_attrs);
   }
@@ -163,6 +180,8 @@ typedef enum {
   FAKE_CALL_AND_FINISH,  /* as FAKE_CALL, as a web request that the fake
                             then finishes as FrankenPHP does */
   FAKE_THROW_NOT_WORKER, /* parse the argument, throw as outside worker mode */
+  FAKE_CALL_WITH_REQUEST_DATA, /* as FAKE_CALL, with the request data that
+                                  FrankenPHP puts in the superglobals */
 } fake_mode_t;
 
 #define FAKE_MAX_CALLS 8
@@ -170,6 +189,8 @@ typedef enum {
 typedef struct {
   bool txn_is_null;
   size_t captured;
+  bool requests_started;
+  nr_php_frankenphp_thread_role_t role;
 } fake_observation_t;
 
 static struct {
@@ -191,6 +212,8 @@ static void fake_reset(fake_mode_t mode) {
 static void fake_observe(fake_observation_t* observation) {
   observation->txn_is_null = (NULL == NRPRG(txn));
   observation->captured = captured_count;
+  observation->requests_started = nr_php_frankenphp_requests_started();
+  observation->role = nr_php_frankenphp_thread_role();
 }
 
 /*
@@ -202,6 +225,37 @@ static void fake_observe(fake_observation_t* observation) {
 static void fake_start_web_request(void) {
   php_register_variable("REQUEST_METHOD", "GET",
                         &PG(http_globals)[TRACK_VARS_SERVER]);
+}
+
+/*
+ * Gives the request the data a transaction takes from the superglobals: the
+ * request URI and the X-Request-Start header in $_SERVER, and a request
+ * parameter in $_REQUEST. The parameter is the number of the call, 1 for the
+ * first, so that the data of one request differ from the next one's.
+ * FrankenPHP resets the superglobals for each request before it calls the
+ * callback:
+ * https://github.com/php/frankenphp/blob/v1.11.2/frankenphp.c#L474
+ * and they keep the request's values after the call. Without this, tlib's
+ * $_SERVER holds only the environment. X-Request-Start is in microseconds, as
+ * nr_get_time() returns it, which is one of the forms the agent parses.
+ */
+static void fake_register_request_data(void) {
+  char* x_request_start = nr_formatf("t=" NR_TIME_FMT, nr_get_time());
+  char* id = nr_formatf("%d", fake.entered);
+  char* request_uri = nr_formatf("/r?id=%s", id);
+  zval request;
+
+  php_register_variable("REQUEST_URI", request_uri,
+                        &PG(http_globals)[TRACK_VARS_SERVER]);
+  php_register_variable("HTTP_X_REQUEST_START", x_request_start,
+                        &PG(http_globals)[TRACK_VARS_SERVER]);
+  nr_free(request_uri);
+  nr_free(x_request_start);
+
+  array_init(&request);
+  add_assoc_string(&request, "id", id);
+  zend_hash_str_update(&EG(symbol_table), ZEND_STRL("_REQUEST"), &request);
+  nr_free(id);
 }
 
 /*
@@ -259,12 +313,16 @@ static ZEND_FUNCTION(frankenphp_handle_request) {
     RETURN_THROWS();
   }
 
-  if (FAKE_CALL == fake.mode || FAKE_CALL_AND_FINISH == fake.mode) {
+  if (FAKE_CALL == fake.mode || FAKE_CALL_AND_FINISH == fake.mode
+      || FAKE_CALL_WITH_REQUEST_DATA == fake.mode) {
     zval retval;
     zval arg;
 
     if (FAKE_CALL_AND_FINISH == fake.mode) {
       fake_start_web_request();
+    }
+    if (FAKE_CALL_WITH_REQUEST_DATA == fake.mode) {
+      fake_register_request_data();
     }
 
     ZVAL_UNDEF(&retval);
@@ -1849,10 +1907,11 @@ static void test_direct_call_begins_no_transaction(void) {
 
 /*
  * A transaction started in the worker loop between requests is ended at the
- * next frankenphp_handle_request as it is: not renamed as the bootstrap, and
- * not made a background job, so a named one in a GET keeps its name and its
- * web type. Pinned: interim behaviour, not the desired one. Captured: [0]
- * bootstrap, [1] request 1, [2] the loop-body transaction, [3] request 2.
+ * next frankenphp_handle_request. The client got its response when the call
+ * before it returned, so it is a background job, named or not, also in a GET.
+ * An unnamed one gets the between-requests name, and a named one keeps its
+ * name. Captured: [0] bootstrap, [1] request 1, [2] the loop-body
+ * transaction, [3] request 2.
  */
 static void test_loop_body_txn_ended_as_left(void) {
   engine_create("");
@@ -1864,8 +1923,10 @@ static void test_loop_body_txn_ended_as_left(void) {
       "frankenphp_handle_request($cb);");
   tlib_pass_if_size_t_equal("loop body unnamed: 4 transactions", 4,
                             captured_count);
-  tlib_fail_if_str_equal("loop body unnamed: not named as the bootstrap",
-                         BOOTSTRAP_TXN_NAME, captured[2].name);
+  tlib_pass_if_str_equal("loop body unnamed: the between-requests name",
+                         BETWEEN_REQUESTS_TXN_NAME, captured[2].name);
+  tlib_pass_if_true("loop body unnamed: background", captured[2].background,
+                    "background=%d", captured[2].background);
   request_end();
   engine_destroy();
 
@@ -1879,8 +1940,38 @@ static void test_loop_body_txn_ended_as_left(void) {
       "frankenphp_handle_request($cb);");
   tlib_pass_if_size_t_equal("loop body named: 4 transactions", 4,
                             captured_count);
-  tlib_pass_if_str_equal("loop body named: keeps its name and type",
-                         "WebTransaction/Custom/loop_body", captured[2].name);
+  tlib_pass_if_str_equal("loop body named: keeps its name",
+                         "OtherTransaction/Custom/loop_body", captured[2].name);
+  tlib_pass_if_true("loop body named: background", captured[2].background,
+                    "background=%d", captured[2].background);
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A framework that names the transaction started between requests, as an
+ * action, wins over the between-requests name: the transaction keeps the
+ * framework's name and path type, and is a background job. Captured: [0]
+ * bootstrap, [1] request 1, [2] the loop-body transaction, [3] request 2.
+ */
+static void test_loop_body_txn_named_by_framework_keeps_its_name(void) {
+  engine_create("");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));");
+  tlib_pass_if_not_null("framework-named: a loop-body transaction", NRPRG(txn));
+  nr_txn_set_path("test", NRPRG(txn), "fw_action", NR_PATH_TYPE_ACTION,
+                  NR_OK_TO_OVERWRITE);
+  tlib_php_request_eval("frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("framework-named: 4 transactions", 4,
+                            captured_count);
+  tlib_pass_if_str_equal("framework-named: keeps its name and path type",
+                         "OtherTransaction/Action/fw_action", captured[2].name);
+  tlib_pass_if_true("framework-named: background", captured[2].background,
+                    "background=%d", captured[2].background);
   request_end();
   engine_destroy();
 }
@@ -2112,10 +2203,12 @@ static void test_handler_called_from_user_code_keeps_its_segment(void) {
  * recording at the next frankenphp_handle_request is ended there too, before
  * the real function runs: sent with its own name if the worker script ended
  * it early with newrelic_end_of_transaction(), discarded if it ignored it.
+ * Either way it is a background job from its begin, so the one ended early is
+ * sent as one, also in a GET.
  */
 static void test_loop_body_txn_not_recording(void) {
   engine_create("");
-  request_start(FAKE_CALL);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);"
@@ -2138,7 +2231,7 @@ static void test_loop_body_txn_not_recording(void) {
   engine_destroy();
 
   engine_create("");
-  request_start(FAKE_CALL);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
   tlib_php_request_eval(
       "$cb = function () { return 1; };"
       "frankenphp_handle_request($cb);"
@@ -2153,6 +2246,430 @@ static void test_loop_body_txn_not_recording(void) {
       "loop body ignored: no transaction when the real function is entered",
       fake.on_entry[1].txn_is_null, "NRPRG(txn) was not NULL");
   request_end();
+  engine_destroy();
+}
+
+/*
+ * A worker script that replaces the bootstrap transaction before its first
+ * call, ending it and starting another one.
+ */
+static const char bootstrap_replacement_code[]
+    = "newrelic_end_transaction();"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);";
+
+/*
+ * Passes if bootstrap_replacement_code recorded the RINIT bootstrap, the
+ * replacement as the bootstrap too, sent at the first call, and request 1.
+ */
+static void pass_if_replacement_sent_as_bootstrap(const char* label) {
+  char msg[160];
+
+  snprintf(msg, sizeof(msg), "%s: the bootstrap, the replacement, request 1",
+           label);
+  tlib_pass_if_size_t_equal(msg, 3, captured_count);
+  snprintf(msg, sizeof(msg), "%s: the RINIT bootstrap", label);
+  tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[0].name);
+  snprintf(msg, sizeof(msg), "%s: the replacement sent at the first call",
+           label);
+  tlib_pass_if_size_t_equal(msg, 2, fake.on_entry[0].captured);
+  snprintf(msg, sizeof(msg), "%s: the replacement is named as the bootstrap",
+           label);
+  tlib_pass_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[1].name);
+  snprintf(msg, sizeof(msg), "%s: the replacement is background", label);
+  tlib_pass_if_true(msg, captured[1].background, "background=%d",
+                    captured[1].background);
+  snprintf(msg, sizeof(msg), "%s: request 1 is its own", label);
+  tlib_fail_if_str_equal(msg, BOOTSTRAP_TXN_NAME, captured[2].name);
+}
+
+/*
+ * A transaction that replaces the bootstrap before the first call records
+ * the rest of the bootstrap. It is sent as the bootstrap at the first call,
+ * not as a web transaction named after the worker script.
+ */
+static void test_bootstrap_replaced_before_first_call(void) {
+  engine_create("");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(bootstrap_replacement_code);
+  pass_if_replacement_sent_as_bootstrap("replaced bootstrap");
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * The bootstrap transaction is a background job from its begin, before the
+ * begin decides whether to install the auto-RUM output handler, which
+ * doesn't check again later. So the bootstrap gets no auto-RUM handler. A
+ * classic-mode GET in the same engine is the positive control: it gets one.
+ */
+static void test_bootstrap_background_from_begin(void) {
+  const char* handlers = "implode(',', ob_list_handlers())";
+
+  engine_create("");
+
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_RETURN_ONLY);
+  tlib_pass_if_not_null("background from begin: a bootstrap transaction",
+                        NRPRG(txn));
+  if (NULL != NRPRG(txn)) {
+    tlib_pass_if_int_equal("background from begin: background", 1,
+                           NRPRG(txn)->status.background);
+  }
+  pass_if_php_string("background from begin: no auto-RUM handler", "",
+                     handlers);
+  request_end();
+
+  request_start_web_as(RUN_CLASSIC, FAKE_THROW_NOT_WORKER);
+  pass_if_php_string("classic GET: the auto-RUM handler", "New Relic auto-RUM",
+                     handlers);
+  request_end();
+
+  engine_destroy();
+}
+
+/*
+ * A bootstrap that is a background job from its begin isn't made one again
+ * at the first call. Once its name is frozen, here by the browser agent's
+ * footer while it is still recording, that would be refused, and the refusal
+ * would add a supportability metric to the bootstrap.
+ */
+static void test_frozen_background_bootstrap_not_marked_again(void) {
+  engine_create("");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(
+      "newrelic_get_browser_timing_header();"
+      "newrelic_get_browser_timing_footer();");
+  tlib_pass_if_true("frozen background bootstrap: frozen, a background job",
+                    NULL != NRPRG(txn) && NRTXN(status.path_is_frozen)
+                        && NRTXN(status.background),
+                    "txn=%p", (void*)NRPRG(txn));
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal(
+      "frozen background bootstrap: the bootstrap and request 1", 2,
+      captured_count);
+  tlib_pass_if_str_equal("frozen background bootstrap: the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_false("frozen background bootstrap: no refused change",
+                     captured[0].background_change_prevented,
+                     "background_status_change_prevented was added");
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A replacement bootstrap that the worker script names is a background job
+ * too, because no HTTP request is in progress before the first call. Here
+ * newrelic_set_appname() replaces the RINIT transaction, which it discards by
+ * default. The replacement keeps its name. It is sent at the first call, or,
+ * when the boot fails, at the end of the script run, and then not with the
+ * status that the failed boot leaves.
+ */
+static void test_named_bootstrap_replacement_is_background(void) {
+  static const char replace_and_name[]
+      = "newrelic_set_appname(ini_get('newrelic.appname'));"
+        "newrelic_name_transaction('boot');";
+
+  engine_create("");
+
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(replace_and_name);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("named replacement: it and request 1", 2,
+                            captured_count);
+  tlib_pass_if_str_equal("named replacement: keeps its name",
+                         "OtherTransaction/Custom/boot", captured[0].name);
+  tlib_pass_if_true("named replacement: background", captured[0].background,
+                    "background=%d", captured[0].background);
+  tlib_fail_if_str_equal("named replacement: request 1 is its own",
+                         "OtherTransaction/Custom/boot", captured[1].name);
+  request_end();
+
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(replace_and_name);
+  tlib_php_request_eval("newrelic_notice_error('boot failed');");
+  /* The status that a worker script's fatal error leaves. */
+  SG(sapi_headers).http_response_code = 500;
+  request_end();
+  tlib_pass_if_size_t_equal("named failed boot: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("named failed boot: keeps its name",
+                         "OtherTransaction/Custom/boot", captured[0].name);
+  tlib_pass_if_true("named failed boot: background", captured[0].background,
+                    "background=%d", captured[0].background);
+  tlib_pass_if_true("named failed boot: has the error", captured[0].has_error,
+                    "the transaction has no error");
+  tlib_pass_if_null("named failed boot: no status 500",
+                    nr_strstr(NRSAFESTR(captured[0].agent_attributes),
+                              "\"http.statusCode\":500"));
+
+  engine_destroy();
+}
+
+/*
+ * A worker script that fails before its first call, after
+ * newrelic_set_appname() replaced the RINIT transaction, which it discards by
+ * default, is still recorded as the bootstrap. The replacement is unnamed, and
+ * it is sent at the end of the script run, with the bootstrap name and the
+ * error.
+ */
+static void test_failed_boot_after_set_appname(void) {
+  engine_create("");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+
+  tlib_php_request_eval(
+      "newrelic_set_appname(ini_get('newrelic.appname'));"
+      "newrelic_notice_error('boot failed');");
+  request_end();
+
+  tlib_pass_if_size_t_equal("failed boot after set_appname: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_str_equal("failed boot after set_appname: the bootstrap",
+                         BOOTSTRAP_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("failed boot after set_appname: background",
+                    captured[0].background, "background=%d",
+                    captured[0].background);
+  tlib_pass_if_true("failed boot after set_appname: has the error",
+                    captured[0].has_error, "the transaction has no error");
+  tlib_pass_if_str_equal("failed boot after set_appname: the error message",
+                         "boot failed", captured[0].error_message);
+
+  engine_destroy();
+}
+
+/*
+ * tlib's default INI doesn't capture request parameters, which the tests of a
+ * transaction's request data need.
+ */
+#define REQUEST_DATA_INI "newrelic.attributes.include=request.parameters.*\n"
+
+/*
+ * Passes if the capture has the request data that FAKE_CALL_WITH_REQUEST_DATA
+ * gives the request of the given call: the request URI, which the agent keeps
+ * without its query string, and the request parameter, which is the number of
+ * the call. The JSON escapes the slash.
+ */
+static void pass_if_has_request_data(const char* label,
+                                     const captured_txn_t* c,
+                                     int call) {
+  char msg[160];
+  char* parameter = nr_formatf("\"request.parameters.id\":\"%d\"", call);
+
+  snprintf(msg, sizeof(msg), "%s: request.uri", label);
+  tlib_pass_if_not_null(msg, nr_strstr(NRSAFESTR(c->agent_attributes),
+                                       "\"request.uri\":\"\\/r\""));
+  snprintf(msg, sizeof(msg), "%s: request.parameters.id of call %d", label,
+           call);
+  tlib_pass_if_true(
+      msg, NULL != nr_strstr(NRSAFESTR(c->agent_attributes), parameter),
+      "agent_attributes=%s", NRSAFESTR(c->agent_attributes));
+  nr_free(parameter);
+}
+
+/*
+ * Passes if the capture is a worker request's transaction with the request
+ * data of the given call and a queue start, as the positive control for a
+ * transaction begun after the request.
+ */
+static void pass_if_worker_request_with_data(const char* label,
+                                             const captured_txn_t* c,
+                                             int call) {
+  char msg[160];
+
+  pass_if_has_request_data(label, c, call);
+  snprintf(msg, sizeof(msg), "%s: a queue start", label);
+  tlib_pass_if_true(msg, 0 != c->queue_start, "queue_start=" NR_TIME_FMT,
+                    c->queue_start);
+  snprintf(msg, sizeof(msg), "%s: not background", label);
+  tlib_pass_if_false(msg, c->background, "background=%d", c->background);
+}
+
+/*
+ * Passes if the capture is a transaction begun after the worker request of
+ * the given call: it has that request's data, it is a background job, and it
+ * has no queue start.
+ */
+static void pass_if_after_request_with_data(const char* label,
+                                            const captured_txn_t* c,
+                                            int call) {
+  char msg[160];
+
+  pass_if_has_request_data(label, c, call);
+  snprintf(msg, sizeof(msg), "%s: background", label);
+  tlib_pass_if_true(msg, c->background, "background=%d", c->background);
+  snprintf(msg, sizeof(msg), "%s: no queue start", label);
+  tlib_pass_if_time_equal(msg, 0, c->queue_start);
+}
+
+/*
+ * A transaction started between requests is the last request's
+ * after-response work. It keeps the data that the superglobals still hold,
+ * which are request 1's, not request 2's, but not the queue start from
+ * request 1's X-Request-Start, which would measure request 1. Captured: [0]
+ * bootstrap, [1] request 1, [2] the loop-body transaction, [3] request 2.
+ */
+static void test_between_requests_txn_keeps_request_data(void) {
+  engine_create(REQUEST_DATA_INI);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL_WITH_REQUEST_DATA);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("request data: 4 transactions", 4, captured_count);
+  pass_if_worker_request_with_data("request data, request 1", &captured[1], 1);
+  pass_if_after_request_with_data("request data, between requests",
+                                  &captured[2], 1);
+  pass_if_worker_request_with_data("request data, request 2", &captured[3], 2);
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * Whether the worker script has made its first call lasts for one worker
+ * lifetime. After a lifetime with two calls, the next one on the same thread
+ * starts again before its first call, so a replacement bootstrap gets the
+ * bootstrap name, not the between-requests one.
+ */
+static void test_second_worker_lifetime(void) {
+  engine_create("");
+
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("first lifetime: bootstrap plus two requests", 3,
+                            captured_count);
+  tlib_pass_if_true("first lifetime: requests started",
+                    nr_php_frankenphp_requests_started(),
+                    "requests_started was false");
+  request_end();
+
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+  tlib_php_request_eval(bootstrap_replacement_code);
+  pass_if_replacement_sent_as_bootstrap("second lifetime");
+  request_end();
+
+  engine_destroy();
+}
+
+/*
+ * The wrapper records the worker script's first call on every thread, also
+ * on one that RINIT took for classic mode. There, a request handler that the
+ * begin handler never sees, such as a trampoline, confirms the thread only
+ * when call 1 returns, and request 1 must already count as after the first
+ * call. RSHUTDOWN forgets it.
+ */
+static void test_requests_started_on_canary_thread(void) {
+  size_t trampolines = 0;
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(rejected_callables); i++) {
+    char* code;
+    char msg[128];
+
+    if (NULL == nr_strstr(rejected_callables[i].label, "trampoline")) {
+      continue;
+    }
+    trampolines += 1;
+    code = nr_formatf("$cb = %s; frankenphp_handle_request($cb);",
+                      rejected_callables[i].expr);
+
+    request_start_web_as(RUN_BOOTSTRAP_URI_NO_ENV, FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+
+    snprintf(msg, sizeof(msg), "canary, %s: a classic-mode thread in call 1",
+             rejected_callables[i].label);
+    tlib_pass_if_int_equal(msg, NR_PHP_FRANKENPHP_THREAD_CLASSIC,
+                           fake.on_entry[0].role);
+    snprintf(msg, sizeof(msg), "canary, %s: requests started in call 1",
+             rejected_callables[i].label);
+    tlib_pass_if_true(msg, fake.on_entry[0].requests_started,
+                      "requests_started was false");
+
+    request_end();
+    snprintf(msg, sizeof(msg), "canary, %s: forgotten at RSHUTDOWN",
+             rejected_callables[i].label);
+    tlib_pass_if_false(msg, nr_php_frankenphp_requests_started(),
+                       "requests_started was true");
+    nr_free(code);
+  }
+  tlib_pass_if_size_t_equal("canary: both trampoline cases ran", 2,
+                            trampolines);
+  engine_destroy();
+}
+
+/*
+ * The wrapper records the first call also when no transaction was open for
+ * it to end. Here no license key is configured, so neither RINIT nor the
+ * begin handler begins one, as on a cold start before the app is connected.
+ * A transaction that the worker script starts after call 1 is sent at call 2
+ * as a between-requests one, not as the bootstrap.
+ */
+static void test_requests_started_without_open_txn(void) {
+  engine_create("newrelic.license=\n");
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL);
+
+  tlib_pass_if_null("no open transaction: no bootstrap transaction",
+                    NRPRG(txn));
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'),"
+      "  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("no open transaction: one transaction", 1,
+                            captured_count);
+  tlib_pass_if_size_t_equal("no open transaction: sent at call 2", 1,
+                            fake.on_entry[1].captured);
+  tlib_pass_if_str_equal("no open transaction: the between-requests name",
+                         BETWEEN_REQUESTS_TXN_NAME, captured[0].name);
+  tlib_pass_if_true("no open transaction: background", captured[0].background,
+                    "background=%d", captured[0].background);
+
+  request_end();
+  engine_destroy();
+}
+
+/*
+ * A worker script can leave its loop after a served request, as with a
+ * $maxRequests counter, and start a transaction after that. It is the last
+ * request's after-response work too. It is ended at the end of the script
+ * run, under the between-requests name, with the request data that the
+ * agent's RSHUTDOWN attached while the superglobals still held request 1's.
+ * After a call that returns false they hold the dummy request's data instead,
+ * which these tests leave to FrankenPHP itself: the fake never returns false
+ * after calling the callback. Captured: [0] bootstrap, [1] request 1, [2] the
+ * transaction started after the loop.
+ */
+static void test_txn_after_counter_exit_keeps_request_data(void) {
+  engine_create(REQUEST_DATA_INI);
+  request_start_web_as(RUN_WORKER_BOOTSTRAP, FAKE_CALL_WITH_REQUEST_DATA);
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "frankenphp_handle_request($cb);"
+      "newrelic_start_transaction(ini_get('newrelic.appname'));");
+  request_end();
+
+  tlib_pass_if_size_t_equal("after the loop: 3 transactions", 3,
+                            captured_count);
+  pass_if_worker_request_with_data("after the loop, request 1", &captured[1],
+                                   1);
+  tlib_pass_if_str_equal("after the loop: the between-requests name",
+                         BETWEEN_REQUESTS_TXN_NAME, captured[2].name);
+  pass_if_after_request_with_data("after the loop", &captured[2], 1);
+
   engine_destroy();
 }
 #endif /* ZTS && PHP 8.0+ */
@@ -2194,8 +2711,19 @@ void test_main(void* p NRUNUSED) {
   test_buffered_html_gets_browser_agent();
   test_direct_call_begins_no_transaction();
   test_loop_body_txn_ended_as_left();
+  test_loop_body_txn_named_by_framework_keeps_its_name();
   test_confirmed_by_return();
   test_handler_called_from_user_code_keeps_its_segment();
   test_loop_body_txn_not_recording();
+  test_bootstrap_replaced_before_first_call();
+  test_bootstrap_background_from_begin();
+  test_frozen_background_bootstrap_not_marked_again();
+  test_named_bootstrap_replacement_is_background();
+  test_failed_boot_after_set_appname();
+  test_between_requests_txn_keeps_request_data();
+  test_second_worker_lifetime();
+  test_requests_started_on_canary_thread();
+  test_requests_started_without_open_txn();
+  test_txn_after_counter_exit_keeps_request_data();
 #endif
 }

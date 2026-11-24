@@ -8,6 +8,7 @@
 #include "php_api_distributed_trace.h"
 #include "php_autorum.h"
 #include "php_execute.h"
+#include "php_frankenphp.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_header.h"
@@ -1084,6 +1085,18 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   if (is_cli) {
     nr_txn_set_as_background_job(NRPRG(txn), "CLI SAPI");
   }
+
+#ifdef ZTS
+  /*
+   * A FrankenPHP worker thread outside a worker request records no HTTP
+   * request. This has to come after the queue start is taken from
+   * X-Request-Start above, which it drops, and before the auto-RUM check
+   * below, which reads the background status.
+   */
+  if (NR_PHP_PROCESS_GLOBALS(is_frankenphp)) {
+    nr_php_frankenphp_txn_starting(NRPRG(txn));
+  }
+#endif
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   NRTXNGLOBAL(mysqli_links) = nr_mysqli_metadata_create();
