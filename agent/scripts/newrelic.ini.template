@@ -661,6 +661,40 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.framework = ""
 
+; Setting: newrelic.frankenphp.worker_mode
+; Type   : "auto", "on" or "off"
+; Scope  : system
+; Default: "auto"
+; Info   : Sets whether the agent instruments FrankenPHP worker mode. It has
+;          an effect only when PHP runs under FrankenPHP in worker mode, which
+;          needs PHP 8.3 or later built with ZTS.
+;
+;          "auto" instruments worker mode from FrankenPHP v1.11.2. On an
+;          earlier version, or on one the agent can't read, it doesn't.
+;
+;          "on" also instruments worker mode from FrankenPHP v1.2.4, and on
+;          a version the agent can't read, such as a custom build. This is at
+;          your own risk and unsupported. Before v1.11.2, worker request
+;          transactions carry no request parameters. Versions before v1.2.4
+;          are never instrumented.
+;
+;          On a version that isn't instrumented, the agent still records the
+;          worker script's bootstrap transaction and logs a warning, but
+;          records no worker request transactions.
+;
+;          "off" records nothing on worker threads and leaves classic mode
+;          alone. With "off", newrelic_set_appname() and
+;          newrelic_start_transaction() return false on worker threads.
+;
+;          "on" and "off" may be written with or without quotes. PHP reads an
+;          unquoted on, yes or true as 1, and an unquoted off, no, false, none
+;          or null as an empty value, and the agent accepts both forms. An
+;          empty value means "off", and so does 0. Any other value is ignored:
+;          the setting keeps its default, "auto", so worker mode is still
+;          recorded.
+;
+;newrelic.frankenphp.worker_mode = "auto"
+
 ; Setting: newrelic.webtransaction.name.remove_trailing_path
 ; Type   : boolean
 ; Scope  : per-directory

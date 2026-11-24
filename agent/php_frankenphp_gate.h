@@ -128,6 +128,80 @@ typedef enum {
  */
 extern bool nr_php_frankenphp_log_once(nr_php_frankenphp_log_once_t what);
 
+/*
+ * What a script run turned out to be, going by the two signals FrankenPHP
+ * gives the agent: the request URI and the FRANKENPHP_WORKER variable.
+ *
+ * Each signal catches a case in which the other fails, so a run is a worker
+ * bootstrap only when both say so. When they disagree the run is classic mode,
+ * and the two kinds of disagreement are told apart so that each can be logged.
+ */
+typedef enum {
+  /* An HTTP request, or a run that has neither signal. */
+  NR_PHP_FRANKENPHP_RUN_CLASSIC,
+  /* A worker script's bootstrap: both signals say so. */
+  NR_PHP_FRANKENPHP_RUN_BOOTSTRAP,
+  /* The variable is "1", but the URI isn't bootstrap-shaped. */
+  NR_PHP_FRANKENPHP_RUN_CLASSIC_WORKER_ENV_SET,
+  /* The URI is bootstrap-shaped, but the variable isn't "1". */
+  NR_PHP_FRANKENPHP_RUN_CLASSIC_NO_WORKER_ENV
+} nr_php_frankenphp_run_t;
+
+/*
+ * Purpose : Classify a script run from the request URI and the value of the
+ *           FRANKENPHP_WORKER variable.
+ *
+ *           The URI is bootstrap-shaped when it isn't NULL, isn't empty, has
+ *           no leading slash and isn't *. The variable counts only when it is
+ *           exactly "1": "0", "true", "" and " 1" count as unset.
+ *
+ * Params  : 1. The request URI. May be NULL.
+ *           2. The value of FRANKENPHP_WORKER. May be NULL.
+ *
+ * Returns : How the run is classified.
+ */
+extern nr_php_frankenphp_run_t nr_php_frankenphp_classify_run(
+    const char* request_uri,
+    const char* frankenphp_worker);
+
+/* What newrelic.frankenphp.worker_mode is set to. */
+typedef enum {
+  NR_PHP_FRANKENPHP_SETTING_AUTO = 0,
+  NR_PHP_FRANKENPHP_SETTING_ON,
+  NR_PHP_FRANKENPHP_SETTING_OFF
+} nr_php_frankenphp_setting_t;
+
+/* What the agent does with worker mode, given the setting and the version. */
+typedef enum {
+  /* Worker mode is recorded. */
+  NR_PHP_FRANKENPHP_MODE_INSTRUMENTED,
+  /* The version is one the agent doesn't support, so nothing is recorded. */
+  NR_PHP_FRANKENPHP_MODE_UNSUPPORTED,
+  /* The setting turned worker mode instrumentation off. */
+  NR_PHP_FRANKENPHP_MODE_OFF
+} nr_php_frankenphp_mode_t;
+
+/*
+ * Purpose : Decide what the agent does with worker mode.
+ *
+ *           With the setting off the answer is off, whatever the version. With
+ *           the setting auto, worker mode is instrumented from v1.11.2, the
+ *           oldest version the agent supports, and unsupported below that.
+ *           With the setting on, it is instrumented from v1.2.4, the oldest
+ *           version it can work with, and also when the version is unknown,
+ *           as on a custom build, and unsupported only below v1.2.4. The two
+ *           floors are fixed, not tied to the latest release.
+ *
+ * Params  : 1. The setting.
+ *           2. The version as read from FrankenPHP, which may be NULL. It is
+ *              parsed by nr_php_frankenphp_parse_version().
+ *
+ * Returns : What the agent does.
+ */
+extern nr_php_frankenphp_mode_t nr_php_frankenphp_mode_for(
+    nr_php_frankenphp_setting_t setting,
+    const char* version);
+
 #endif /* ZTS */
 
 #endif /* PHP_FRANKENPHP_GATE_H */

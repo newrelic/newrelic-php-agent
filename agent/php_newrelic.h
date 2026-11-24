@@ -350,6 +350,9 @@ typedef struct _ini_t {
   nriniuint_t tt_recordsql;  // newrelic.transaction_tracer.record_sql
   nrinibool_t fibers_disabled;         // newrelic.fibers.disabled
   nrinifw_t force_framework;           // newrelic.framework
+#ifdef ZTS
+  nriniuint_t frankenphp_worker_mode;  // newrelic.frankenphp.worker_mode
+#endif
   nrinibool_t guzzle_enabled;          // newrelic.guzzle.enabled
   nrinistr_t security_policies_token;  // newrelic.security_policies_token
   nrinibool_t

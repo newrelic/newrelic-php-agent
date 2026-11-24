@@ -138,4 +138,99 @@ bool nr_php_frankenphp_log_once(nr_php_frankenphp_log_once_t what) {
   return !__atomic_exchange_n(flag, true, __ATOMIC_ACQ_REL);
 }
 
+/*
+ * A worker bootstrap's request URI is the worker script's path, as FrankenPHP
+ * gives it, so it has no leading slash. An HTTP request's has one, an
+ * OPTIONS * request's is *, and an embedding program or a run with no request
+ * has an empty one or none. The agent takes those for classic mode, which is
+ * the safe direction: it keeps today's behaviour.
+ */
+static bool nr_php_frankenphp_uri_is_bootstrap_shaped(const char* request_uri) {
+  if (NULL == request_uri || '\0' == request_uri[0]) {
+    return false;
+  }
+
+  return '/' != request_uri[0] && !nr_streq(request_uri, "*");
+}
+
+nr_php_frankenphp_run_t nr_php_frankenphp_classify_run(
+    const char* request_uri,
+    const char* frankenphp_worker) {
+  bool bootstrap_shaped
+      = nr_php_frankenphp_uri_is_bootstrap_shaped(request_uri);
+  bool worker_env = nr_streq(frankenphp_worker, "1");
+
+  if (bootstrap_shaped && worker_env) {
+    return NR_PHP_FRANKENPHP_RUN_BOOTSTRAP;
+  }
+
+  if (worker_env) {
+    return NR_PHP_FRANKENPHP_RUN_CLASSIC_WORKER_ENV_SET;
+  }
+
+  if (bootstrap_shaped) {
+    return NR_PHP_FRANKENPHP_RUN_CLASSIC_NO_WORKER_ENV;
+  }
+
+  return NR_PHP_FRANKENPHP_RUN_CLASSIC;
+}
+
+/*
+ * The oldest version the agent supports worker mode on, and the oldest it can
+ * work with at all. They are fixed values, not tied to the latest release.
+ */
+static const nr_php_frankenphp_version_t nr_php_frankenphp_support_floor
+    = {1, 11, 2};
+static const nr_php_frankenphp_version_t nr_php_frankenphp_technical_floor
+    = {1, 2, 4};
+
+static bool nr_php_frankenphp_version_at_least(
+    const nr_php_frankenphp_version_t* version,
+    const nr_php_frankenphp_version_t* minimum) {
+  if (version->major != minimum->major) {
+    return version->major > minimum->major;
+  }
+
+  if (version->minor != minimum->minor) {
+    return version->minor > minimum->minor;
+  }
+
+  return version->patch >= minimum->patch;
+}
+
+nr_php_frankenphp_mode_t nr_php_frankenphp_mode_for(
+    nr_php_frankenphp_setting_t setting,
+    const char* version) {
+  nr_php_frankenphp_version_t parsed = {0, 0, 0};
+  bool known;
+
+  if (NR_PHP_FRANKENPHP_SETTING_OFF == setting) {
+    return NR_PHP_FRANKENPHP_MODE_OFF;
+  }
+
+  known = nr_php_frankenphp_parse_version(version, &parsed);
+
+  if (known
+      && nr_php_frankenphp_version_at_least(&parsed,
+                                            &nr_php_frankenphp_support_floor)) {
+    return NR_PHP_FRANKENPHP_MODE_INSTRUMENTED;
+  }
+
+  if (NR_PHP_FRANKENPHP_SETTING_ON != setting) {
+    return NR_PHP_FRANKENPHP_MODE_UNSUPPORTED;
+  }
+
+  /*
+   * The setting is on, and the version is below the support floor or unknown.
+   * An unknown version is taken to be a custom build and is allowed through.
+   */
+  if (!known
+      || nr_php_frankenphp_version_at_least(
+          &parsed, &nr_php_frankenphp_technical_floor)) {
+    return NR_PHP_FRANKENPHP_MODE_INSTRUMENTED;
+  }
+
+  return NR_PHP_FRANKENPHP_MODE_UNSUPPORTED;
+}
+
 #endif /* ZTS */
